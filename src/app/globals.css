@@ -2,7 +2,10 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0f172a;
+  --ambuhub-brand: #0069b4;
+  --ambuhub-brand-dark: #004a7c;
+  --ambuhub-surface: #f3f8fc;
 }
 
 @theme inline {
@@ -10,17 +13,26 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-ambuhub-50: #eff8ff;
+  --color-ambuhub-100: #dbeafe;
+  --color-ambuhub-200: #bfdbfe;
+  --color-ambuhub-300: #93c5fd;
+  --color-ambuhub-500: #0ea5e9;
+  --color-ambuhub-600: #0284c7;
+  --color-ambuhub-700: #0369a1;
+  --color-ambuhub-800: #075985;
+  --color-ambuhub-900: #0c4a6e;
+  --color-ambuhub-brand: #0069b4;
+  --color-ambuhub-brand-dark: #004a7c;
+  --color-ambuhub-surface: #f3f8fc;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
 }
