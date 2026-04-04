@@ -1,32 +1,32 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { MapPin, Radio, Users, Zap } from "lucide-react";
+import { BadgeCheck, CalendarClock, Package, Users } from "lucide-react";
 
 const features = [
   {
-    title: "Live fleet visibility",
+    title: "Vetted provider profiles",
     description:
-      "See which units are available, on scene, or en route—on a map built for emergency workflows.",
-    icon: MapPin,
+      "Compare coverage areas, credentials, and reviews before you book standby or transport.",
+    icon: BadgeCheck,
   },
   {
-    title: "Faster handoffs",
+    title: "Structured bookings",
     description:
-      "Share incident context, patient summary placeholders, and ETA updates without scattered calls.",
-    icon: Zap,
+      "Dates, venues, and scope stay in one thread—so organizers and providers stay aligned.",
+    icon: CalendarClock,
   },
   {
-    title: "Multi-agency ready",
+    title: "Equipment marketplace",
     description:
-      "Designed for ambulances, fire, and supporting services to align on one operational picture.",
+      "List or source stretchers, monitors, and vehicle kit alongside your service bookings.",
+    icon: Package,
+  },
+  {
+    title: "Personnel on demand",
+    description:
+      "Post shifts or browse medics and drivers for tours, standby, and short-term coverage.",
     icon: Users,
-  },
-  {
-    title: "Reliable comms layer",
-    description:
-      "Structured updates reduce radio noise and help dispatch stay ahead of changing scenes.",
-    icon: Radio,
   },
 ] as const;
 
@@ -50,7 +50,7 @@ const item = {
 export function FeaturesSection() {
   return (
     <section
-      id="services"
+      id="features"
       className="border-t border-ambuhub-100 bg-white py-16 sm:py-20 lg:py-24"
     >
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -62,12 +62,11 @@ export function FeaturesSection() {
           className="max-w-2xl"
         >
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Built for emergency operations
+            Built for events, venues, and fleets
           </h2>
           <p className="mt-4 text-lg leading-relaxed text-foreground/70">
-            Everything on the landing page is framed around how teams actually work
-            under pressure—clear status, shared context, and fewer gaps between the
-            field and the control room.
+            Ambuhub is for promoters, operators, and buyers who plan ahead—clear
+            listings, shared expectations, and less back-and-forth before show day.
           </p>
         </motion.div>
 

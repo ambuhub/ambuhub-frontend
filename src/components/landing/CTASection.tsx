@@ -16,10 +16,10 @@ export function CTASection() {
           className="overflow-hidden rounded-3xl bg-gradient-to-br from-ambuhub-brand to-ambuhub-800 px-6 py-12 text-center shadow-xl sm:px-10 sm:py-14 lg:px-16"
         >
           <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            Ready to modernize your emergency workflows?
+            Ready to list or book on Ambuhub?
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-white/90 sm:text-lg">
-            Tell us about your fleet and control room needs. We will follow up with
+            Tell us about your event, fleet, or storefront. We will follow up with
             next steps for a tailored walkthrough.
           </p>
           <motion.div
@@ -37,7 +37,7 @@ export function CTASection() {
               Contact us
             </Link>
             <Link
-              href="#top"
+              href="/#top"
               className="inline-flex items-center justify-center rounded-xl border border-white/40 bg-white/10 px-6 py-3.5 text-base font-semibold text-white backdrop-blur transition-colors hover:bg-white/20"
             >
               Back to top

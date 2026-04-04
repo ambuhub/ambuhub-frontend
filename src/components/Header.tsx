@@ -7,10 +7,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 
 const navItems = [
-  { label: "Home", href: "#top" },
-  { label: "Services", href: "#services" },
-  { label: "How it works", href: "#how-it-works" },
-  { label: "Contact", href: "#contact" },
+  { label: "Home", href: "/#top" },
+  { label: "Services", href: "/#services" },
+  { label: "How it works", href: "/#how-it-works" },
+  { label: "Contact", href: "/#contact" },
 ] as const;
 
 export function Header() {
@@ -20,7 +20,7 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-ambuhub-100 bg-white/95 shadow-sm backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:h-[4.25rem] sm:px-6 lg:px-8">
         <Link
-          href="#top"
+          href="/"
           className="flex shrink-0 items-center gap-3 rounded-lg outline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ambuhub-brand"
           onClick={() => setOpen(false)}
         >
@@ -53,7 +53,13 @@ export function Header() {
             </Link>
           ))}
           <Link
-            href="#contact"
+            href="/auth"
+            className="ml-1 rounded-lg border border-ambuhub-200 bg-white px-4 py-2 text-sm font-semibold text-ambuhub-brand transition-colors hover:bg-ambuhub-50"
+          >
+            Log in
+          </Link>
+          <Link
+            href="/#contact"
             className="ml-2 rounded-lg bg-ambuhub-brand px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-ambuhub-brand-dark"
           >
             Get started
@@ -101,7 +107,14 @@ export function Header() {
                 </Link>
               ))}
               <Link
-                href="#contact"
+                href="/auth"
+                className="mt-1 rounded-lg border border-ambuhub-200 px-3 py-3 text-center text-base font-semibold text-ambuhub-brand hover:bg-ambuhub-50"
+                onClick={() => setOpen(false)}
+              >
+                Log in
+              </Link>
+              <Link
+                href="/#contact"
                 className="mt-2 rounded-lg bg-ambuhub-brand px-3 py-3 text-center text-base font-semibold text-white"
                 onClick={() => setOpen(false)}
               >

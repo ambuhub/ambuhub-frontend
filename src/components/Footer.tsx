@@ -1,9 +1,9 @@
 import Link from "next/link";
 
 const footerLinks = [
-  { label: "Services", href: "#services" },
-  { label: "How it works", href: "#how-it-works" },
-  { label: "Contact", href: "#contact" },
+  { label: "Services", href: "/#services" },
+  { label: "How it works", href: "/#how-it-works" },
+  { label: "Contact", href: "/#contact" },
 ] as const;
 
 export function Footer() {
@@ -14,8 +14,8 @@ export function Footer() {
           <div className="max-w-md">
             <p className="text-lg font-semibold text-ambuhub-brand">Ambuhub</p>
             <p className="mt-2 text-sm leading-relaxed text-foreground/70">
-              Coordination tools for ambulance and emergency response teams. Built
-              for clarity, speed, and reliability when every minute counts.
+              A marketplace to book ambulance standby, hire personnel, and buy or
+              sell equipment—with clear profiles and straightforward coordination.
             </p>
           </div>
           <nav
@@ -34,8 +34,9 @@ export function Footer() {
           </nav>
         </div>
         <p className="mt-10 border-t border-ambuhub-200 pt-8 text-xs leading-relaxed text-foreground/55">
-          Ambuhub is not a substitute for emergency services. For life-threatening
-          emergencies, call your local emergency number immediately.
+          Ambuhub is a booking and marketplace platform. If someone needs
+          immediate professional medical care, contact your local medical helpline
+          or public ambulance service right away.
         </p>
         <p className="mt-4 text-center text-sm text-foreground/50 md:text-left">
           &copy; {new Date().getFullYear()} Ambuhub. All rights reserved.

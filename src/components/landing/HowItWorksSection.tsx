@@ -5,18 +5,18 @@ import { motion } from "framer-motion";
 const steps = [
   {
     step: "01",
-    title: "Capture the incident",
-    body: "Log calls and incidents in one place so dispatchers and supervisors share the same facts.",
+    title: "Post your need or browse listings",
+    body: "Describe your event, transport, staffing, or equipment ask—or explore what providers already offer.",
   },
   {
     step: "02",
-    title: "Assign the right unit",
-    body: "Match the closest capable crew with clear availability—reducing guesswork during peaks.",
+    title: "Compare providers and confirm details",
+    body: "Review profiles, scope, and pricing, then lock dates, locations, and deliverables in writing.",
   },
   {
     step: "03",
-    title: "Track through resolution",
-    body: "Follow progress from dispatch to handover with timestamps you can review afterward.",
+    title: "Book and coordinate on the day",
+    body: "Keep contact details, schedules, and handoffs in one place from load-in through wrap.",
   },
 ] as const;
 
@@ -38,8 +38,8 @@ export function HowItWorksSection() {
             How it works
           </h2>
           <p className="mt-4 text-lg leading-relaxed text-foreground/70">
-            A simple flow your teams can adopt quickly—without sacrificing the rigor
-            emergency response demands.
+            A simple flow promoters, venues, and providers can adopt quickly—without
+            sacrificing the rigor professional medical coverage deserves.
           </p>
         </motion.div>
 

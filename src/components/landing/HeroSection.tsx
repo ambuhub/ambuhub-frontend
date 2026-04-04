@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Shield } from "lucide-react";
+import { ArrowRight, CalendarDays } from "lucide-react";
+import { ServiceHubGraphic } from "@/components/landing/ServiceHubGraphic";
 
 export function HeroSection() {
   return (
@@ -18,17 +19,20 @@ export function HeroSection() {
             "radial-gradient(circle at 20% 20%, rgb(0 105 180 / 0.12) 0%, transparent 45%), radial-gradient(circle at 80% 60%, rgb(2 132 199 / 0.1) 0%, transparent 40%)",
         }}
       />
-      <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-28">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <div>
+      <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-28">
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.55fr)] lg:items-stretch lg:gap-6 xl:gap-8">
+          <div className="min-w-0 self-center">
             <motion.div
               initial={{ opacity: 0, x: -40 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
               className="inline-flex items-center gap-2 rounded-full border border-ambuhub-200 bg-white/80 px-3 py-1 text-xs font-medium text-ambuhub-800 shadow-sm backdrop-blur sm:text-sm"
             >
-              <Shield className="h-3.5 w-3.5 text-ambuhub-brand" aria-hidden />
-              Emergency-ready operations
+              <CalendarDays
+                className="h-3.5 w-3.5 text-ambuhub-brand"
+                aria-hidden
+              />
+              Concerts, venues & tours
             </motion.div>
             <motion.h1
               initial={{ opacity: 0, x: -48 }}
@@ -36,7 +40,7 @@ export function HeroSection() {
               transition={{ duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
               className="mt-6 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]"
             >
-              Dispatch and coordinate emergency response with confidence
+              Book ambulance coverage, crew, and equipment in one place
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, x: -36 }}
@@ -44,8 +48,10 @@ export function HeroSection() {
               transition={{ duration: 0.55, delay: 0.16, ease: [0.22, 1, 0.36, 1] }}
               className="mt-5 max-w-xl text-lg leading-relaxed text-foreground/70"
             >
-              Ambuhub brings ambulances, first responders, and control rooms onto
-              one clear workflow—so teams see the full picture and act faster.
+              Planning a show, festival, or corporate event? Ambuhub connects
+              you with providers for on-site medical standby, scheduled
+              transports, qualified personnel, and ambulance gear—before the
+              doors open.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 24 }}
@@ -68,41 +74,7 @@ export function HeroSection() {
               </Link>
             </motion.div>
           </div>
-          <motion.div
-            initial={{ opacity: 0, x: 48 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-            className="relative lg:justify-self-end"
-          >
-            <div className="relative rounded-2xl border border-ambuhub-100 bg-white p-6 shadow-xl shadow-ambuhub-900/5 sm:p-8">
-              <div className="absolute -right-6 -top-6 hidden h-24 w-24 rounded-full bg-ambuhub-200/60 blur-2xl sm:block" />
-              <div className="space-y-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-ambuhub-700">
-                  Live overview
-                </p>
-                <div className="space-y-3">
-                  {[
-                    { label: "Active units", value: "12", tone: "text-ambuhub-brand" },
-                    { label: "Incidents triaged", value: "48", tone: "text-foreground" },
-                    { label: "Avg. response sync", value: "< 2m", tone: "text-foreground/80" },
-                  ].map((row) => (
-                    <div
-                      key={row.label}
-                      className="flex items-center justify-between rounded-xl bg-ambuhub-surface px-4 py-3"
-                    >
-                      <span className="text-sm text-foreground/70">{row.label}</span>
-                      <span className={`text-sm font-semibold ${row.tone}`}>
-                        {row.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-foreground/50">
-                  Illustrative preview—connect your fleet when you are ready.
-                </p>
-              </div>
-            </div>
-          </motion.div>
+          <ServiceHubGraphic />
         </div>
       </div>
     </section>

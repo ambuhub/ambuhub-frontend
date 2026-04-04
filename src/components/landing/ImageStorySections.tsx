@@ -8,19 +8,20 @@ const ease = [0.22, 1, 0.36, 1] as const;
 const blocks = [
   {
     id: "field-operations",
-    title: "Clarity from the control room to the street",
-    body: "Give supervisors and crews the same operational picture—who is moving, where help is needed, and what changed in the last few minutes. Fewer radio round-trips, more time focused on patients and safety.",
+    title: "From tour bus to festival field",
+    body: "Give your production team and medical partners the same plan—who is booked, when they arrive, and what is included. Less time chasing spreadsheets, more time locking in the run of show.",
     imageSrc: "/landing-page/landing-1.jpg",
     imageAlt:
-      "Emergency response team coordinating ambulance and field operations",
+      "Medical standby and ambulance vehicle at an outdoor event venue",
     imageOnRight: true,
   },
   {
-    id: "unified-response",
-    title: "One workflow for a faster, calmer response",
-    body: "Ambuhub is built so dispatch, ambulances, and partner agencies can align without juggling spreadsheets and group chats. Structured updates and shared context help every handoff feel deliberate—not rushed.",
+    id: "unified-marketplace",
+    title: "One place for coverage and gear",
+    body: "Ambuhub keeps standby, transport, staff, and equipment listings connected—so you can secure medical coverage for opening night and source kit for the fleet without switching between disconnected tools.",
     imageSrc: "/landing-page/landing-2.jpg",
-    imageAlt: "Ambulance and emergency medical professionals in action",
+    imageAlt:
+      "Ambulance and medical professionals preparing kit for an event",
     imageOnRight: false,
   },
 ] as const;

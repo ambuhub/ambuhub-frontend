@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ambuhub | Emergency & ambulance coordination",
+  title: "Ambuhub | Book ambulance standby, crew & equipment",
   description:
-    "Coordinate ambulance and emergency response teams with clarity—dispatch, fleet visibility, and shared context in one place.",
+    "Book on-site medical standby for events, arrange scheduled transports, hire ambulance personnel, and buy or sell equipment—in one marketplace.",
 };
 
 export default function RootLayout({
