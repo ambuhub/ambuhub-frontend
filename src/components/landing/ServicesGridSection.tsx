@@ -1,27 +1,17 @@
+import Image from "next/image";
 import Link from "next/link";
-import {
-  Ambulance,
-  CarFront,
-  Package,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
 import { AMBUHUB_SERVICES } from "@/lib/ambuhub-services";
 
-const icons: LucideIcon[] = [Ambulance, CarFront, Users, Package];
+const serviceImages = [
+  "/landing-page/landing-3.png",
+  "/landing-page/landing-4.png",
+  "/landing-page/landing-5.png",
+] as const;
 
 const accentBorder = [
   "border-ambuhub-brand/30 hover:border-ambuhub-brand/60",
-  "border-ambuhub-900/20 hover:border-ambuhub-900/40",
   "border-ambuhub-600/25 hover:border-ambuhub-600/50",
   "border-orange-700/25 hover:border-orange-700/45",
-] as const;
-
-const iconTone = [
-  "text-ambuhub-brand",
-  "text-ambuhub-900",
-  "text-ambuhub-600",
-  "text-orange-700",
 ] as const;
 
 export function ServicesGridSection() {
@@ -39,24 +29,27 @@ export function ServicesGridSection() {
           Our services
         </h2>
         <p className="mx-auto mt-3 max-w-2xl text-center text-foreground/70">
-          Standby, scheduled transport, personnel, and equipment—explore each path
-          on one platform.
+          Medical transport, personnel, and equipment—explore each path on one
+          platform.
         </p>
-        <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:gap-6">
-          {AMBUHUB_SERVICES.map((service, i) => {
-            const Icon = icons[i];
-            return (
-              <li key={service.slug}>
-                <Link
-                  href={`/services/${service.slug}`}
-                  className={`group flex h-full flex-col rounded-2xl border bg-white p-6 shadow-sm transition-colors hover:bg-ambuhub-surface/60 sm:p-7 ${accentBorder[i]}`}
-                >
-                  <span
-                    className={`flex h-12 w-12 items-center justify-center rounded-xl bg-ambuhub-surface ${iconTone[i]}`}
-                  >
-                    <Icon className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-                  </span>
-                  <span className="mt-4 text-lg font-semibold text-foreground group-hover:text-ambuhub-brand">
+        <ul className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
+          {AMBUHUB_SERVICES.map((service, i) => (
+            <li key={service.slug} className="min-w-0">
+              <Link
+                href={`/services/${service.slug}`}
+                className={`group flex h-full flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition-colors hover:bg-ambuhub-surface/60 ${accentBorder[i]}`}
+              >
+                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-ambuhub-100">
+                  <Image
+                    src={serviceImages[i]}
+                    alt={service.title}
+                    fill
+                    className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                  />
+                </div>
+                <div className="flex flex-1 flex-col p-6 sm:p-7">
+                  <span className="text-lg font-semibold text-foreground group-hover:text-ambuhub-brand">
                     {service.title}
                   </span>
                   <span className="mt-2 flex-1 text-sm leading-relaxed text-foreground/70">
@@ -71,10 +64,10 @@ export function ServicesGridSection() {
                       &rarr;
                     </span>
                   </span>
-                </Link>
-              </li>
-            );
-          })}
+                </div>
+              </Link>
+            </li>
+          ))}
         </ul>
       </div>
     </section>

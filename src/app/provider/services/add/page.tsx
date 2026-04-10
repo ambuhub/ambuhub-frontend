@@ -31,12 +31,7 @@ export default function ProviderAddServicePage() {
             <option value="" disabled>
               Select a category
             </option>
-            <option value="emergency-medical-transport">
-              Emergency Medical Transport
-            </option>
-            <option value="non-emergency-medical-transport">
-              Non Emergency Medical Transport
-            </option>
+            <option value="medical-transport">Medical transport</option>
             <option value="personnel">Personnel</option>
             <option value="ambulance-servicing">Ambulance Servicing</option>
           </select>

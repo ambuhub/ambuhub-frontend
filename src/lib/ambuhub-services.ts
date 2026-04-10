@@ -1,6 +1,5 @@
 export type AmbuhubServiceSlug =
-  | "emergency-medical-transport"
-  | "non-emergency-medical-transport"
+  | "medical-transport"
   | "personnel"
   | "ambulance-servicing";
 
@@ -12,16 +11,10 @@ export type AmbuhubServiceMeta = {
 
 export const AMBUHUB_SERVICES: AmbuhubServiceMeta[] = [
   {
-    slug: "emergency-medical-transport",
-    title: "Emergency Medical Transport",
+    slug: "medical-transport",
+    title: "Medical transport",
     description:
-      "Book on-site ambulance coverage for concerts, sports, corporate events, and other venues.",
-  },
-  {
-    slug: "non-emergency-medical-transport",
-    title: "Non Emergency Medical Transport",
-    description:
-      "Arrange planned, non-urgent transports with vetted providers and clear scheduling.",
+      "Event standby and planned transports—ground or air—with vetted providers.",
   },
   {
     slug: "personnel",

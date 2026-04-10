@@ -1,13 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import {
-  Ambulance,
-  CarFront,
-  Package,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { Ambulance, Package, Users, type LucideIcon } from "lucide-react";
 import { AMBUHUB_SERVICES } from "@/lib/ambuhub-services";
 
 const cx = 500;
@@ -24,7 +18,7 @@ const VB_H = 648;
 
 const totalSpan = 4.48;
 const gap = 0.038;
-const wedgeAngle = (totalSpan - 5 * gap) / 4;
+const wedgeAngle = (totalSpan - 4 * gap) / 3;
 const arcStart = -Math.PI / 2 - totalSpan / 2;
 
 function polar(r: number, a: number) {
@@ -124,8 +118,8 @@ type ServiceItem = {
   fo: { x: number; y: number; w: number; h: number };
 };
 
-const wedgeFills = ["#0069b4", "#0c4a6e", "#0284c7", "#c2410c"] as const;
-const wedgeIcons = [Ambulance, CarFront, Users, Package] as const;
+const wedgeFills = ["#0069b4", "#0284c7", "#c2410c"] as const;
+const wedgeIcons = [Ambulance, Users, Package] as const;
 
 const services: Omit<ServiceItem, "fo">[] = AMBUHUB_SERVICES.map((s, i) => ({
   id: s.slug,
@@ -162,7 +156,7 @@ function computeForeignObjects(): ServiceItem[] {
       }
     }
 
-    if (i === 3) {
+    if (i === 2) {
       const trimRight = 16;
       const narrowed = {
         ...fo,
@@ -338,11 +332,9 @@ export function ServiceHubGraphic() {
                 className={
                   i === 0
                     ? "relative box-border flex h-full min-h-0 w-full flex-col items-end justify-center gap-1 py-2 pl-5 pr-2 text-left text-white"
-                    : i === 2
+                    : i === 1
                       ? "relative box-border flex h-full min-h-0 w-full flex-col items-start justify-center gap-1 py-2 pl-1 pr-3 text-left text-white"
-                      : i === 3
-                        ? "relative box-border flex h-full min-h-0 w-full flex-col items-center justify-center gap-1 py-2 pl-2 pr-3 text-center text-white"
-                        : "relative box-border flex h-full min-h-0 w-full flex-col items-center justify-center gap-1 py-2 px-2 text-center text-white"
+                      : "relative box-border flex h-full min-h-0 w-full flex-col items-center justify-center gap-1 py-2 pl-2 pr-3 text-center text-white"
                 }
                 style={{ textShadow: "0 1px 2px rgb(0 0 0 / 0.35)" }}
               >
@@ -350,9 +342,7 @@ export function ServiceHubGraphic() {
                   className={`pointer-events-none absolute select-none text-3xl font-bold leading-none text-white/25 ${
                     i === 0
                       ? "bottom-4 right-1 top-auto -translate-y-1 sm:bottom-5 sm:-translate-y-20"
-                      : i === 2 || i === 3
-                        ? "left-13 top-5.5"
-                        : "right-1 top-0.5"
+                      : "left-13 top-5.5"
                   }`}
                   aria-hidden
                 >
@@ -362,11 +352,9 @@ export function ServiceHubGraphic() {
                   className={`relative z-[1] flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 ring-2 ring-white/40 sm:h-11 sm:w-11 ${
                     i === 0
                       ? "-translate-x-2 sm:-translate-x-9"
-                      : i === 2
+                      : i === 1
                         ? "-translate-x-1.5 sm:-translate-x-2.5"
-                        : i === 3
-                          ? "translate-x-1.5 sm:-translate-x-18"
-                          : ""
+                        : "translate-x-1.5 sm:-translate-x-18"
                   }`}
                 >
                   <Icon
@@ -378,11 +366,9 @@ export function ServiceHubGraphic() {
                   className={`relative z-[1] min-w-0 max-w-full break-words text-[11px] font-bold leading-snug sm:text-xs ${
                     i === 0
                       ? "w-full text-left translate-x-2 text-balance sm:translate-x-10"
-                      : i === 2
+                      : i === 1
                         ? "w-full text-balance text-left -translate-x-1 sm:-translate-x-1.5"
-                        : i === 3
-                          ? "w-full text-balance text-right translate-x-1 sm:-translate-x-9"
-                          : "w-full text-balance text-center"
+                        : "w-full text-balance text-right translate-x-1 sm:-translate-x-9"
                   }`}
                 >
                   {item.title}
@@ -391,11 +377,9 @@ export function ServiceHubGraphic() {
                   className={`relative z-[1] min-w-0 max-w-full break-words text-[9px] leading-snug text-white/95 sm:text-[10px] ${
                     i === 0
                       ? "w-full text-left translate-x-2 text-pretty sm:translate-x-7"
-                      : i === 2
+                      : i === 1
                         ? "w-full text-left text-pretty -translate-x-1 sm:-translate-x-2"
-                        : i === 3
-                          ? "w-full text-right text-pretty translate-x-1 sm:-translate-x-10"
-                          : "w-full text-pretty text-center"
+                        : "w-full text-right text-pretty translate-x-1 sm:-translate-x-10"
                   }`}
                 >
                   {item.description}
