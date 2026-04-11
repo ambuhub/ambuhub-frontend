@@ -21,8 +21,13 @@ const gap = 0.038;
 const wedgeAngle = (totalSpan - 4 * gap) / 3;
 const arcStart = -Math.PI / 2 - totalSpan / 2;
 
+/** Stable coords across Node/browser so SVG path `d` matches after SSR. */
 function polar(r: number, a: number) {
-  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+  const p = 1e5;
+  return {
+    x: Math.round((cx + r * Math.cos(a)) * p) / p,
+    y: Math.round((cy + r * Math.sin(a)) * p) / p,
+  };
 }
 
 function wedgePath(a0: number, a1: number) {
@@ -297,22 +302,28 @@ export function ServiceHubGraphic() {
           const wa = wedgeAngles[i];
           const d = wedgePath(wa.a0, wa.a1);
           return (
-            <g key={`${item.id}-fill`} clipPath={`url(#ambuhub-clip-${i})`}>
-              <motion.path
-                d={d}
-                fill={item.fill}
-                stroke="rgba(255, 255, 255, 0)"
-                strokeWidth={2}
-                filter="url(#ambuhub-wedge-shadow)"
+            <g
+              key={`${item.id}-fill`}
+              clipPath={`url(#ambuhub-clip-${i})`}
+              className="group"
+            >
+              <motion.g
                 initial={reduceMotion ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={wedgeTransition(0.08 + i * 0.07)}
-                whileHover={
-                  reduceMotion
-                    ? undefined
-                    : { stroke: "rgba(255, 255, 255, 0.45)" }
-                }
-              />
+              >
+                <path
+                  d={d}
+                  fill={item.fill}
+                  strokeWidth={2}
+                  filter="url(#ambuhub-wedge-shadow)"
+                  className={
+                    reduceMotion
+                      ? "stroke-transparent"
+                      : "stroke-transparent transition-[stroke] duration-200 ease-out group-hover:stroke-white/45"
+                  }
+                />
+              </motion.g>
             </g>
           );
         })}
