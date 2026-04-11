@@ -16,6 +16,7 @@ import {
   Settings,
   X,
 } from "lucide-react";
+import { getApiBaseUrl } from "@/lib/api";
 
 const navItems = [
   {
@@ -71,9 +72,14 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  function handleSignOut() {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("ambuhub_token");
+  async function handleSignOut() {
+    try {
+      await fetch(`${getApiBaseUrl()}/api/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {
+      console.warn("Logout request failed; redirecting anyway");
     }
     window.location.href = "/auth";
   }

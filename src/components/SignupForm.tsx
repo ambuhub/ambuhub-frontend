@@ -34,6 +34,7 @@ export function SignupForm({ role, onBack }: Props) {
       const res = await fetch(`${getApiBaseUrl()}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           name: name.trim(),
           email: email.trim(),
@@ -45,15 +46,11 @@ export function SignupForm({ role, onBack }: Props) {
       });
       const data = (await res.json()) as {
         message?: string;
-        token?: string;
         user?: { role?: string };
       };
       if (!res.ok) {
         setError(data.message ?? "Sign up failed");
         return;
-      }
-      if (data.token) {
-        localStorage.setItem("ambuhub_token", data.token);
       }
       const authRole = data.user?.role;
       const next =

@@ -24,19 +24,16 @@ export function LoginForm({ onSwitchToSignup }: Props) {
       const res = await fetch(`${getApiBaseUrl()}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email: email.trim(), password }),
       });
       const data = (await res.json()) as {
         message?: string;
-        token?: string;
         user?: { role?: string };
       };
       if (!res.ok) {
         setError(data.message ?? "Login failed");
         return;
-      }
-      if (data.token) {
-        localStorage.setItem("ambuhub_token", data.token);
       }
       const role = data.user?.role;
       const next =
