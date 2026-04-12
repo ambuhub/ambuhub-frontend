@@ -1,6 +1,6 @@
 "use client";
 
-import { getApiBaseUrl } from "@/lib/api";
+import { API_PROXY_PREFIX } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -14,7 +14,6 @@ type ServiceCategoryRow = {
 
 export default function ProviderAddServicePage() {
   const router = useRouter();
-  const api = getApiBaseUrl();
 
   const [categories, setCategories] = useState<ServiceCategoryRow[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -33,7 +32,7 @@ export default function ProviderAddServicePage() {
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch(`${api}/api/service-categories`, {
+        const res = await fetch(`${API_PROXY_PREFIX}/service-categories`, {
           credentials: "include",
         });
         if (!res.ok) {
@@ -59,7 +58,7 @@ export default function ProviderAddServicePage() {
     return () => {
       cancelled = true;
     };
-  }, [api]);
+  }, []);
 
   const selectedCategory = useMemo(
     () => categories.find((c) => c.slug === categorySlug),
@@ -93,7 +92,7 @@ export default function ProviderAddServicePage() {
         for (const f of imageFiles) {
           formData.append("images", f);
         }
-        const uploadRes = await fetch(`${api}/api/uploads/service-images`, {
+        const uploadRes = await fetch(`${API_PROXY_PREFIX}/uploads/service-images`, {
           method: "POST",
           credentials: "include",
           body: formData,
@@ -108,7 +107,7 @@ export default function ProviderAddServicePage() {
         photoUrls = uploadData.urls ?? [];
       }
 
-      const createRes = await fetch(`${api}/api/services`, {
+      const createRes = await fetch(`${API_PROXY_PREFIX}/services`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

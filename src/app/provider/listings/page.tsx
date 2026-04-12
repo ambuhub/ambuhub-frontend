@@ -1,6 +1,6 @@
 "use client";
 
-import { getApiBaseUrl } from "@/lib/api";
+import { API_PROXY_PREFIX } from "@/lib/api";
 import { AMBUHUB_SERVICE_SLUGS } from "@/lib/ambuhub-services";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -18,7 +18,6 @@ type MyService = {
 };
 
 export default function ProviderListingsPage() {
-  const api = getApiBaseUrl();
   const [services, setServices] = useState<MyService[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +27,7 @@ export default function ProviderListingsPage() {
     async function load() {
       setError(null);
       try {
-        const res = await fetch(`${api}/api/services/me`, {
+        const res = await fetch(`${API_PROXY_PREFIX}/services/me`, {
           credentials: "include",
         });
         const data = (await res.json()) as {
@@ -63,7 +62,7 @@ export default function ProviderListingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [api]);
+  }, []);
 
   const sections = useMemo(() => {
     const result: { slug: string; categoryName: string; items: MyService[] }[] =

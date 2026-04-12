@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { postAuthPath, type AuthUserRole } from "@/lib/auth-redirect";
-import { getApiBaseUrl } from "@/lib/api";
+import { API_AUTH_BFF_PREFIX } from "@/lib/api";
 import type { SignupRole } from "./SignupRoleCards";
 
 type Props = {
@@ -31,7 +31,7 @@ export function SignupForm({ role, onBack }: Props) {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(`${getApiBaseUrl()}/api/auth/register`, {
+      const res = await fetch(`${API_AUTH_BFF_PREFIX}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

@@ -16,7 +16,7 @@ import {
   Settings,
   X,
 } from "lucide-react";
-import { getApiBaseUrl } from "@/lib/api";
+import { API_AUTH_BFF_PREFIX } from "@/lib/api";
 
 const navItems = [
   {
@@ -74,7 +74,7 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
 
   async function handleSignOut() {
     try {
-      await fetch(`${getApiBaseUrl()}/api/auth/logout`, {
+      await fetch(`${API_AUTH_BFF_PREFIX}/logout`, {
         method: "POST",
         credentials: "include",
       });
