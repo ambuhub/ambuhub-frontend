@@ -7,16 +7,13 @@ import { ServiceHubGraphic } from "@/components/landing/ServiceHubGraphic";
 
 export function HeroSection() {
   return (
-    <section
-      id="top"
-      className="relative overflow-hidden bg-gradient-to-b from-ambuhub-50 via-white to-white"
-    >
+    <section id="top" className="relative overflow-hidden bg-black">
       <div
-        className="pointer-events-none absolute inset-0 opacity-40"
+        className="pointer-events-none absolute inset-0 opacity-[0.22]"
         aria-hidden
         style={{
           backgroundImage:
-            "radial-gradient(circle at 20% 20%, rgb(0 105 180 / 0.12) 0%, transparent 45%), radial-gradient(circle at 80% 60%, rgb(2 132 199 / 0.1) 0%, transparent 40%)",
+            "radial-gradient(circle at 20% 20%, rgb(0 105 180 / 0.35) 0%, transparent 45%), radial-gradient(circle at 80% 60%, rgb(2 132 199 / 0.28) 0%, transparent 40%)",
         }}
       />
       <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-28">
@@ -26,10 +23,10 @@ export function HeroSection() {
               initial={{ opacity: 0, x: -40 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-              className="inline-flex items-center gap-2 rounded-full border border-ambuhub-200 bg-white/80 px-3 py-1 text-xs font-medium text-ambuhub-800 shadow-sm backdrop-blur sm:text-sm"
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/90 shadow-sm backdrop-blur sm:text-sm"
             >
               <CalendarDays
-                className="h-3.5 w-3.5 text-ambuhub-brand"
+                className="h-3.5 w-3.5 text-sky-400"
                 aria-hidden
               />
               Concerts, venues & tours
@@ -38,7 +35,7 @@ export function HeroSection() {
               initial={{ opacity: 0, x: -48 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-6 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]"
+              className="mt-6 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]"
             >
               Book ambulance coverage, crew, servicing, and equipment in one
               place
@@ -47,7 +44,7 @@ export function HeroSection() {
               initial={{ opacity: 0, x: -36 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.55, delay: 0.16, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-5 max-w-xl text-lg leading-relaxed text-foreground/70"
+              className="mt-5 max-w-xl text-lg leading-relaxed text-white/75"
             >
               Planning a show, festival, or corporate event? Ambuhub connects
               you with providers for on-site medical standby, scheduled
@@ -69,7 +66,7 @@ export function HeroSection() {
               </Link>
               <Link
                 href="#how-it-works"
-                className="inline-flex items-center justify-center rounded-xl border border-ambuhub-200 bg-white px-6 py-3.5 text-base font-semibold text-ambuhub-900 transition-colors hover:bg-ambuhub-50"
+                className="inline-flex items-center justify-center rounded-xl border border-white/30 bg-transparent px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-white/10"
               >
                 See how it works
               </Link>
