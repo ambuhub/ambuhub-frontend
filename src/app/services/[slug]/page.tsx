@@ -1,51 +1,63 @@
-import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { CategoryServiceListing } from "@/components/services/CategoryServiceListing";
 import {
-  AMBUHUB_SERVICE_SLUGS,
-  getServiceBySlug,
-  isAmbuhubServiceSlug,
-} from "@/lib/ambuhub-services";
+  fetchMarketplaceServices,
+  fetchServiceCategoryBySlug,
+  fetchServiceCategorySlugsForStaticParams,
+  getCategoryPageTitleDescription,
+  groupMarketplaceByDepartments,
+} from "@/lib/service-category-page-data";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
-export function generateStaticParams() {
-  return AMBUHUB_SERVICE_SLUGS.map((slug) => ({ slug }));
+export async function generateStaticParams() {
+  const slugs = await fetchServiceCategorySlugsForStaticParams();
+  return slugs.map((slug) => ({ slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  try {
+    const category = await fetchServiceCategoryBySlug(slug);
+    if (!category) {
+      return { title: "Services" };
+    }
+    const { title, description } = getCategoryPageTitleDescription(category);
+    return {
+      title: `${title} | Ambuhub`,
+      description,
+    };
+  } catch {
+    return { title: "Services" };
+  }
 }
 
 export default async function ServiceDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  if (!isAmbuhubServiceSlug(slug)) {
+
+  const [category, marketplace] = await Promise.all([
+    fetchServiceCategoryBySlug(slug),
+    fetchMarketplaceServices(),
+  ]);
+
+  if (!category) {
     notFound();
   }
-  const service = getServiceBySlug(slug);
-  if (!service) notFound();
+
+  const sections = groupMarketplaceByDepartments(category, marketplace);
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-white">
       <Header />
-      <main className="flex flex-1 flex-col px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
-        <div className="mx-auto w-full max-w-3xl flex-1">
-          <p className="text-sm font-medium text-ambuhub-brand">Services</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            {service.title}
-          </h1>
-          <p className="mt-4 text-lg text-foreground/70">{service.description}</p>
-          <div className="mt-12 rounded-2xl border border-dashed border-ambuhub-200 bg-ambuhub-surface/50 px-6 py-12 text-center">
-            <p className="text-foreground/60">
-              Service page placeholder. Content for this section will go here.
-            </p>
-          </div>
-          <Link
-            href="/#services"
-            className="mt-10 inline-flex text-sm font-semibold text-ambuhub-brand hover:underline"
-          >
-            &larr; Back to services
-          </Link>
-        </div>
+      <main className="flex flex-1 flex-col pt-4 sm:pt-6 lg:pt-8">
+        <CategoryServiceListing category={category} sections={sections} />
       </main>
       <Footer />
     </div>

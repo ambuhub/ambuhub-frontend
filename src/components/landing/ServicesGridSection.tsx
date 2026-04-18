@@ -1,12 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import { AMBUHUB_SERVICES } from "@/lib/ambuhub-services";
-
-const serviceImages = [
-  "/landing-page/landing-3.png",
-  "/landing-page/landing-4.png",
-  "/landing-page/landing-5.png",
-] as const;
+import { getServiceBySlug } from "@/lib/ambuhub-services";
+import {
+  FALLBACK_THUMB,
+  fetchLandingServiceCategories,
+  isCloudinaryHost,
+  orderLandingCategories,
+  type LandingServiceCategory,
+} from "@/lib/landing-service-categories";
 
 const accentBorder = [
   "border-ambuhub-brand/30 hover:border-ambuhub-brand/60",
@@ -14,14 +15,108 @@ const accentBorder = [
   "border-orange-700/25 hover:border-orange-700/45",
 ] as const;
 
-export function ServicesGridSection() {
+function cardDescription(category: LandingServiceCategory): string {
+  const note = category.note?.trim();
+  if (note) {
+    return note;
+  }
+  const staticMeta = getServiceBySlug(category.slug);
+  if (staticMeta) {
+    return staticMeta.description;
+  }
+  return "Explore providers and listings in this category.";
+}
+
+const cardImageBaseClass =
+  "object-cover transition-transform duration-300 group-hover:scale-[1.03]";
+
+/** Personnel thumb: bias toward upper area (faces) but not as tight as object-top. */
+function cardImageClass(slug: string): string {
+  const focus =
+    slug === "personnel" ? " object-[center_22%]" : "";
+  return cardImageBaseClass + focus;
+}
+
+function CategoryCardImage({
+  slug,
+  thumbnailUrl,
+  alt,
+}: {
+  slug: string;
+  thumbnailUrl?: string | null;
+  alt: string;
+}) {
+  const src = thumbnailUrl?.trim();
+  const imgClass = cardImageClass(slug);
+
+  if (!src) {
+    return (
+      <Image
+        src={FALLBACK_THUMB}
+        alt={alt}
+        fill
+        className={imgClass}
+        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+      />
+    );
+  }
+
+  if (src.startsWith("/")) {
+    return (
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        className={imgClass}
+        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+      />
+    );
+  }
+
+  if (src.startsWith("http") && isCloudinaryHost(src)) {
+    return (
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        className={imgClass}
+        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+      />
+    );
+  }
+
+  if (src.startsWith("http")) {
+    return (
+      <img
+        src={src}
+        alt={alt}
+        className={`absolute inset-0 h-full w-full ${imgClass}`}
+      />
+    );
+  }
+
+  return (
+    <Image
+      src={FALLBACK_THUMB}
+      alt={alt}
+      fill
+      className={imgClass}
+      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+    />
+  );
+}
+
+export async function ServicesGridSection() {
+  const rows = await fetchLandingServiceCategories();
+  const categories = orderLandingCategories(rows);
+
   return (
     <section
       id="services"
       className="border-t border-ambuhub-100 bg-gradient-to-b from-white to-ambuhub-50/50 py-16 sm:py-20 lg:py-24"
       aria-labelledby="services-grid-heading"
     >
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <h2
           id="services-grid-heading"
           className="text-center text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
@@ -32,43 +127,49 @@ export function ServicesGridSection() {
           Medical transport, personnel, and equipment—explore each path on one
           platform.
         </p>
-        <ul className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
-          {AMBUHUB_SERVICES.map((service, i) => (
-            <li key={service.slug} className="min-w-0">
-              <Link
-                href={`/services/${service.slug}`}
-                className={`group flex h-full flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition-colors hover:bg-ambuhub-surface/60 ${accentBorder[i]}`}
-              >
-                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-ambuhub-100">
-                  <Image
-                    src={serviceImages[i]}
-                    alt={service.title}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                  />
-                </div>
-                <div className="flex flex-1 flex-col p-6 sm:p-7">
-                  <span className="text-lg font-semibold text-foreground group-hover:text-ambuhub-brand">
-                    {service.title}
-                  </span>
-                  <span className="mt-2 flex-1 text-sm leading-relaxed text-foreground/70">
-                    {service.description}
-                  </span>
-                  <span className="mt-4 text-sm font-medium text-ambuhub-brand">
-                    Learn more
-                    <span
-                      className="ml-1 inline-block transition-transform group-hover:translate-x-0.5"
-                      aria-hidden
-                    >
-                      &rarr;
+
+        {categories.length === 0 ? (
+          <p className="mt-10 text-center text-sm text-foreground/60">
+            Service categories could not be loaded. Check that the API is
+            reachable and try again shortly.
+          </p>
+        ) : (
+          <ul className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+            {categories.map((category, i) => (
+              <li key={category.id} className="min-w-0">
+                <Link
+                  href={`/services/${category.slug}`}
+                  className={`group flex h-full flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition-colors hover:bg-ambuhub-surface/60 ${accentBorder[i % accentBorder.length]}`}
+                >
+                  <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-ambuhub-100">
+                    <CategoryCardImage
+                      slug={category.slug}
+                      thumbnailUrl={category.thumbnailUrl}
+                      alt={category.name}
+                    />
+                  </div>
+                  <div className="flex flex-1 flex-col p-6 sm:p-7">
+                    <span className="text-lg font-semibold text-foreground group-hover:text-ambuhub-brand">
+                      {category.name}
                     </span>
-                  </span>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
+                    <span className="mt-2 flex-1 text-sm leading-relaxed text-foreground/70">
+                      {cardDescription(category)}
+                    </span>
+                    <span className="mt-4 text-sm font-medium text-ambuhub-brand">
+                      Learn more
+                      <span
+                        className="ml-1 inline-block transition-transform group-hover:translate-x-0.5"
+                        aria-hidden
+                      >
+                        &rarr;
+                      </span>
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </section>
   );
