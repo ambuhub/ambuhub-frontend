@@ -1,7 +1,13 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { Ambulance, Package, Users, type LucideIcon } from "lucide-react";
+import {
+  Ambulance,
+  Package,
+  ShoppingCart,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { AMBUHUB_SERVICES } from "@/lib/ambuhub-services";
 
 const cx = 500;
@@ -18,7 +24,8 @@ const VB_H = 648;
 
 const totalSpan = 4.48;
 const gap = 0.038;
-const wedgeAngle = (totalSpan - 4 * gap) / 3;
+const wedgeCount = AMBUHUB_SERVICES.length;
+const wedgeAngle = (totalSpan - (wedgeCount + 1) * gap) / wedgeCount;
 const arcStart = -Math.PI / 2 - totalSpan / 2;
 
 /** Stable coords across Node/browser so SVG path `d` matches after SSR. */
@@ -123,8 +130,13 @@ type ServiceItem = {
   fo: { x: number; y: number; w: number; h: number };
 };
 
-const wedgeFills = ["#0069b4", "#0284c7", "#c2410c"] as const;
-const wedgeIcons = [Ambulance, Users, Package] as const;
+const wedgeFills = [
+  "#0069b4",
+  "#0284c7",
+  "#c2410c",
+  "#059669",
+] as const satisfies readonly string[];
+const wedgeIcons = [Ambulance, Users, Package, ShoppingCart] as const;
 
 const services: Omit<ServiceItem, "fo">[] = AMBUHUB_SERVICES.map((s, i) => ({
   id: s.slug,
@@ -161,7 +173,7 @@ function computeForeignObjects(): ServiceItem[] {
       }
     }
 
-    if (i === 2) {
+    if (i === services.length - 1) {
       const trimRight = 16;
       const narrowed = {
         ...fo,
@@ -345,7 +357,9 @@ export function ServiceHubGraphic() {
                     ? "relative box-border flex h-full min-h-0 w-full flex-col items-end justify-center gap-1 py-2 pl-5 pr-2 text-left text-white"
                     : i === 1
                       ? "relative box-border flex h-full min-h-0 w-full flex-col items-start justify-center gap-1 py-2 pl-1 pr-3 text-left text-white"
-                      : "relative box-border flex h-full min-h-0 w-full flex-col items-center justify-center gap-1 py-2 pl-2 pr-3 text-center text-white"
+                      : i === 2
+                        ? "relative box-border flex h-full min-h-0 w-full flex-col items-center justify-center gap-1 py-2 pl-2 pr-3 text-center text-white"
+                        : "relative box-border flex h-full min-h-0 w-full flex-col items-center justify-center gap-1 py-2 pl-2 pr-3 text-center text-white"
                 }
                 style={{ textShadow: "0 1px 2px rgb(0 0 0 / 0.35)" }}
               >
@@ -353,7 +367,9 @@ export function ServiceHubGraphic() {
                   className={`pointer-events-none absolute select-none text-3xl font-bold leading-none text-white/25 ${
                     i === 0
                       ? "bottom-4 right-1 top-auto -translate-y-1 sm:bottom-5 sm:-translate-y-20"
-                      : "left-13 top-5.5"
+                      : i === 2
+                        ? "left-1/2 top-5 -translate-x-1/2 sm:top-4"
+                        : "left-13 top-5.5"
                   }`}
                   aria-hidden
                 >
@@ -365,7 +381,9 @@ export function ServiceHubGraphic() {
                       ? "-translate-x-2 sm:-translate-x-9"
                       : i === 1
                         ? "-translate-x-1.5 sm:-translate-x-2.5"
-                        : "translate-x-1.5 sm:-translate-x-18"
+                        : i === 2
+                          ? "translate-x-0"
+                          : "translate-x-1.5 sm:-translate-x-18"
                   }`}
                 >
                   <Icon
@@ -379,7 +397,9 @@ export function ServiceHubGraphic() {
                       ? "w-full text-left translate-x-2 text-balance sm:translate-x-10"
                       : i === 1
                         ? "w-full text-balance text-left -translate-x-1 sm:-translate-x-1.5"
-                        : "w-full text-balance text-right translate-x-1 sm:-translate-x-9"
+                        : i === 2
+                          ? "w-full text-balance text-center"
+                          : "w-full text-balance text-right translate-x-1 sm:-translate-x-9"
                   }`}
                 >
                   {item.title}
@@ -390,7 +410,9 @@ export function ServiceHubGraphic() {
                       ? "w-full text-left translate-x-2 text-pretty sm:translate-x-7"
                       : i === 1
                         ? "w-full text-left text-pretty -translate-x-1 sm:-translate-x-2"
-                        : "w-full text-right text-pretty translate-x-1 sm:-translate-x-10"
+                        : i === 2
+                          ? "w-full text-pretty text-center"
+                          : "w-full text-right text-pretty translate-x-1 sm:-translate-x-10"
                   }`}
                 >
                   {item.description}

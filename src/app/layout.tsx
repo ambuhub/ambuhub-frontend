@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Ambuhub | Book ambulance standby, crew & equipment",
   description:
-    "Book on-site medical standby for events, arrange scheduled transports, hire ambulance personnel, and buy or sell equipment—in one marketplace.",
+    "Book on-site medical standby for events, arrange scheduled transports, hire ambulance personnel, arrange fleet servicing, and buy or sell equipment—in one marketplace.",
 };
 
 export default function RootLayout({

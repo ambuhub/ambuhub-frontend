@@ -17,6 +17,11 @@ const FALLBACK_THUMB = "/landing-page/landing-3.png";
 
 export { FALLBACK_THUMB };
 
+/** Canonical slug for comparisons (trims whitespace, lowercases). */
+export function normalizeSlug(slug: string): string {
+  return slug.trim().toLowerCase();
+}
+
 /**
  * Fetch categories for the home page (server). Uses ISR-style revalidation.
  */
@@ -42,24 +47,41 @@ export async function fetchLandingServiceCategories(): Promise<
   }
 }
 
-/** Stable order: catalog slugs first, then any extra categories. */
+/**
+ * Stable order: catalog slugs first, then any extra categories.
+ * Deduplicates by normalized slug so duplicate API rows or casing mismatches
+ * cannot render two cards for the same category.
+ */
 export function orderLandingCategories(
   rows: LandingServiceCategory[],
 ): LandingServiceCategory[] {
-  const known = new Set<string>([...AMBUHUB_SERVICE_SLUGS]);
-  const bySlug = new Map(rows.map((c) => [c.slug, c]));
-  const ordered: LandingServiceCategory[] = [];
-
-  for (const slug of AMBUHUB_SERVICE_SLUGS) {
-    const c = bySlug.get(slug);
-    if (c) {
-      ordered.push(c);
+  const dedupedBySlug = new Map<string, LandingServiceCategory>();
+  for (const c of rows) {
+    const key = normalizeSlug(c.slug);
+    if (!dedupedBySlug.has(key)) {
+      dedupedBySlug.set(key, c);
     }
   }
 
-  for (const c of rows) {
-    if (!known.has(c.slug)) {
+  const knownCatalog = new Set(
+    AMBUHUB_SERVICE_SLUGS.map((s) => normalizeSlug(s)),
+  );
+  const ordered: LandingServiceCategory[] = [];
+  const seen = new Set<string>();
+
+  for (const slug of AMBUHUB_SERVICE_SLUGS) {
+    const c = dedupedBySlug.get(normalizeSlug(slug));
+    if (c) {
       ordered.push(c);
+      seen.add(normalizeSlug(c.slug));
+    }
+  }
+
+  for (const c of dedupedBySlug.values()) {
+    const key = normalizeSlug(c.slug);
+    if (!knownCatalog.has(key) && !seen.has(key)) {
+      ordered.push(c);
+      seen.add(key);
     }
   }
 

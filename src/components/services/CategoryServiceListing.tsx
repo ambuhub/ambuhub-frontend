@@ -17,6 +17,7 @@ const TALL_TOP_BIAS_BANNER_SLUGS = new Set([
   "personnel",
   "medical-transport",
   "ambulance-servicing",
+  "ambulance-equipment",
 ]);
 
 /** Taller shell + top-biased crop (same as landing Personnel card treatment). */

@@ -40,7 +40,8 @@ export function HeroSection() {
               transition={{ duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
               className="mt-6 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]"
             >
-              Book ambulance coverage, crew, and equipment in one place
+              Book ambulance coverage, crew, servicing, and equipment in one
+              place
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, x: -36 }}
@@ -50,8 +51,8 @@ export function HeroSection() {
             >
               Planning a show, festival, or corporate event? Ambuhub connects
               you with providers for on-site medical standby, scheduled
-              transports, qualified personnel, and ambulance gear—before the
-              doors open.
+              transports, qualified personnel, fleet servicing, and ambulance
+              gear—before the doors open.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 24 }}

@@ -124,8 +124,8 @@ export async function ServicesGridSection() {
           Our services
         </h2>
         <p className="mx-auto mt-3 max-w-2xl text-center text-foreground/70">
-          Medical transport, personnel, and equipment—explore each path on one
-          platform.
+          Medical transport, personnel, fleet servicing, and equipment—explore
+          each path on one platform.
         </p>
 
         {categories.length === 0 ? (

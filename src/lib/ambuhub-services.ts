@@ -1,7 +1,8 @@
 export type AmbuhubServiceSlug =
   | "medical-transport"
   | "personnel"
-  | "ambulance-servicing";
+  | "ambulance-servicing"
+  | "ambulance-equipment";
 
 export type AmbuhubServiceMeta = {
   slug: AmbuhubServiceSlug;
@@ -25,6 +26,12 @@ export const AMBUHUB_SERVICES: AmbuhubServiceMeta[] = [
   {
     slug: "ambulance-servicing",
     title: "Ambulance servicing",
+    description:
+      "Ambulance sales and maintenance—keep your fleet road-ready with trusted providers.",
+  },
+  {
+    slug: "ambulance-equipment",
+    title: "Ambulance equipment",
     description:
       "Buy and sell stretchers, monitors, vehicle kit, and other ambulance-related gear.",
   },
