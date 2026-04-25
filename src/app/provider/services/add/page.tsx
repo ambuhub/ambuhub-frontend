@@ -29,6 +29,7 @@ export default function ProviderAddServicePage() {
   const [categorySlug, setCategorySlug] = useState("");
   const [departmentSlug, setDepartmentSlug] = useState("");
   const [listingType, setListingType] = useState<ListingType | "">("");
+  const [stock, setStock] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [fileList, setFileList] = useState<File[]>([]);
@@ -79,7 +80,14 @@ export default function ProviderAddServicePage() {
   useEffect(() => {
     setDepartmentSlug("");
     setListingType("");
+    setStock("");
   }, [categorySlug]);
+
+  useEffect(() => {
+    if (listingType !== "sale") {
+      setStock("");
+    }
+  }, [listingType]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -96,6 +104,13 @@ export default function ProviderAddServicePage() {
     if (!isNullListingTypeCategory && !listingType) {
       setSubmitError("Listing type is required for this category.");
       return;
+    }
+    if (listingType === "sale") {
+      const parsedStock = Number(stock);
+      if (!stock.trim() || !Number.isInteger(parsedStock) || parsedStock < 0) {
+        setSubmitError("Stock is required and must be a non-negative integer.");
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -133,6 +148,7 @@ export default function ProviderAddServicePage() {
           serviceCategorySlug: categorySlug,
           departmentSlug,
           listingType: isNullListingTypeCategory ? null : listingType,
+          stock: listingType === "sale" ? Number(stock) : null,
           photoUrls,
         }),
       });
@@ -254,6 +270,31 @@ export default function ProviderAddServicePage() {
 
         <div>
           <label
+            htmlFor="stock"
+            className="block text-sm font-medium text-foreground"
+          >
+            Stock
+          </label>
+          <input
+            id="stock"
+            name="stock"
+            type="number"
+            min={0}
+            step={1}
+            value={listingType === "sale" ? stock : ""}
+            onChange={(e) => setStock(e.target.value)}
+            disabled={listingType !== "sale"}
+            className="mt-1.5 w-full rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25 disabled:cursor-not-allowed disabled:bg-ambuhub-surface/50 disabled:text-foreground/60"
+            placeholder={
+              listingType === "sale"
+                ? "Enter stock quantity"
+                : "Available only for sale listings"
+            }
+          />
+        </div>
+
+        <div>
+          <label
             htmlFor="service-title"
             className="block text-sm font-medium text-foreground"
           >
@@ -323,7 +364,11 @@ export default function ProviderAddServicePage() {
             !!loadError ||
             !categorySlug ||
             !departmentSlug ||
-            (!isNullListingTypeCategory && !listingType)
+            (!isNullListingTypeCategory && !listingType) ||
+            (listingType === "sale" &&
+              (!stock.trim() ||
+                !Number.isInteger(Number(stock)) ||
+                Number(stock) < 0))
           }
           className="w-full rounded-xl bg-ambuhub-brand py-3.5 text-base font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
