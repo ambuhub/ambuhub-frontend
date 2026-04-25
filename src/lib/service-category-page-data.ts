@@ -23,6 +23,7 @@ export type MarketplaceServiceRow = {
   description: string;
   listingType: "sale" | "rent" | null;
   stock: number | null;
+  price: number | null;
   departmentSlug: string;
   departmentName: string;
   category: { id: string; slug: string; name: string };

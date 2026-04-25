@@ -18,7 +18,7 @@ function buildUpstreamUrl(
 
 async function proxyRequest(
   request: NextRequest,
-  method: "GET" | "POST",
+  method: "GET" | "POST" | "PUT",
   segments: string[],
 ): Promise<NextResponse> {
   if (!isAllowedProxySegments(segments)) {
@@ -40,7 +40,7 @@ async function proxyRequest(
   }
 
   let body: BodyInit | undefined;
-  if (method === "POST") {
+  if (method === "POST" || method === "PUT") {
     const contentType = request.headers.get("content-type");
     if (contentType) {
       headers.set("content-type", contentType);
@@ -55,7 +55,7 @@ async function proxyRequest(
   const upstream = await fetch(upstreamUrl, {
     method,
     headers,
-    body: method === "POST" ? body : undefined,
+    body: method === "POST" || method === "PUT" ? body : undefined,
   });
 
   const outHeaders = new Headers();
@@ -66,10 +66,9 @@ async function proxyRequest(
 
   const buf = await upstream.arrayBuffer();
 
-  // Invalidate marketplace fetch cache after listing mutations (extend when adding PATCH/DELETE on services).
+  // Invalidate marketplace fetch cache after service listing mutations.
   if (
-    method === "POST" &&
-    segments.length === 1 &&
+    (method === "POST" || method === "PUT") &&
     segments[0] === "services" &&
     upstream.ok
   ) {
@@ -96,4 +95,12 @@ export async function POST(
 ): Promise<NextResponse> {
   const { path } = await context.params;
   return proxyRequest(request, "POST", path ?? []);
+}
+
+export async function PUT(
+  request: NextRequest,
+  context: RouteParams,
+): Promise<NextResponse> {
+  const { path } = await context.params;
+  return proxyRequest(request, "PUT", path ?? []);
 }

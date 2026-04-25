@@ -1,9 +1,14 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { Search } from "lucide-react";
+import { useMemo, useState } from "react";
 import { FALLBACK_THUMB, isCloudinaryHost } from "@/lib/landing-service-categories";
 import {
   getCategoryPageTitleDescription,
   type DepartmentServiceSection,
+  type MarketplaceServiceRow,
   type ServiceCategoryPageDto,
 } from "@/lib/service-category-page-data";
 
@@ -12,6 +17,39 @@ const CARD_SIZES =
   "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw";
 
 const bannerImgBase = "h-full w-full object-cover";
+const nairaNumberFormatter = new Intl.NumberFormat("en-NG", {
+  maximumFractionDigits: 2,
+});
+
+function formatNaira(value: number): string {
+  return `₦${nairaNumberFormatter.format(value)}`;
+}
+
+type ListingTypeFilter = "all" | "sale" | "rent" | "none";
+
+function normalizeSearchText(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function formatListingTypeLabel(listingType: "sale" | "rent" | null): string {
+  if (listingType === "sale") {
+    return "SALE";
+  }
+  if (listingType === "rent") {
+    return "RENT";
+  }
+  return "N/A";
+}
+
+function formatStockLabel(
+  listingType: "sale" | "rent" | null,
+  stock: number | null,
+): string {
+  if (listingType === "sale" && typeof stock === "number") {
+    return `Stock: ${stock}`;
+  }
+  return "Stock: N/A";
+}
 
 const TALL_TOP_BIAS_BANNER_SLUGS = new Set([
   "personnel",
@@ -165,6 +203,88 @@ export function CategoryServiceListing({ category, sections }: Props) {
     category.bannerUrl?.trim() ||
     category.thumbnailUrl?.trim() ||
     "";
+  const [listingTypeFilter, setListingTypeFilter] =
+    useState<ListingTypeFilter>("all");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const departmentOptions = useMemo(() => {
+    const options = new Map<string, string>();
+
+    for (const d of category.departments) {
+      options.set(d.slug, d.name);
+    }
+
+    for (const section of sections) {
+      if (!options.has(section.key)) {
+        options.set(section.key, section.heading);
+      }
+    }
+
+    return Array.from(options.entries()).map(([slug, label]) => ({
+      slug,
+      label,
+    }));
+  }, [category.departments, sections]);
+
+  const filteredSections = useMemo(() => {
+    const normalizedQuery = normalizeSearchText(searchQuery);
+
+    function matchesListingType(service: MarketplaceServiceRow): boolean {
+      if (listingTypeFilter === "all") {
+        return true;
+      }
+      if (listingTypeFilter === "none") {
+        return service.listingType === null;
+      }
+      return service.listingType === listingTypeFilter;
+    }
+
+    function matchesSearch(
+      service: MarketplaceServiceRow,
+      section: DepartmentServiceSection,
+    ): boolean {
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      const searchableParts = [
+        service.title,
+        service.description,
+        service.departmentName,
+        service.departmentSlug,
+        service.category.name,
+        service.category.slug,
+        section.heading,
+        service.listingType ?? "not specified",
+        typeof service.price === "number" ? String(service.price) : "",
+        typeof service.stock === "number" ? String(service.stock) : "",
+      ];
+
+      const haystack = normalizeSearchText(searchableParts.join(" "));
+      return haystack.includes(normalizedQuery);
+    }
+
+    return sections
+      .map((section) => {
+        if (departmentFilter !== "all" && section.key !== departmentFilter) {
+          return null;
+        }
+
+        const services = section.services.filter(
+          (service) => matchesListingType(service) && matchesSearch(service, section),
+        );
+        if (services.length === 0) {
+          return null;
+        }
+
+        return {
+          ...section,
+          services,
+        };
+      })
+      .filter((section): section is DepartmentServiceSection => section !== null);
+  }, [departmentFilter, listingTypeFilter, searchQuery, sections]);
 
   const tallBannerShellClass =
     "relative mt-6 h-56 max-h-96 w-full overflow-hidden rounded-2xl bg-gradient-to-br from-ambuhub-100 to-ambuhub-200/80 sm:mt-8 sm:h-72 md:mt-10 md:h-96";
@@ -199,14 +319,83 @@ export function CategoryServiceListing({ category, sections }: Props) {
       </div>
 
       <div className="mx-auto mt-10 w-full max-w-7xl flex-1 px-4 pb-14 sm:mt-12 sm:px-6 sm:pb-16 lg:mt-14 lg:px-8 lg:pb-20">
-        {sections.length === 0 ? (
+        <div className="mb-6 rounded-2xl border border-ambuhub-100 bg-white p-4 sm:mb-8">
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 md:flex-row md:items-end">
+            <div className="min-w-0 flex-[2]">
+              <label
+                htmlFor="services-smart-search"
+                className="block text-sm font-medium text-foreground"
+              >
+                Search listings
+              </label>
+              <div className="relative mt-1.5">
+                <Search
+                  size={16}
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-foreground/45"
+                  aria-hidden
+                />
+                <input
+                  id="services-smart-search"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search title, description, department, listing type, price, stock..."
+                  className="w-full rounded-xl border border-ambuhub-200 bg-white py-3 pl-9 pr-4 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25"
+                />
+              </div>
+            </div>
+            <div className="md:w-56">
+              <label
+                htmlFor="department-filter"
+                className="block text-sm font-medium text-foreground"
+              >
+                Department
+              </label>
+              <select
+                id="department-filter"
+                value={departmentFilter}
+                onChange={(e) => setDepartmentFilter(e.target.value)}
+                className="mt-1.5 w-full rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25"
+              >
+                <option value="all">All departments</option>
+                {departmentOptions.map((option) => (
+                  <option key={option.slug} value={option.slug}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="md:w-52">
+              <label
+                htmlFor="listing-type-filter"
+                className="block text-sm font-medium text-foreground"
+              >
+                Listing type
+              </label>
+              <select
+                id="listing-type-filter"
+                value={listingTypeFilter}
+                onChange={(e) =>
+                  setListingTypeFilter(e.target.value as ListingTypeFilter)
+                }
+                className="mt-1.5 w-full rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25"
+              >
+                <option value="all">All types</option>
+                <option value="sale">Sale</option>
+                <option value="rent">Rent</option>
+                <option value="none">Not specified</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {filteredSections.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-ambuhub-200 bg-ambuhub-surface/50 px-6 py-12 text-center text-foreground/60">
-            No listings in this category yet. Check back soon or explore other
-            services from the home page.
+            No listings match the selected filters.
           </p>
         ) : (
           <div className="flex flex-col gap-10 sm:gap-12 lg:gap-14">
-            {sections.map((section, sectionIndex) => (
+            {filteredSections.map((section, sectionIndex) => (
               <section
                 key={section.key}
                 aria-labelledby={`dept-heading-${section.key}`}
@@ -233,11 +422,23 @@ export function CategoryServiceListing({ category, sections }: Props) {
                             photoUrl={svc.photoUrls[0]}
                             alt={svc.title}
                           />
+                          <span className="absolute bottom-3 left-3 rounded-md bg-black/85 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
+                            {formatListingTypeLabel(svc.listingType)}
+                          </span>
                         </div>
                         <div className="flex flex-1 flex-col p-5 sm:p-6">
                           <h3 className="text-base font-semibold text-foreground">
                             {svc.title}
                           </h3>
+                          {svc.listingType === "sale" &&
+                          typeof svc.price === "number" ? (
+                            <p className="mt-2 text-sm font-semibold text-foreground">
+                              {formatNaira(svc.price)}
+                            </p>
+                          ) : null}
+                          <p className="mt-1 text-xs font-medium text-foreground/70">
+                            {formatStockLabel(svc.listingType, svc.stock)}
+                          </p>
                           <p className="mt-2 line-clamp-3 flex-1 text-sm leading-relaxed text-foreground/70">
                             {svc.description}
                           </p>

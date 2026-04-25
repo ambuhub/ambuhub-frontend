@@ -30,6 +30,7 @@ export default function ProviderAddServicePage() {
   const [departmentSlug, setDepartmentSlug] = useState("");
   const [listingType, setListingType] = useState<ListingType | "">("");
   const [stock, setStock] = useState("");
+  const [price, setPrice] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [fileList, setFileList] = useState<File[]>([]);
@@ -81,11 +82,13 @@ export default function ProviderAddServicePage() {
     setDepartmentSlug("");
     setListingType("");
     setStock("");
+    setPrice("");
   }, [categorySlug]);
 
   useEffect(() => {
     if (listingType !== "sale") {
       setStock("");
+      setPrice("");
     }
   }, [listingType]);
 
@@ -109,6 +112,11 @@ export default function ProviderAddServicePage() {
       const parsedStock = Number(stock);
       if (!stock.trim() || !Number.isInteger(parsedStock) || parsedStock < 0) {
         setSubmitError("Stock is required and must be a non-negative integer.");
+        return;
+      }
+      const parsedPrice = Number(price);
+      if (!price.trim() || !Number.isFinite(parsedPrice) || parsedPrice < 0) {
+        setSubmitError("Price is required and must be a non-negative number.");
         return;
       }
     }
@@ -149,6 +157,7 @@ export default function ProviderAddServicePage() {
           departmentSlug,
           listingType: isNullListingTypeCategory ? null : listingType,
           stock: listingType === "sale" ? Number(stock) : null,
+          price: listingType === "sale" ? Number(price) : null,
           photoUrls,
         }),
       });
@@ -295,6 +304,31 @@ export default function ProviderAddServicePage() {
 
         <div>
           <label
+            htmlFor="price"
+            className="block text-sm font-medium text-foreground"
+          >
+            Price (NGN)
+          </label>
+          <input
+            id="price"
+            name="price"
+            type="number"
+            min={0}
+            step={0.01}
+            value={listingType === "sale" ? price : ""}
+            onChange={(e) => setPrice(e.target.value)}
+            disabled={listingType !== "sale"}
+            className="mt-1.5 w-full rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25 disabled:cursor-not-allowed disabled:bg-ambuhub-surface/50 disabled:text-foreground/60"
+            placeholder={
+              listingType === "sale"
+                ? "Enter price in naira"
+                : "Available only for sale listings"
+            }
+          />
+        </div>
+
+        <div>
+          <label
             htmlFor="service-title"
             className="block text-sm font-medium text-foreground"
           >
@@ -368,7 +402,11 @@ export default function ProviderAddServicePage() {
             (listingType === "sale" &&
               (!stock.trim() ||
                 !Number.isInteger(Number(stock)) ||
-                Number(stock) < 0))
+                Number(stock) < 0)) ||
+            (listingType === "sale" &&
+              (!price.trim() ||
+                !Number.isFinite(Number(price)) ||
+                Number(price) < 0))
           }
           className="w-full rounded-xl bg-ambuhub-brand py-3.5 text-base font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
