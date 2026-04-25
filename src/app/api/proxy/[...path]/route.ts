@@ -1,5 +1,7 @@
+import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { isAllowedProxySegments } from "@/lib/api-proxy-allowlist";
+import { MARKETPLACE_SERVICES_CACHE_TAG } from "@/lib/cache-tags";
 import { getServerBackendOrigin } from "@/lib/server-backend-origin";
 
 type RouteParams = { params: Promise<{ path: string[] }> };
@@ -63,6 +65,17 @@ async function proxyRequest(
   }
 
   const buf = await upstream.arrayBuffer();
+
+  // Invalidate marketplace fetch cache after listing mutations (extend when adding PATCH/DELETE on services).
+  if (
+    method === "POST" &&
+    segments.length === 1 &&
+    segments[0] === "services" &&
+    upstream.ok
+  ) {
+    revalidateTag(MARKETPLACE_SERVICES_CACHE_TAG, "max");
+  }
+
   return new NextResponse(buf, {
     status: upstream.status,
     headers: outHeaders,

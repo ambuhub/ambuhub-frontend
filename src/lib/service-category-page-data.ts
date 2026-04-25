@@ -3,6 +3,7 @@ import {
   AMBUHUB_SERVICE_SLUGS,
   getServiceBySlug,
 } from "@/lib/ambuhub-services";
+import { MARKETPLACE_SERVICES_CACHE_TAG } from "@/lib/cache-tags";
 
 const REVALIDATE = 120;
 
@@ -58,7 +59,10 @@ export async function fetchMarketplaceServices(): Promise<MarketplaceServiceRow[
   const base = getApiBaseUrl();
   try {
     const res = await fetch(`${base}/api/services/marketplace`, {
-      next: { revalidate: REVALIDATE },
+      next: {
+        revalidate: REVALIDATE,
+        tags: [MARKETPLACE_SERVICES_CACHE_TAG],
+      },
     });
     if (!res.ok) {
       return [];
