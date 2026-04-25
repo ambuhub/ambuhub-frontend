@@ -9,6 +9,7 @@ type MyService = {
   id: string;
   title: string;
   description: string;
+  listingType: "sale" | "rent" | null;
   departmentSlug: string;
   departmentName: string;
   category: { id: string; slug: string; name: string };

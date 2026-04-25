@@ -5,12 +5,19 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 type Department = { name: string; slug: string; order: number };
+type ListingType = "sale" | "rent";
 type ServiceCategoryRow = {
   id: string;
   name: string;
   slug: string;
   departments: Department[];
 };
+const PERSONNEL_CATEGORY_SLUG = "personnel";
+const AMBULANCE_SERVICING_CATEGORY_SLUG = "ambulance-servicing";
+const NULL_LISTING_TYPE_CATEGORY_SLUGS = new Set([
+  PERSONNEL_CATEGORY_SLUG,
+  AMBULANCE_SERVICING_CATEGORY_SLUG,
+]);
 
 export default function ProviderAddServicePage() {
   const router = useRouter();
@@ -21,6 +28,7 @@ export default function ProviderAddServicePage() {
 
   const [categorySlug, setCategorySlug] = useState("");
   const [departmentSlug, setDepartmentSlug] = useState("");
+  const [listingType, setListingType] = useState<ListingType | "">("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [fileList, setFileList] = useState<File[]>([]);
@@ -64,9 +72,13 @@ export default function ProviderAddServicePage() {
     () => categories.find((c) => c.slug === categorySlug),
     [categories, categorySlug],
   );
+  const isNullListingTypeCategory = selectedCategory
+    ? NULL_LISTING_TYPE_CATEGORY_SLUGS.has(selectedCategory.slug)
+    : false;
 
   useEffect(() => {
     setDepartmentSlug("");
+    setListingType("");
   }, [categorySlug]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -79,6 +91,10 @@ export default function ProviderAddServicePage() {
     }
     if (!title.trim() || !description.trim()) {
       setSubmitError("Title and description are required.");
+      return;
+    }
+    if (!isNullListingTypeCategory && !listingType) {
+      setSubmitError("Listing type is required for this category.");
       return;
     }
 
@@ -116,6 +132,7 @@ export default function ProviderAddServicePage() {
           description: description.trim(),
           serviceCategorySlug: categorySlug,
           departmentSlug,
+          listingType: isNullListingTypeCategory ? null : listingType,
           photoUrls,
         }),
       });
@@ -210,6 +227,33 @@ export default function ProviderAddServicePage() {
 
         <div>
           <label
+            htmlFor="listing-type"
+            className="block text-sm font-medium text-foreground"
+          >
+            Listing type
+          </label>
+          <select
+            id="listing-type"
+            name="listingType"
+            className="mt-1.5 w-full rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25 disabled:cursor-not-allowed disabled:bg-ambuhub-surface/50 disabled:text-foreground/60"
+            value={isNullListingTypeCategory ? "" : listingType}
+            onChange={(e) => setListingType(e.target.value as ListingType | "")}
+            disabled={!selectedCategory || isNullListingTypeCategory}
+          >
+            <option value="">
+              {!selectedCategory
+                ? "Choose a category first"
+                : isNullListingTypeCategory
+                  ? "Not applicable for this category"
+                  : "Select listing type"}
+            </option>
+            <option value="sale">Sale</option>
+            <option value="rent">Rent</option>
+          </select>
+        </div>
+
+        <div>
+          <label
             htmlFor="service-title"
             className="block text-sm font-medium text-foreground"
           >
@@ -278,7 +322,8 @@ export default function ProviderAddServicePage() {
             loadingCategories ||
             !!loadError ||
             !categorySlug ||
-            !departmentSlug
+            !departmentSlug ||
+            (!isNullListingTypeCategory && !listingType)
           }
           className="w-full rounded-xl bg-ambuhub-brand py-3.5 text-base font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
