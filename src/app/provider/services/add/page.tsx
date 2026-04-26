@@ -176,37 +176,42 @@ export default function ProviderAddServicePage() {
     }
   }
 
+  const inputClass =
+    "mt-1.5 w-full rounded-xl border border-blue-200/90 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-blue-700 focus:ring-2 focus:ring-blue-600/30";
+  const inputDisabledClass =
+    "disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100/90 disabled:text-slate-500";
+  const labelClass = "block text-sm font-semibold text-blue-950";
+
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-        Add service
-      </h1>
-      <p className="mt-2 text-foreground/70">
-        List standby coverage, scheduled transport, personnel, or equipment for
-        venues and organizers.
-      </p>
+      <div className="overflow-hidden rounded-3xl border border-blue-200/80 bg-gradient-to-br from-blue-950 via-blue-900 to-slate-900 p-5 shadow-xl shadow-blue-950/40 sm:p-6">
+        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+          Add service
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-blue-100/90 sm:text-base">
+          List standby coverage, scheduled transport, personnel, or equipment for
+          venues and organizers.
+        </p>
+      </div>
 
       {loadError ? (
-        <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+        <p className="mt-4 rounded-xl border border-red-300/80 bg-red-50 px-4 py-3 text-sm text-red-900 shadow-sm">
           {loadError}
         </p>
       ) : null}
 
       <form
-        className="mt-8 space-y-6 rounded-2xl border border-ambuhub-100 bg-white p-6 shadow-sm sm:p-8"
+        className="mt-6 space-y-6 rounded-3xl border border-blue-100 bg-gradient-to-b from-white via-blue-50/40 to-cyan-50/50 p-6 shadow-lg shadow-blue-200/50 sm:p-8"
         onSubmit={(e) => void handleSubmit(e)}
       >
         <div>
-          <label
-            htmlFor="service-category"
-            className="block text-sm font-medium text-foreground"
-          >
+          <label htmlFor="service-category" className={labelClass}>
             Service category
           </label>
           <select
             id="service-category"
             name="category"
-            className="mt-1.5 w-full rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25"
+            className={`${inputClass} ${inputDisabledClass}`}
             value={categorySlug}
             onChange={(e) => setCategorySlug(e.target.value)}
             disabled={loadingCategories || !!loadError}
@@ -223,16 +228,13 @@ export default function ProviderAddServicePage() {
         </div>
 
         <div>
-          <label
-            htmlFor="department"
-            className="block text-sm font-medium text-foreground"
-          >
+          <label htmlFor="department" className={labelClass}>
             Department (sub-category)
           </label>
           <select
             id="department"
             name="department"
-            className="mt-1.5 w-full rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25 disabled:cursor-not-allowed disabled:bg-ambuhub-surface/50 disabled:text-foreground/60"
+            className={`${inputClass} ${inputDisabledClass}`}
             value={departmentSlug}
             onChange={(e) => setDepartmentSlug(e.target.value)}
             disabled={!selectedCategory}
@@ -251,16 +253,13 @@ export default function ProviderAddServicePage() {
         </div>
 
         <div>
-          <label
-            htmlFor="listing-type"
-            className="block text-sm font-medium text-foreground"
-          >
+          <label htmlFor="listing-type" className={labelClass}>
             Listing type
           </label>
           <select
             id="listing-type"
             name="listingType"
-            className="mt-1.5 w-full rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25 disabled:cursor-not-allowed disabled:bg-ambuhub-surface/50 disabled:text-foreground/60"
+            className={`${inputClass} ${inputDisabledClass}`}
             value={isNullListingTypeCategory ? "" : listingType}
             onChange={(e) => setListingType(e.target.value as ListingType | "")}
             disabled={!selectedCategory || isNullListingTypeCategory}
@@ -278,10 +277,7 @@ export default function ProviderAddServicePage() {
         </div>
 
         <div>
-          <label
-            htmlFor="stock"
-            className="block text-sm font-medium text-foreground"
-          >
+          <label htmlFor="stock" className={labelClass}>
             Stock
           </label>
           <input
@@ -293,7 +289,7 @@ export default function ProviderAddServicePage() {
             value={listingType === "sale" ? stock : ""}
             onChange={(e) => setStock(e.target.value)}
             disabled={listingType !== "sale"}
-            className="mt-1.5 w-full rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25 disabled:cursor-not-allowed disabled:bg-ambuhub-surface/50 disabled:text-foreground/60"
+            className={`${inputClass} ${inputDisabledClass}`}
             placeholder={
               listingType === "sale"
                 ? "Enter stock quantity"
@@ -303,10 +299,7 @@ export default function ProviderAddServicePage() {
         </div>
 
         <div>
-          <label
-            htmlFor="price"
-            className="block text-sm font-medium text-foreground"
-          >
+          <label htmlFor="price" className={labelClass}>
             Price (NGN)
           </label>
           <input
@@ -318,7 +311,7 @@ export default function ProviderAddServicePage() {
             value={listingType === "sale" ? price : ""}
             onChange={(e) => setPrice(e.target.value)}
             disabled={listingType !== "sale"}
-            className="mt-1.5 w-full rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25 disabled:cursor-not-allowed disabled:bg-ambuhub-surface/50 disabled:text-foreground/60"
+            className={`${inputClass} ${inputDisabledClass}`}
             placeholder={
               listingType === "sale"
                 ? "Enter price in naira"
@@ -328,10 +321,7 @@ export default function ProviderAddServicePage() {
         </div>
 
         <div>
-          <label
-            htmlFor="service-title"
-            className="block text-sm font-medium text-foreground"
-          >
+          <label htmlFor="service-title" className={labelClass}>
             Title
           </label>
           <input
@@ -341,16 +331,13 @@ export default function ProviderAddServicePage() {
             required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25"
+            className={inputClass}
             placeholder="e.g. Event medical standby — 2 ambulances"
           />
         </div>
 
         <div>
-          <label
-            htmlFor="service-description"
-            className="block text-sm font-medium text-foreground"
-          >
+          <label htmlFor="service-description" className={labelClass}>
             Description
           </label>
           <textarea
@@ -360,16 +347,14 @@ export default function ProviderAddServicePage() {
             required
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="mt-1.5 w-full resize-y rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25"
+            className={`${inputClass} resize-y`}
             placeholder="Coverage area, crew size, vehicle types, pricing notes…"
           />
         </div>
 
         <div>
-          <span className="block text-sm font-medium text-foreground">
-            Photos
-          </span>
-          <p className="mt-1 text-xs text-foreground/55">
+          <span className={labelClass}>Photos</span>
+          <p className="mt-1 text-xs text-slate-600">
             Images only (JPEG, PNG, WebP, etc.). Up to 10 files, 5MB each.
           </p>
           <input
@@ -380,12 +365,12 @@ export default function ProviderAddServicePage() {
               const list = e.target.files;
               setFileList(list ? Array.from(list) : []);
             }}
-            className="mt-3 block w-full text-sm text-foreground/70 file:mr-4 file:rounded-lg file:border-0 file:bg-ambuhub-brand file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-ambuhub-brand-dark"
+            className="mt-3 block w-full text-sm text-slate-600 file:mr-4 file:rounded-xl file:border-0 file:bg-gradient-to-r file:from-blue-800 file:to-blue-600 file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-white file:shadow-md file:shadow-blue-900/30 hover:file:opacity-95"
           />
         </div>
 
         {submitError ? (
-          <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-900">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 shadow-sm">
             {submitError}
           </div>
         ) : null}
@@ -408,7 +393,7 @@ export default function ProviderAddServicePage() {
                 !Number.isFinite(Number(price)) ||
                 Number(price) < 0))
           }
-          className="w-full rounded-xl bg-ambuhub-brand py-3.5 text-base font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-cyan-700 py-3.5 text-base font-semibold text-white shadow-lg shadow-blue-900/40 transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-55"
         >
           {submitting ? "Publishing…" : "Publish service"}
         </button>

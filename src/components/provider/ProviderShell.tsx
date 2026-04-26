@@ -85,32 +85,32 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-full flex-1 bg-ambuhub-surface">
+    <div className="flex h-[100dvh] max-h-[100dvh] min-h-0 w-full flex-1 items-stretch overflow-hidden bg-slate-100">
       {sidebarOpen && (
         <button
           type="button"
           aria-label="Close menu"
-          className="fixed inset-0 z-40 bg-ambuhub-900/40 md:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-ambuhub-200 bg-white shadow-lg transition-transform duration-200 md:static md:z-0 md:translate-x-0 md:shadow-none ${
+        className={`fixed top-0 bottom-0 left-0 z-50 flex min-h-[100dvh] w-64 shrink-0 flex-col border-r border-blue-900/60 bg-gradient-to-b from-blue-950 via-slate-950 to-slate-950 shadow-xl shadow-blue-950/40 transition-transform duration-200 md:relative md:z-0 md:h-[100dvh] md:min-h-[100dvh] md:self-stretch md:translate-x-0 md:shadow-none ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex h-14 items-center justify-between border-b border-ambuhub-100 px-4 md:h-16">
+        <div className="flex h-14 items-center justify-between border-b border-blue-900/60 px-4 md:h-16">
           <Link
             href="/provider/dashboard"
-            className="text-lg font-semibold tracking-tight text-ambuhub-brand"
+            className="text-lg font-semibold tracking-tight text-blue-200"
             onClick={() => setSidebarOpen(false)}
           >
             Ambuhub
           </Link>
           <button
             type="button"
-            className="rounded-lg p-2 text-foreground/70 hover:bg-ambuhub-50 md:hidden"
+            className="rounded-lg p-2 text-slate-300 hover:bg-white/10 md:hidden"
             onClick={() => setSidebarOpen(false)}
             aria-label="Close sidebar"
           >
@@ -118,7 +118,7 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        <nav className="flex-1 space-y-0.5 overflow-y-auto p-3" aria-label="Provider">
+        <nav className="min-h-0 flex-1 space-y-0.5 overflow-hidden p-3" aria-label="Provider">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActivePath(pathname, item.href);
@@ -129,8 +129,8 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                   active
-                    ? "bg-ambuhub-brand/10 text-ambuhub-brand"
-                    : "text-foreground/80 hover:bg-ambuhub-50 hover:text-foreground"
+                    ? "bg-blue-500/20 text-blue-100 ring-1 ring-blue-400/30"
+                    : "text-slate-300 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 <Icon className="h-5 w-5 shrink-0 opacity-90" aria-hidden />
@@ -140,17 +140,17 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="border-t border-ambuhub-100 p-3">
+        <div className="border-t border-blue-900/60 p-3">
           <Link
             href="/"
-            className="mb-2 block rounded-xl px-3 py-2 text-sm font-medium text-foreground/70 hover:bg-ambuhub-50 hover:text-foreground"
+            className="mb-2 block rounded-xl px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
           >
             View public site
           </Link>
           <button
             type="button"
             onClick={handleSignOut}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-foreground/80 hover:bg-ambuhub-50"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
           >
             <LogOut className="h-5 w-5 shrink-0" aria-hidden />
             Sign out
@@ -158,19 +158,21 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-ambuhub-200 bg-white px-4 md:hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col self-stretch md:min-h-[100dvh]">
+        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-blue-900/60 bg-slate-950 px-4 md:hidden">
           <button
             type="button"
-            className="rounded-lg p-2 text-foreground hover:bg-ambuhub-50"
+            className="rounded-lg p-2 text-slate-200 hover:bg-white/10"
             onClick={() => setSidebarOpen(true)}
             aria-label="Open menu"
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="text-sm font-semibold text-foreground">Provider</span>
+          <span className="text-sm font-semibold text-blue-100">Provider</span>
         </header>
-        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-slate-100 via-blue-50/30 to-slate-100 p-4 sm:p-6 lg:p-8">
+          {children}
+        </main>
       </div>
     </div>
   );

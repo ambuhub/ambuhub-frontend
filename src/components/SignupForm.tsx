@@ -12,7 +12,7 @@ type Props = {
 };
 
 const roleLabels: Record<SignupRole, string> = {
-  patient: "Patient",
+  client: "Client",
   service_provider: "Service provider",
 };
 
@@ -54,7 +54,9 @@ export function SignupForm({ role, onBack }: Props) {
       }
       const authRole = data.user?.role;
       const next =
-        authRole === "service_provider" || authRole === "patient"
+        authRole === "service_provider" ||
+        authRole === "client" ||
+        authRole === "patient"
           ? postAuthPath(authRole as AuthUserRole)
           : "/";
       router.push(next);

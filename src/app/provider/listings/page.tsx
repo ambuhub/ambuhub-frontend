@@ -5,6 +5,17 @@ import { AMBUHUB_SERVICE_SLUGS } from "@/lib/ambuhub-services";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+const TAB_SHADE_CLASSES = [
+  "from-blue-700 to-cyan-600 border-blue-500/70 text-white shadow-blue-900/35",
+  "from-sky-700 to-blue-600 border-sky-500/70 text-white shadow-sky-900/35",
+  "from-indigo-700 to-blue-600 border-indigo-500/70 text-white shadow-indigo-900/35",
+  "from-cyan-700 to-blue-600 border-cyan-500/70 text-white shadow-cyan-900/35",
+] as const;
+
+function tabShadeClass(index: number): string {
+  return TAB_SHADE_CLASSES[index % TAB_SHADE_CLASSES.length];
+}
+
 type MyService = {
   id: string;
   title: string;
@@ -24,6 +35,7 @@ export default function ProviderListingsPage() {
   const [services, setServices] = useState<MyService[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTabSlug, setActiveTabSlug] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -103,13 +115,29 @@ export default function ProviderListingsPage() {
     return result;
   }, [services]);
 
+  useEffect(() => {
+    if (sections.length === 0) {
+      setActiveTabSlug("");
+      return;
+    }
+    const hasActive = sections.some((section) => section.slug === activeTabSlug);
+    if (!hasActive) {
+      setActiveTabSlug(sections[0].slug);
+    }
+  }, [activeTabSlug, sections]);
+
+  const activeSection = useMemo(
+    () => sections.find((section) => section.slug === activeTabSlug) ?? null,
+    [activeTabSlug, sections],
+  );
+
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
           My listings
         </h1>
-        <p className="mt-4 text-foreground/70">Loading your services…</p>
+        <p className="mt-4 text-slate-600">Loading your services…</p>
       </div>
     );
   }
@@ -117,7 +145,7 @@ export default function ProviderListingsPage() {
   if (error) {
     return (
       <div className="mx-auto max-w-4xl">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
           My listings
         </h1>
         <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
@@ -130,13 +158,13 @@ export default function ProviderListingsPage() {
   if (services.length === 0) {
     return (
       <div className="mx-auto max-w-4xl">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
           My listings
         </h1>
-        <p className="mt-2 text-foreground/70">
+        <p className="mt-2 text-slate-600">
           Services and equipment you have published.
         </p>
-        <div className="mt-10 rounded-2xl border border-dashed border-ambuhub-200 bg-white px-6 py-16 text-center text-foreground/55">
+        <div className="mt-10 rounded-2xl border border-dashed border-blue-300 bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 px-6 py-16 text-center text-slate-600">
           No listings yet. Use{" "}
           <Link
             href="/provider/services/add"
@@ -152,28 +180,47 @@ export default function ProviderListingsPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
         My listings
       </h1>
-      <p className="mt-2 text-foreground/70">
+      <p className="mt-2 text-slate-600">
         Services and equipment you have published, grouped by category.
       </p>
 
-      <div className="mt-10 space-y-12">
-        {sections.map((section) => (
-          <section key={section.slug}>
-            <h2 className="border-b border-ambuhub-200 pb-2 text-lg font-semibold text-foreground">
-              {section.categoryName}
-            </h2>
-            <ul className="mt-4 grid gap-4 sm:grid-cols-2">
-              {section.items.map((item) => (
+      <div className="mt-10 rounded-3xl border border-blue-100 bg-white/95 p-4 shadow-lg shadow-slate-200/70 backdrop-blur-sm sm:p-5">
+        <div className="border-b border-blue-100">
+          <div className="-mb-px flex flex-wrap gap-2">
+            {sections.map((section, index) => {
+              const isActive = section.slug === activeTabSlug;
+              return (
+                <button
+                  key={section.slug}
+                  type="button"
+                  onClick={() => setActiveTabSlug(section.slug)}
+                  className={`rounded-t-xl border border-b-0 px-4 py-2 text-sm font-semibold transition-all ${
+                    isActive
+                      ? `bg-gradient-to-r shadow-md ${tabShadeClass(index)}`
+                      : "border-transparent bg-slate-100/80 text-slate-600 hover:bg-slate-200/70 hover:text-slate-800"
+                  }`}
+                >
+                  {section.categoryName}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {activeSection ? (
+          <section className="pt-5">
+            <ul className="grid gap-4 sm:grid-cols-2">
+              {activeSection.items.map((item) => (
                 <li
                   key={item.id}
-                  className="overflow-hidden rounded-2xl border border-ambuhub-100 bg-white shadow-sm"
+                  className="overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/60 to-cyan-50/70 shadow-md shadow-blue-100/60 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-200/60"
                 >
                   <div className="flex gap-0 sm:gap-0">
                     {item.photoUrls[0] ? (
-                      <div className="relative h-28 w-28 shrink-0 bg-ambuhub-surface">
+                      <div className="relative h-28 w-28 shrink-0 bg-blue-100/70">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={item.photoUrls[0]}
@@ -183,13 +230,13 @@ export default function ProviderListingsPage() {
                       </div>
                     ) : null}
                     <div className="min-w-0 flex-1 p-4">
-                      <p className="text-xs font-medium uppercase tracking-wide text-foreground/50">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-blue-700/85">
                         {item.departmentName}
                       </p>
-                      <h3 className="mt-1 font-semibold text-foreground">
+                      <h3 className="mt-1 font-semibold text-slate-900">
                         {item.title}
                       </h3>
-                      <p className="mt-2 line-clamp-3 text-sm text-foreground/70">
+                      <p className="mt-2 line-clamp-3 text-sm text-slate-600">
                         {item.description}
                       </p>
                     </div>
@@ -198,10 +245,10 @@ export default function ProviderListingsPage() {
               ))}
             </ul>
           </section>
-        ))}
+        ) : null}
       </div>
 
-      <p className="mt-10 text-center text-sm text-foreground/55">
+      <p className="mt-10 text-center text-sm text-slate-600">
         <Link
           href="/provider/services/add"
           className="font-medium text-ambuhub-brand hover:underline"

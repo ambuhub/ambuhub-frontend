@@ -2,7 +2,7 @@
 
 import { Building2, UserRound } from "lucide-react";
 
-export type SignupRole = "patient" | "service_provider";
+export type SignupRole = "client" | "service_provider";
 
 type Props = {
   onSelectRole: (role: SignupRole) => void;
@@ -23,14 +23,14 @@ export function SignupRoleCards({ onSelectRole, onBackToLogin }: Props) {
       <div className="mt-8 grid gap-4 sm:grid-cols-2 sm:gap-5">
         <button
           type="button"
-          onClick={() => onSelectRole("patient")}
+          onClick={() => onSelectRole("client")}
           className="group flex flex-col items-start rounded-2xl border-2 border-ambuhub-100 bg-ambuhub-surface/50 p-6 text-left transition-all hover:border-ambuhub-brand hover:bg-ambuhub-50 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ambuhub-brand"
         >
           <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-ambuhub-brand text-white shadow-sm transition-transform group-hover:scale-105">
             <UserRound className="h-6 w-6" aria-hidden />
           </span>
           <span className="mt-4 text-lg font-semibold text-foreground">
-            Sign up as a patient
+            Sign up as a client
           </span>
           <span className="mt-2 text-sm leading-relaxed text-foreground/65">
             Book standby and transport, browse listings, and keep your bookings

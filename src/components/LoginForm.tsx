@@ -37,7 +37,7 @@ export function LoginForm({ onSwitchToSignup }: Props) {
       }
       const role = data.user?.role;
       const next =
-        role === "service_provider" || role === "patient"
+        role === "service_provider" || role === "client" || role === "patient"
           ? postAuthPath(role as AuthUserRole)
           : "/";
       router.push(next);

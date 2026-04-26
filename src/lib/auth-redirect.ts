@@ -1,4 +1,4 @@
-export type AuthUserRole = "patient" | "service_provider";
+export type AuthUserRole = "client" | "service_provider" | "patient";
 
 export type PublicAuthUser = {
   id: string;
