@@ -2,10 +2,13 @@ export type AuthUserRole = "client" | "service_provider" | "patient";
 
 export type PublicAuthUser = {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: AuthUserRole;
   emailVerified: boolean;
+  /** ISO YYYY-MM-DD for clients; null for service providers */
+  dateOfBirth: string | null;
 };
 
 export function postAuthPath(role: AuthUserRole): string {

@@ -214,33 +214,38 @@ export default function ProviderListingsPage() {
           <section className="pt-5">
             <ul className="grid gap-4 sm:grid-cols-2">
               {activeSection.items.map((item) => (
-                <li
-                  key={item.id}
-                  className="overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/60 to-cyan-50/70 shadow-md shadow-blue-100/60 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-200/60"
-                >
-                  <div className="flex gap-0 sm:gap-0">
-                    {item.photoUrls[0] ? (
-                      <div className="relative h-28 w-28 shrink-0 bg-blue-100/70">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={item.photoUrls[0]}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
+                <li key={item.id}>
+                  <Link
+                    href={`/provider/listings/${item.id}`}
+                    className="block overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-white via-blue-50/60 to-cyan-50/70 shadow-md shadow-blue-100/60 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-200/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+                  >
+                    <div className="flex gap-0 sm:gap-0">
+                      {item.photoUrls[0] ? (
+                        <div className="relative h-28 w-28 shrink-0 bg-blue-100/70">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={item.photoUrls[0]}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                      ) : null}
+                      <div className="min-w-0 flex-1 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-700/85">
+                          {item.departmentName}
+                        </p>
+                        <h3 className="mt-1 font-semibold text-slate-900">
+                          {item.title}
+                        </h3>
+                        <p className="mt-2 line-clamp-3 text-sm text-slate-600">
+                          {item.description}
+                        </p>
+                        <p className="mt-3 text-xs font-semibold text-blue-700">
+                          View details
+                        </p>
                       </div>
-                    ) : null}
-                    <div className="min-w-0 flex-1 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-blue-700/85">
-                        {item.departmentName}
-                      </p>
-                      <h3 className="mt-1 font-semibold text-slate-900">
-                        {item.title}
-                      </h3>
-                      <p className="mt-2 line-clamp-3 text-sm text-slate-600">
-                        {item.description}
-                      </p>
                     </div>
-                  </div>
+                  </Link>
                 </li>
               ))}
             </ul>

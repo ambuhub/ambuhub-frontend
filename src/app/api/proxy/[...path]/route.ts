@@ -18,7 +18,7 @@ function buildUpstreamUrl(
 
 async function proxyRequest(
   request: NextRequest,
-  method: "GET" | "POST" | "PUT",
+  method: "GET" | "POST" | "PUT" | "DELETE",
   segments: string[],
 ): Promise<NextResponse> {
   if (!isAllowedProxySegments(segments)) {
@@ -68,7 +68,7 @@ async function proxyRequest(
 
   // Invalidate marketplace fetch cache after service listing mutations.
   if (
-    (method === "POST" || method === "PUT") &&
+    (method === "POST" || method === "PUT" || method === "DELETE") &&
     segments[0] === "services" &&
     upstream.ok
   ) {
@@ -103,4 +103,12 @@ export async function PUT(
 ): Promise<NextResponse> {
   const { path } = await context.params;
   return proxyRequest(request, "PUT", path ?? []);
+}
+
+export async function DELETE(
+  request: NextRequest,
+  context: RouteParams,
+): Promise<NextResponse> {
+  const { path } = await context.params;
+  return proxyRequest(request, "DELETE", path ?? []);
 }

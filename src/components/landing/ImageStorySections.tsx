@@ -44,8 +44,8 @@ export function ImageStorySections() {
           id={block.id}
           className={
             index % 2 === 0
-              ? "border-t border-ambuhub-100 bg-white py-16 sm:py-20 lg:py-24"
-              : "border-t border-ambuhub-100 bg-gradient-to-b from-ambuhub-surface/80 to-white py-16 sm:py-20 lg:py-24"
+              ? "border-t border-blue-200/50 bg-gradient-to-b from-white via-blue-50/50 to-sky-50/60 py-16 sm:py-20 lg:py-24"
+              : "border-t border-indigo-200/50 bg-gradient-to-b from-cyan-50/80 via-sky-50/70 to-blue-100/70 py-16 sm:py-20 lg:py-24"
           }
         >
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -58,10 +58,10 @@ export function ImageStorySections() {
                     : "order-2 lg:order-2"
                 }
               >
-                <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                <h2 className="text-3xl font-bold tracking-tight text-blue-950 sm:text-4xl">
                   {block.title}
                 </h2>
-                <p className="mt-5 text-lg leading-relaxed text-foreground/70">
+                <p className="mt-5 text-lg leading-relaxed text-blue-900/75">
                   {block.body}
                 </p>
               </motion.div>
@@ -74,7 +74,7 @@ export function ImageStorySections() {
                     : "order-1 lg:order-1"
                 }
               >
-                <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-ambuhub-100 bg-ambuhub-50 shadow-xl shadow-ambuhub-900/[0.06]">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border-2 border-sky-300/60 bg-gradient-to-br from-sky-100 to-blue-100 shadow-xl shadow-blue-900/15 ring-2 ring-blue-400/20">
                   <Image
                     src={block.imageSrc}
                     alt={block.imageAlt}
