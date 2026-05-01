@@ -9,6 +9,12 @@ export type PublicAuthUser = {
   emailVerified: boolean;
   /** ISO YYYY-MM-DD for clients; null for service providers */
   dateOfBirth: string | null;
+  phone: string;
+  /** ISO 3166-1 alpha-2 */
+  countryCode: string;
+  businessName?: string;
+  physicalAddress?: string;
+  website?: string | null;
 };
 
 export function postAuthPath(role: AuthUserRole): string {
