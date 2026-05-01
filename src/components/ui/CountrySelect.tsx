@@ -35,7 +35,10 @@ export function CountrySelect({
   }, [search]);
 
   const selected = useMemo(
-    () => COUNTRIES.find((c) => c.name === value) ?? null,
+    () =>
+      COUNTRIES.find(
+        (c) => c.code.toUpperCase() === value.trim().toUpperCase(),
+      ) ?? null,
     [value],
   );
 
@@ -74,7 +77,7 @@ export function CountrySelect({
 
   const selectCountry = useCallback(
     (c: Country) => {
-      onChange(c.name);
+      onChange(c.code.toUpperCase());
       setOpen(false);
       setSearch("");
     },
@@ -126,11 +129,11 @@ export function CountrySelect({
     <div ref={containerRef} className="relative w-full">
       <input
         type="hidden"
-        name="country"
+        name="countryCode"
         value={value}
         readOnly
         tabIndex={-1}
-        autoComplete="country-name"
+        autoComplete="country"
         aria-hidden
       />
       <button
@@ -222,7 +225,7 @@ export function CountrySelect({
                   />
                   <span className="min-w-0 flex-1 truncate">{c.name}</span>
                   <span className="shrink-0 text-xs uppercase text-slate-400">
-                    {c.code}
+                    {c.code.toUpperCase()}
                   </span>
                 </li>
               ))

@@ -19,3 +19,11 @@ export const COUNTRIES: Country[] = worldCountries
     };
   })
   .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+
+/** ISO alpha-2 (any case) -> English common name, or null if unknown */
+export function getCountryNameByCode(isoAlpha2: string): string | null {
+  const key = isoAlpha2?.trim().toLowerCase();
+  if (!key || key.length !== 2) return null;
+  const row = COUNTRIES.find((c) => c.code === key);
+  return row?.name ?? null;
+}

@@ -59,7 +59,7 @@ export function SignupForm({ role, onBack, splitLayout }: Props) {
           lastName: lastName.trim(),
           email: email.trim(),
           phone: phone.trim(),
-          country: country.trim(),
+          countryCode: country.trim(),
           password,
           role,
           ...(role === "service_provider"
