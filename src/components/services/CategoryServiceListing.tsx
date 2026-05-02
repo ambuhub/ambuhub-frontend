@@ -319,12 +319,12 @@ export function CategoryServiceListing({ category, sections }: Props) {
       </div>
 
       <div className="mx-auto mt-10 w-full max-w-7xl flex-1 px-4 pb-14 sm:mt-12 sm:px-6 sm:pb-16 lg:mt-14 lg:px-8 lg:pb-20">
-        <div className="mb-6 rounded-2xl border border-ambuhub-100 bg-white p-4 sm:mb-8">
+        <div className="mb-6 rounded-2xl border border-white/15 bg-gradient-to-br from-ambuhub-600 to-ambuhub-800 p-5 sm:mb-8 sm:p-6">
           <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 md:flex-row md:items-end">
             <div className="min-w-0 flex-[2]">
               <label
                 htmlFor="services-smart-search"
-                className="block text-sm font-medium text-foreground"
+                className="block text-sm font-medium text-white"
               >
                 Search listings
               </label>
@@ -347,7 +347,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
             <div className="md:w-56">
               <label
                 htmlFor="department-filter"
-                className="block text-sm font-medium text-foreground"
+                className="block text-sm font-medium text-white"
               >
                 Department
               </label>
@@ -368,7 +368,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
             <div className="md:w-52">
               <label
                 htmlFor="listing-type-filter"
-                className="block text-sm font-medium text-foreground"
+                className="block text-sm font-medium text-white"
               >
                 Listing type
               </label>
