@@ -3,14 +3,17 @@ import { NextResponse, type NextRequest } from "next/server";
 import { AUTH_COOKIE_NAME } from "@/lib/auth-cookie";
 
 export async function middleware(request: NextRequest) {
-  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-  const secret = process.env.JWT_SECRET;
+  const { pathname } = request.nextUrl;
+  const isProvider = pathname.startsWith("/provider");
+  const isClient = pathname.startsWith("/client");
 
+  const secret = process.env.JWT_SECRET;
   if (!secret) {
-    console.error("JWT_SECRET is not set; provider routes are blocked");
+    console.error("JWT_SECRET is not set; protected app routes are blocked");
     return NextResponse.redirect(new URL("/auth", request.url));
   }
 
+  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
   if (!token) {
     return NextResponse.redirect(new URL("/auth", request.url));
   }
@@ -20,9 +23,30 @@ export async function middleware(request: NextRequest) {
       token,
       new TextEncoder().encode(secret),
     );
-    const role = payload.role;
-    if (role !== "service_provider") {
-      return NextResponse.redirect(new URL("/", request.url));
+    const role = typeof payload.role === "string" ? payload.role : "";
+
+    if (isProvider) {
+      if (role === "service_provider") {
+        return NextResponse.next();
+      }
+      if (role === "client" || role === "patient") {
+        return NextResponse.redirect(
+          new URL("/client/dashboard", request.url),
+        );
+      }
+      return NextResponse.redirect(new URL("/auth", request.url));
+    }
+
+    if (isClient) {
+      if (role === "client" || role === "patient") {
+        return NextResponse.next();
+      }
+      if (role === "service_provider") {
+        return NextResponse.redirect(
+          new URL("/provider/dashboard", request.url),
+        );
+      }
+      return NextResponse.redirect(new URL("/auth", request.url));
     }
   } catch {
     return NextResponse.redirect(new URL("/auth", request.url));
@@ -32,5 +56,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/provider/:path*"],
+  matcher: ["/provider/:path*", "/client/:path*"],
 };

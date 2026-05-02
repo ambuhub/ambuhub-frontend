@@ -1,4 +1,7 @@
-import { Bell, Search, Upload, Wallet } from "lucide-react";
+import { Bell, Search, Upload } from "lucide-react";
+
+import { ProviderMonthlySalesChart } from "./ProviderMonthlySalesChart";
+import { ProviderWalletBalance } from "./ProviderWalletBalance";
 
 const metricCards = [
   {
@@ -74,16 +77,7 @@ export default function ProviderDashboardPage() {
               />
             </div>
           </div>
-          <div className="rounded-2xl border border-cyan-500/40 bg-gradient-to-br from-cyan-900 via-blue-800 to-cyan-700 p-4 text-white shadow-lg shadow-cyan-900/40">
-            <p className="text-xs uppercase tracking-wide text-cyan-100/85">
-              Wallet balance
-            </p>
-            <p className="mt-2 flex items-center gap-2 text-xl font-bold text-white">
-              <Wallet className="h-5 w-5 text-cyan-200" />
-              ₦1,250,000
-            </p>
-            <p className="mt-1 text-sm text-cyan-100/85">Available balance</p>
-          </div>
+          <ProviderWalletBalance />
         </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -100,25 +94,7 @@ export default function ProviderDashboardPage() {
         </div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-slate-900">
-                Monthly performance
-              </h2>
-              <span className="text-xs text-slate-500">Jan - Aug</span>
-            </div>
-            <div className="mt-5 h-44 rounded-xl bg-gradient-to-b from-cyan-50 via-white to-white p-4">
-              <div className="flex h-full items-end gap-2">
-                {[35, 56, 44, 67, 40, 59, 74, 62].map((height, idx) => (
-                  <div
-                    key={idx}
-                    className="flex-1 rounded-t-md bg-gradient-to-t from-blue-600 to-cyan-400"
-                    style={{ height: `${height}%` }}
-                  />
-                ))}
-              </div>
-            </div>
-          </section>
+          <ProviderMonthlySalesChart />
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-semibold text-slate-900">

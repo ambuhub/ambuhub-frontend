@@ -2,9 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
+import { Loader2, Search, ShoppingCart, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
 import { FALLBACK_THUMB, isCloudinaryHost } from "@/lib/landing-service-categories";
+import { postCartItem } from "@/lib/marketplace-cart";
 import {
   getCategoryPageTitleDescription,
   type DepartmentServiceSection,
@@ -49,6 +52,15 @@ function formatStockLabel(
     return `Stock: ${stock}`;
   }
   return "Stock: N/A";
+}
+
+function isSalePurchasable(svc: MarketplaceServiceRow): boolean {
+  return (
+    svc.listingType === "sale" &&
+    typeof svc.price === "number" &&
+    typeof svc.stock === "number" &&
+    svc.stock >= 1
+  );
 }
 
 const TALL_TOP_BIAS_BANNER_SLUGS = new Set([
@@ -198,13 +210,35 @@ type Props = {
 };
 
 export function CategoryServiceListing({ category, sections }: Props) {
+  const pathname = usePathname();
+  const loginHref = `/auth?next=${encodeURIComponent(pathname || "/")}`;
   const { title, description } = getCategoryPageTitleDescription(category);
   const bannerSrc =
     category.bannerUrl?.trim() ||
     category.thumbnailUrl?.trim() ||
     "";
+  const {
+    user,
+    cart,
+    loading: sessionLoading,
+    refresh,
+    itemCount,
+    subtotalNgn,
+  } = useSessionAndCart();
+  const [addingServiceId, setAddingServiceId] = useState<string | null>(null);
+  const [cartNotice, setCartNotice] = useState<string | null>(null);
   const [listingTypeFilter, setListingTypeFilter] =
     useState<ListingTypeFilter>("all");
+
+  useEffect(() => {
+    if (!cartNotice) {
+      return;
+    }
+    const isSuccess = cartNotice.startsWith("Added");
+    const ms = isSuccess ? 3500 : 9000;
+    const id = window.setTimeout(() => setCartNotice(null), ms);
+    return () => window.clearTimeout(id);
+  }, [cartNotice]);
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -294,8 +328,56 @@ export function CategoryServiceListing({ category, sections }: Props) {
     ? tallBannerShellClass
     : defaultBannerShellClass;
 
+  async function handleAddToCart(serviceId: string) {
+    setAddingServiceId(serviceId);
+    setCartNotice(null);
+    try {
+      await postCartItem(serviceId, 1);
+      await refresh();
+      setCartNotice("Added to cart.");
+    } catch (err) {
+      setCartNotice(err instanceof Error ? err.message : "Could not add to cart.");
+    } finally {
+      setAddingServiceId(null);
+    }
+  }
+
+  const listingBottomPad =
+    itemCount > 0 ? "pb-28 sm:pb-20" : "pb-14 sm:pb-16 lg:pb-20";
+
+  const cartNoticeIsSuccess = cartNotice?.startsWith("Added") ?? false;
+
   return (
     <>
+      {cartNotice ? (
+        <div
+          className="fixed left-1/2 top-20 z-[60] w-[min(100%-1.5rem,36rem)] -translate-x-1/2 px-0 sm:top-24"
+          role="alert"
+        >
+          <div
+            className={`flex items-start gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur-md ${
+              cartNoticeIsSuccess
+                ? "border-green-200/90 bg-green-50/95 text-green-950"
+                : "border-amber-200/90 bg-amber-50/95 text-amber-950"
+            }`}
+          >
+            <p className="min-w-0 flex-1 text-sm leading-relaxed">{cartNotice}</p>
+            <button
+              type="button"
+              onClick={() => setCartNotice(null)}
+              className={`shrink-0 rounded-lg p-1 transition-colors ${
+                cartNoticeIsSuccess
+                  ? "text-green-800 hover:bg-green-100/80"
+                  : "text-amber-900 hover:bg-amber-100/80"
+              }`}
+              aria-label="Dismiss message"
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className={bannerShellClass} aria-hidden={!bannerSrc}>
           {bannerSrc ? (
@@ -315,10 +397,26 @@ export function CategoryServiceListing({ category, sections }: Props) {
           <p className="mt-3 max-w-3xl text-base leading-relaxed text-foreground/70 sm:mt-4 sm:text-lg">
             {description}
           </p>
+          {!sessionLoading && !user ? (
+            <div className="mt-5 rounded-2xl border border-ambuhub-200 bg-ambuhub-50 px-4 py-3 text-sm leading-relaxed text-foreground/90 sm:mt-6 sm:px-5 sm:py-4">
+              <p className="font-semibold text-foreground">Purchasing sale listings</p>
+              <p className="mt-1.5">
+                You need to{" "}
+                <Link href={loginHref} className="font-semibold text-ambuhub-brand underline">
+                  log in
+                </Link>{" "}
+                before &quot;Add to cart&quot; will work. Both{" "}
+                <strong>client</strong> and <strong>service provider</strong> accounts can
+                buy sale items—the cart and badge only appear after you are signed in.
+              </p>
+            </div>
+          ) : null}
         </div>
       </div>
 
-      <div className="mx-auto mt-10 w-full max-w-7xl flex-1 px-4 pb-14 sm:mt-12 sm:px-6 sm:pb-16 lg:mt-14 lg:px-8 lg:pb-20">
+      <div
+        className={`mx-auto mt-10 w-full max-w-7xl flex-1 px-4 sm:mt-12 sm:px-6 lg:mt-14 lg:px-8 ${listingBottomPad}`}
+      >
         <div className="mb-6 rounded-2xl border border-white/15 bg-gradient-to-br from-ambuhub-600 to-ambuhub-800 p-5 sm:mb-8 sm:p-6">
           <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 md:flex-row md:items-end">
             <div className="min-w-0 flex-[2]">
@@ -389,6 +487,24 @@ export function CategoryServiceListing({ category, sections }: Props) {
           </div>
         </div>
 
+        {itemCount > 0 ? (
+          <div className="mb-6 hidden items-center justify-between gap-4 rounded-2xl border border-ambuhub-200 bg-white px-5 py-4 shadow-sm sm:flex">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground">Your cart</p>
+              <p className="mt-0.5 text-sm text-foreground/70">
+                {itemCount} {itemCount === 1 ? "item" : "items"} ·{" "}
+                {formatNaira(subtotalNgn)}
+              </p>
+            </div>
+            <Link
+              href="/checkout"
+              className="shrink-0 rounded-xl bg-ambuhub-brand px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ambuhub-brand-dark"
+            >
+              Checkout
+            </Link>
+          </div>
+        ) : null}
+
         {filteredSections.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-ambuhub-200 bg-ambuhub-surface/50 px-6 py-12 text-center text-foreground/60">
             No listings match the selected filters.
@@ -442,6 +558,44 @@ export function CategoryServiceListing({ category, sections }: Props) {
                           <p className="mt-2 line-clamp-3 flex-1 text-sm leading-relaxed text-foreground/70">
                             {svc.description}
                           </p>
+                          {isSalePurchasable(svc) ? (
+                            <div className="mt-4 border-t border-ambuhub-100 pt-4">
+                              {cart.items.some((i) => i.serviceId === svc.id) ? (
+                                <p className="text-xs font-semibold text-ambuhub-brand">
+                                  In cart:{" "}
+                                  {cart.items.find((i) => i.serviceId === svc.id)
+                                    ?.quantity ?? 0}
+                                </p>
+                              ) : null}
+                              {sessionLoading ? (
+                                <p className="text-xs text-foreground/55">Checking session…</p>
+                              ) : user ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleAddToCart(svc.id)}
+                                  disabled={addingServiceId === svc.id}
+                                  className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ambuhub-brand px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ambuhub-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  {addingServiceId === svc.id ? (
+                                    <Loader2
+                                      className="h-4 w-4 shrink-0 animate-spin"
+                                      aria-hidden
+                                    />
+                                  ) : (
+                                    <ShoppingCart className="h-4 w-4 shrink-0" aria-hidden />
+                                  )}
+                                  Add to cart
+                                </button>
+                              ) : (
+                                <Link
+                                  href={loginHref}
+                                  className="mt-2 inline-flex w-full items-center justify-center rounded-xl border border-ambuhub-brand bg-white px-4 py-2.5 text-sm font-semibold text-ambuhub-brand transition-colors hover:bg-ambuhub-50"
+                                >
+                                  Log in to purchase
+                                </Link>
+                              )}
+                            </div>
+                          ) : null}
                         </div>
                       </article>
                     </li>
@@ -459,6 +613,26 @@ export function CategoryServiceListing({ category, sections }: Props) {
           &larr; Back to services
         </Link>
       </div>
+
+      {itemCount > 0 ? (
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-ambuhub-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur-md sm:hidden">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-foreground/70">Cart</p>
+              <p className="truncate text-sm font-semibold text-foreground">
+                {itemCount} {itemCount === 1 ? "item" : "items"} ·{" "}
+                {formatNaira(subtotalNgn)}
+              </p>
+            </div>
+            <Link
+              href="/checkout"
+              className="shrink-0 rounded-xl bg-ambuhub-brand px-4 py-2.5 text-sm font-semibold text-white"
+            >
+              Checkout
+            </Link>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

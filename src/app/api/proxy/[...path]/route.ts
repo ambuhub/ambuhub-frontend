@@ -18,7 +18,7 @@ function buildUpstreamUrl(
 
 async function proxyRequest(
   request: NextRequest,
-  method: "GET" | "POST" | "PUT" | "DELETE",
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
   segments: string[],
 ): Promise<NextResponse> {
   if (!isAllowedProxySegments(segments)) {
@@ -40,7 +40,7 @@ async function proxyRequest(
   }
 
   let body: BodyInit | undefined;
-  if (method === "POST" || method === "PUT") {
+  if (method === "POST" || method === "PUT" || method === "PATCH") {
     const contentType = request.headers.get("content-type");
     if (contentType) {
       headers.set("content-type", contentType);
@@ -55,7 +55,10 @@ async function proxyRequest(
   const upstream = await fetch(upstreamUrl, {
     method,
     headers,
-    body: method === "POST" || method === "PUT" ? body : undefined,
+    body:
+      method === "POST" || method === "PUT" || method === "PATCH"
+        ? body
+        : undefined,
   });
 
   const outHeaders = new Headers();
@@ -66,11 +69,15 @@ async function proxyRequest(
 
   const buf = await upstream.arrayBuffer();
 
-  // Invalidate marketplace fetch cache after service listing mutations.
+  // Invalidate marketplace fetch cache after service listing mutations or checkout (stock).
   if (
-    (method === "POST" || method === "PUT" || method === "DELETE") &&
-    segments[0] === "services" &&
-    upstream.ok
+    upstream.ok &&
+    (method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE") &&
+    (segments[0] === "services" ||
+      (segments[0] === "orders" &&
+        segments[1] === "checkout" &&
+        segments[2] === "simulate-paystack" &&
+        method === "POST"))
   ) {
     revalidateTag(MARKETPLACE_SERVICES_CACHE_TAG, "max");
   }
@@ -103,6 +110,14 @@ export async function PUT(
 ): Promise<NextResponse> {
   const { path } = await context.params;
   return proxyRequest(request, "PUT", path ?? []);
+}
+
+export async function PATCH(
+  request: NextRequest,
+  context: RouteParams,
+): Promise<NextResponse> {
+  const { path } = await context.params;
+  return proxyRequest(request, "PATCH", path ?? []);
 }
 
 export async function DELETE(

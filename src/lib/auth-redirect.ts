@@ -21,5 +21,8 @@ export function postAuthPath(role: AuthUserRole): string {
   if (role === "service_provider") {
     return "/provider/dashboard";
   }
+  if (role === "client" || role === "patient") {
+    return "/client/dashboard";
+  }
   return "/";
 }
