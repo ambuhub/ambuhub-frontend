@@ -5,7 +5,7 @@ export type CartLineClient = {
   serviceId: string;
   quantity: number;
   title: string;
-  listingType: "sale" | "rent" | null;
+  listingType: "sale" | "hire" | "book" | null;
   stock: number | null;
   price: number | null;
   departmentSlug: string;
@@ -124,21 +124,28 @@ export async function deleteCartItem(serviceId: string): Promise<CartClient> {
   return data.cart ?? { items: [] };
 }
 
+export type OrderLineClient = {
+  serviceId: string;
+  lineKind?: "sale" | "hire";
+  title: string;
+  unitPriceNgn: number;
+  quantity: number;
+  lineTotalNgn: number;
+  categoryName: string;
+  categorySlug: string;
+  departmentName: string;
+  hireStart?: string;
+  hireEnd?: string;
+  pricingPeriod?: string;
+  hireBillableUnits?: number;
+};
+
 export type OrderDetailClient = {
   id: string;
   receiptNumber: string;
   currency: string;
   subtotalNgn: number;
-  lines: {
-    serviceId: string;
-    title: string;
-    unitPriceNgn: number;
-    quantity: number;
-    lineTotalNgn: number;
-    categoryName: string;
-    categorySlug: string;
-    departmentName: string;
-  }[];
+  lines: OrderLineClient[];
   paymentProvider: string;
   paystackReference: string;
   paystackSimulated: boolean;
@@ -169,21 +176,28 @@ export async function postSimulateCheckout(): Promise<{
   return { order: data.order, message: data.message ?? "" };
 }
 
+export type ReceiptLineClient = {
+  serviceId: string;
+  lineKind?: "sale" | "hire";
+  title: string;
+  unitPriceNgn: number;
+  quantity: number;
+  lineTotalNgn: number;
+  categoryName: string;
+  departmentName: string;
+  hireStart?: string;
+  hireEnd?: string;
+  pricingPeriod?: string;
+  hireBillableUnits?: number;
+};
+
 export type ReceiptDetailClient = {
   id: string;
   orderId: string;
   receiptNumber: string;
   currency: string;
   subtotalNgn: number;
-  lines: {
-    serviceId: string;
-    title: string;
-    unitPriceNgn: number;
-    quantity: number;
-    lineTotalNgn: number;
-    categoryName: string;
-    departmentName: string;
-  }[];
+  lines: ReceiptLineClient[];
   paymentProvider: string;
   paystackReference: string;
   issuedAt: string;

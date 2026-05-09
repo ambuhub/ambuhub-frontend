@@ -368,8 +368,12 @@ export function ServiceHubGraphic() {
                     i === 0
                       ? "bottom-4 right-1 top-auto -translate-y-1 sm:bottom-5 sm:-translate-y-20"
                       : i === 2
-                        ? "left-1/2 top-5 -translate-x-1/2 sm:top-4"
-                        : "left-13 top-5.5"
+                        ? "left-0.2 top-5 -translate-x-1/2 sm:top-4"
+                        : i === 1
+                          ? "left-30 top-5.5"
+                          : i === 3
+                            ? "left-10 top-5.5"
+                            : "left-30 top-5.5"
                   }`}
                   aria-hidden
                 >
@@ -380,10 +384,10 @@ export function ServiceHubGraphic() {
                     i === 0
                       ? "-translate-x-2 sm:-translate-x-9"
                       : i === 1
-                        ? "-translate-x-1.5 sm:-translate-x-2.5"
+                        ? "translate-x-9 sm:translate-x-13"
                         : i === 2
-                          ? "translate-x-0"
-                          : "translate-x-1.5 sm:-translate-x-18"
+                          ? "-translate-x-18"
+                          : "-translate-x-1.5 sm:-translate-x-18"
                   }`}
                 >
                   <Icon

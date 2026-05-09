@@ -10,6 +10,7 @@ import {
   fetchReceiptByOrderId,
   type ReceiptDetailClient,
 } from "@/lib/marketplace-cart";
+import { formatPricingPeriodLabel, isPricingPeriod } from "@/lib/pricing-period";
 
 const naira = new Intl.NumberFormat("en-NG", { maximumFractionDigits: 2 });
 
@@ -100,8 +101,27 @@ export default function ReceiptPage() {
                           {line.categoryName} · {line.departmentName}
                         </p>
                         <p className="mt-1 text-xs text-foreground/60">
-                          {line.quantity} × {formatNaira(line.unitPriceNgn)}
+                          {line.lineKind === "hire" &&
+                          typeof line.hireBillableUnits === "number" ? (
+                            <>
+                              {line.quantity} × {formatNaira(line.unitPriceNgn)} ×{" "}
+                              {line.hireBillableUnits}{" "}
+                              {line.pricingPeriod && isPricingPeriod(line.pricingPeriod)
+                                ? formatPricingPeriodLabel(line.pricingPeriod).toLowerCase()
+                                : "units"}
+                            </>
+                          ) : (
+                            <>
+                              {line.quantity} × {formatNaira(line.unitPriceNgn)}
+                            </>
+                          )}
                         </p>
+                        {line.lineKind === "hire" && line.hireStart && line.hireEnd ? (
+                          <p className="mt-1 text-xs text-foreground/55">
+                            {new Date(line.hireStart).toLocaleString()} →{" "}
+                            {new Date(line.hireEnd).toLocaleString()}
+                          </p>
+                        ) : null}
                       </div>
                       <p className="shrink-0 text-sm font-semibold text-foreground sm:text-right">
                         {formatNaira(line.lineTotalNgn)}

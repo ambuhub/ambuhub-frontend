@@ -25,9 +25,9 @@ export const AMBUHUB_SERVICES: AmbuhubServiceMeta[] = [
   },
   {
     slug: "ambulance-servicing",
-    title: "Ambulance servicing",
+    title: "Ambulance sales and servicing",
     description:
-      "Ambulance sales and maintenance—keep your fleet road-ready with trusted providers.",
+      "Ambulance sales and servicing—vehicles, parts, and workshop care from trusted providers.",
   },
   {
     slug: "ambulance-equipment",

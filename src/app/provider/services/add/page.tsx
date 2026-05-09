@@ -1,11 +1,17 @@
 "use client";
 
 import { API_PROXY_PREFIX } from "@/lib/api";
+import {
+  PRICING_PERIODS,
+  formatPricingPeriodLabel,
+  type PricingPeriod,
+  isPricingPeriod,
+} from "@/lib/pricing-period";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 type Department = { name: string; slug: string; order: number };
-type ListingType = "sale" | "rent";
+type ListingType = "sale" | "hire" | "book";
 type ServiceCategoryRow = {
   id: string;
   name: string;
@@ -14,10 +20,13 @@ type ServiceCategoryRow = {
 };
 const PERSONNEL_CATEGORY_SLUG = "personnel";
 const AMBULANCE_SERVICING_CATEGORY_SLUG = "ambulance-servicing";
-const NULL_LISTING_TYPE_CATEGORY_SLUGS = new Set([
+const BOOK_LISTING_TYPE_CATEGORY_SLUGS = new Set([
   PERSONNEL_CATEGORY_SLUG,
   AMBULANCE_SERVICING_CATEGORY_SLUG,
 ]);
+
+const MEDICAL_TRANSPORT_CATEGORY_SLUG = "medical-transport";
+const HIRE_LISTING_TYPE_CATEGORY_SLUGS = new Set([MEDICAL_TRANSPORT_CATEGORY_SLUG]);
 
 export default function ProviderAddServicePage() {
   const router = useRouter();
@@ -31,6 +40,7 @@ export default function ProviderAddServicePage() {
   const [listingType, setListingType] = useState<ListingType | "">("");
   const [stock, setStock] = useState("");
   const [price, setPrice] = useState("");
+  const [pricingPeriod, setPricingPeriod] = useState<PricingPeriod | "">("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [fileList, setFileList] = useState<File[]>([]);
@@ -74,23 +84,47 @@ export default function ProviderAddServicePage() {
     () => categories.find((c) => c.slug === categorySlug),
     [categories, categorySlug],
   );
-  const isNullListingTypeCategory = selectedCategory
-    ? NULL_LISTING_TYPE_CATEGORY_SLUGS.has(selectedCategory.slug)
+  const isBookListingTypeCategory = selectedCategory
+    ? BOOK_LISTING_TYPE_CATEGORY_SLUGS.has(selectedCategory.slug)
     : false;
+  const isHireListingTypeCategory = selectedCategory
+    ? HIRE_LISTING_TYPE_CATEGORY_SLUGS.has(selectedCategory.slug)
+    : false;
+
+  const effectiveListingType = useMemo((): ListingType | "" => {
+    if (isBookListingTypeCategory) return "book";
+    if (isHireListingTypeCategory) return "hire";
+    return listingType;
+  }, [isBookListingTypeCategory, isHireListingTypeCategory, listingType]);
+
+  const saleOrHireCommerce =
+    effectiveListingType === "sale" || effectiveListingType === "hire";
 
   useEffect(() => {
     setDepartmentSlug("");
     setListingType("");
     setStock("");
     setPrice("");
+    setPricingPeriod("");
   }, [categorySlug]);
 
   useEffect(() => {
-    if (listingType !== "sale") {
+    if (listingType === "book") {
       setStock("");
       setPrice("");
+      setPricingPeriod("");
+    } else if (listingType === "sale") {
+      setPricingPeriod("");
     }
   }, [listingType]);
+
+  useEffect(() => {
+    if (isBookListingTypeCategory) {
+      setListingType("book");
+    } else if (isHireListingTypeCategory) {
+      setListingType("hire");
+    }
+  }, [isBookListingTypeCategory, isHireListingTypeCategory]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -104,11 +138,11 @@ export default function ProviderAddServicePage() {
       setSubmitError("Title and description are required.");
       return;
     }
-    if (!isNullListingTypeCategory && !listingType) {
+    if (!isBookListingTypeCategory && !isHireListingTypeCategory && !listingType) {
       setSubmitError("Listing type is required for this category.");
       return;
     }
-    if (listingType === "sale") {
+    if (effectiveListingType === "sale") {
       const parsedStock = Number(stock);
       if (!stock.trim() || !Number.isInteger(parsedStock) || parsedStock < 0) {
         setSubmitError("Stock is required and must be a non-negative integer.");
@@ -117,6 +151,26 @@ export default function ProviderAddServicePage() {
       const parsedPrice = Number(price);
       if (!price.trim() || !Number.isFinite(parsedPrice) || parsedPrice < 0) {
         setSubmitError("Price is required and must be a non-negative number.");
+        return;
+      }
+    }
+    if (effectiveListingType === "hire" && stock.trim()) {
+      const parsedStock = Number(stock);
+      if (!Number.isInteger(parsedStock) || parsedStock < 0) {
+        setSubmitError("Stock must be a non-negative integer.");
+        return;
+      }
+    }
+    if (effectiveListingType === "hire" && price.trim()) {
+      const parsedPrice = Number(price);
+      if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+        setSubmitError("Price must be a non-negative number.");
+        return;
+      }
+    }
+    if (effectiveListingType === "hire") {
+      if (!pricingPeriod || !isPricingPeriod(pricingPeriod)) {
+        setSubmitError("Select a pricing period for hire listings.");
         return;
       }
     }
@@ -155,9 +209,31 @@ export default function ProviderAddServicePage() {
           description: description.trim(),
           serviceCategorySlug: categorySlug,
           departmentSlug,
-          listingType: isNullListingTypeCategory ? null : listingType,
-          stock: listingType === "sale" ? Number(stock) : null,
-          price: listingType === "sale" ? Number(price) : null,
+          listingType: isBookListingTypeCategory
+            ? "book"
+            : isHireListingTypeCategory
+              ? "hire"
+              : listingType,
+          stock:
+            effectiveListingType === "sale"
+              ? Number(stock)
+              : effectiveListingType === "hire"
+                ? stock.trim()
+                  ? Number(stock)
+                  : null
+                : null,
+          price:
+            effectiveListingType === "sale"
+              ? Number(price)
+              : effectiveListingType === "hire"
+                ? price.trim()
+                  ? Number(price)
+                  : null
+                : null,
+          pricingPeriod:
+            effectiveListingType === "hire" && isPricingPeriod(pricingPeriod)
+              ? pricingPeriod
+              : null,
           photoUrls,
         }),
       });
@@ -260,19 +336,34 @@ export default function ProviderAddServicePage() {
             id="listing-type"
             name="listingType"
             className={`${inputClass} ${inputDisabledClass}`}
-            value={isNullListingTypeCategory ? "" : listingType}
+            value={
+              isBookListingTypeCategory
+                ? "book"
+                : isHireListingTypeCategory
+                  ? "hire"
+                  : listingType
+            }
             onChange={(e) => setListingType(e.target.value as ListingType | "")}
-            disabled={!selectedCategory || isNullListingTypeCategory}
+            disabled={
+              !selectedCategory ||
+              isBookListingTypeCategory ||
+              isHireListingTypeCategory
+            }
           >
             <option value="">
               {!selectedCategory
                 ? "Choose a category first"
-                : isNullListingTypeCategory
-                  ? "Not applicable for this category"
-                  : "Select listing type"}
+                : isBookListingTypeCategory
+                  ? "This category is booked"
+                  : isHireListingTypeCategory
+                    ? "Medical transport listings are hire"
+                    : "Select listing type"}
             </option>
             <option value="sale">Sale</option>
-            <option value="rent">Rent</option>
+            <option value="hire">Hire</option>
+            <option value="book" disabled>
+              Book
+            </option>
           </select>
         </div>
 
@@ -286,14 +377,16 @@ export default function ProviderAddServicePage() {
             type="number"
             min={0}
             step={1}
-            value={listingType === "sale" ? stock : ""}
+            value={saleOrHireCommerce ? stock : ""}
             onChange={(e) => setStock(e.target.value)}
-            disabled={listingType !== "sale"}
+            disabled={!saleOrHireCommerce}
             className={`${inputClass} ${inputDisabledClass}`}
             placeholder={
-              listingType === "sale"
+              effectiveListingType === "sale"
                 ? "Enter stock quantity"
-                : "Available only for sale listings"
+                : effectiveListingType === "hire"
+                  ? "Optional — units available to hire"
+                  : "Available for sale and hire listings"
             }
           />
         </div>
@@ -308,17 +401,51 @@ export default function ProviderAddServicePage() {
             type="number"
             min={0}
             step={0.01}
-            value={listingType === "sale" ? price : ""}
+            value={saleOrHireCommerce ? price : ""}
             onChange={(e) => setPrice(e.target.value)}
-            disabled={listingType !== "sale"}
+            disabled={!saleOrHireCommerce}
             className={`${inputClass} ${inputDisabledClass}`}
             placeholder={
-              listingType === "sale"
+              effectiveListingType === "sale"
                 ? "Enter price in naira"
-                : "Available only for sale listings"
+                : effectiveListingType === "hire"
+                  ? "Optional — hire rate in naira"
+                  : "Available for sale and hire listings"
             }
           />
         </div>
+
+        {effectiveListingType === "hire" ? (
+          <div>
+            <label htmlFor="pricing-period" className={labelClass}>
+              Pricing period
+            </label>
+            <select
+              id="pricing-period"
+              name="pricingPeriod"
+              className={`${inputClass} ${inputDisabledClass}`}
+              value={pricingPeriod}
+              onChange={(e) =>
+                setPricingPeriod(
+                  e.target.value === ""
+                    ? ""
+                    : (e.target.value as PricingPeriod),
+                )
+              }
+              required
+            >
+              <option value="">Select period</option>
+              {PRICING_PERIODS.map((p) => (
+                <option key={p} value={p}>
+                  {formatPricingPeriodLabel(p)}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-slate-600">
+              How the hire price applies (e.g. per hour, per day).
+            </p>
+          </div>
+        ) : null}
 
         <div>
           <label htmlFor="service-title" className={labelClass}>
@@ -383,15 +510,25 @@ export default function ProviderAddServicePage() {
             !!loadError ||
             !categorySlug ||
             !departmentSlug ||
-            (!isNullListingTypeCategory && !listingType) ||
-            (listingType === "sale" &&
+            (!isBookListingTypeCategory &&
+              !isHireListingTypeCategory &&
+              !listingType) ||
+            (effectiveListingType === "sale" &&
               (!stock.trim() ||
                 !Number.isInteger(Number(stock)) ||
                 Number(stock) < 0)) ||
-            (listingType === "sale" &&
+            (effectiveListingType === "hire" &&
+              !!stock.trim() &&
+              (!Number.isInteger(Number(stock)) || Number(stock) < 0)) ||
+            (effectiveListingType === "sale" &&
               (!price.trim() ||
                 !Number.isFinite(Number(price)) ||
-                Number(price) < 0))
+                Number(price) < 0)) ||
+            (effectiveListingType === "hire" &&
+              !!price.trim() &&
+              (!Number.isFinite(Number(price)) || Number(price) < 0)) ||
+            (effectiveListingType === "hire" &&
+              (!pricingPeriod || !isPricingPeriod(pricingPeriod)))
           }
           className="w-full rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-cyan-700 py-3.5 text-base font-semibold text-white shadow-lg shadow-blue-900/40 transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-55"
         >

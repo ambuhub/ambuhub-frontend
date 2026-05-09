@@ -1,6 +1,7 @@
 "use client";
 
 import { API_PROXY_PREFIX } from "@/lib/api";
+import { formatHirePricePeriodSuffix } from "@/lib/pricing-period";
 import {
   ArrowLeft,
   Calendar,
@@ -18,9 +19,17 @@ type MyService = {
   id: string;
   title: string;
   description: string;
-  listingType: "sale" | "rent" | null;
+  listingType: "sale" | "hire" | "book" | null;
   stock: number | null;
   price: number | null;
+  pricingPeriod:
+    | "hourly"
+    | "daily"
+    | "weekly"
+    | "monthly"
+    | "yearly"
+    | null;
+  isAvailable?: boolean;
   departmentSlug: string;
   departmentName: string;
   category: { id: string; slug: string; name: string };
@@ -171,6 +180,11 @@ export default function ProviderListingDetailPage() {
                     {service.listingType}
                   </span>
                 ) : null}
+                {service.isAvailable === false ? (
+                  <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-100 ring-1 ring-amber-200/50">
+                    Hidden from marketplace
+                  </span>
+                ) : null}
               </div>
               <h1 className="mt-4 text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
                 {service.title}
@@ -260,6 +274,11 @@ export default function ProviderListingDetailPage() {
               </div>
               <p className="mt-2 text-lg font-bold text-blue-950">
                 {formatPrice(service.price)}
+                {service.listingType === "hire" && service.pricingPeriod ? (
+                  <span className="mt-1 block text-sm font-semibold text-blue-900/80">
+                    {formatHirePricePeriodSuffix(service.pricingPeriod)}
+                  </span>
+                ) : null}
               </p>
             </div>
             <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-white to-cyan-50/70 p-4 shadow-md shadow-cyan-100/30">

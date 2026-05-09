@@ -3,6 +3,7 @@ import {
   AMBUHUB_SERVICE_SLUGS,
   getServiceBySlug,
 } from "@/lib/ambuhub-services";
+import type { PricingPeriod } from "@/lib/pricing-period";
 import { MARKETPLACE_SERVICES_CACHE_TAG } from "@/lib/cache-tags";
 
 const REVALIDATE = 120;
@@ -21,9 +22,11 @@ export type MarketplaceServiceRow = {
   id: string;
   title: string;
   description: string;
-  listingType: "sale" | "rent" | null;
+  listingType: "sale" | "hire" | "book" | null;
   stock: number | null;
   price: number | null;
+  pricingPeriod: PricingPeriod | null;
+  isAvailable?: boolean;
   departmentSlug: string;
   departmentName: string;
   category: { id: string; slug: string; name: string };

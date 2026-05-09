@@ -20,9 +20,17 @@ type MyService = {
   id: string;
   title: string;
   description: string;
-  listingType: "sale" | "rent" | null;
+  listingType: "sale" | "hire" | "book" | null;
   stock: number | null;
   price: number | null;
+  pricingPeriod:
+    | "hourly"
+    | "daily"
+    | "weekly"
+    | "monthly"
+    | "yearly"
+    | null;
+  isAvailable?: boolean;
   departmentSlug: string;
   departmentName: string;
   category: { id: string; slug: string; name: string };
@@ -231,9 +239,16 @@ export default function ProviderListingsPage() {
                         </div>
                       ) : null}
                       <div className="min-w-0 flex-1 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-700/85">
-                          {item.departmentName}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-blue-700/85">
+                            {item.departmentName}
+                          </p>
+                          {item.isAvailable === false ? (
+                            <span className="rounded-md bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-700">
+                              Unavailable
+                            </span>
+                          ) : null}
+                        </div>
                         <h3 className="mt-1 font-semibold text-slate-900">
                           {item.title}
                         </h3>

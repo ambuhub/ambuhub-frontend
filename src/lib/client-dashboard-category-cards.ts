@@ -16,7 +16,7 @@ export const CLIENT_CATEGORY_BULLETS: Record<
     "Match skills to your operating needs",
   ],
   "ambulance-servicing": [
-    "Sales and maintenance in one place",
+    "Sales and servicing in one place",
     "Keep your fleet inspection-ready",
     "Trusted workshops and suppliers",
   ],

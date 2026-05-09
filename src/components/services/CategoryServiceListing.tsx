@@ -4,12 +4,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Loader2, Search, ShoppingCart, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
+import { API_PROXY_PREFIX } from "@/lib/api";
 import { FALLBACK_THUMB, isCloudinaryHost } from "@/lib/landing-service-categories";
+import { AMBUHUB_SERVICES } from "@/lib/ambuhub-services";
 import { postCartItem } from "@/lib/marketplace-cart";
 import {
+  formatHirePricePeriodSuffix,
+  formatPricingPeriodLabel,
+  isPricingPeriod,
+} from "@/lib/pricing-period";
+import { AMBUHUB_MARKETPLACE_INVALIDATE_EVENT } from "@/lib/cache-tags";
+import {
   getCategoryPageTitleDescription,
+  groupMarketplaceByDepartments,
   type DepartmentServiceSection,
   type MarketplaceServiceRow,
   type ServiceCategoryPageDto,
@@ -28,27 +37,34 @@ function formatNaira(value: number): string {
   return `₦${nairaNumberFormatter.format(value)}`;
 }
 
-type ListingTypeFilter = "all" | "sale" | "rent" | "none";
+type ListingTypeFilter = "all" | "sale" | "hire" | "book" | "none";
 
 function normalizeSearchText(value: string): string {
   return value.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
-function formatListingTypeLabel(listingType: "sale" | "rent" | null): string {
+function formatListingTypeLabel(listingType: "sale" | "hire" | "book" | null): string {
   if (listingType === "sale") {
     return "SALE";
   }
-  if (listingType === "rent") {
-    return "RENT";
+  if (listingType === "hire") {
+    return "HIRE";
+  }
+  if (listingType === "book") {
+    return "BOOK";
   }
   return "N/A";
 }
 
 function formatStockLabel(
-  listingType: "sale" | "rent" | null,
+  listingType: "sale" | "hire" | "book" | null,
   stock: number | null,
 ): string {
-  if (listingType === "sale" && typeof stock === "number") {
+  if (
+    (listingType === "sale" || listingType === "hire") &&
+    typeof stock === "number" &&
+    Number.isFinite(stock)
+  ) {
     return `Stock: ${stock}`;
   }
   return "Stock: N/A";
@@ -60,6 +76,19 @@ function isSalePurchasable(svc: MarketplaceServiceRow): boolean {
     typeof svc.price === "number" &&
     typeof svc.stock === "number" &&
     svc.stock >= 1
+  );
+}
+
+function isHireBookable(svc: MarketplaceServiceRow): boolean {
+  return (
+    svc.listingType === "hire" &&
+    typeof svc.price === "number" &&
+    svc.price >= 0 &&
+    typeof svc.stock === "number" &&
+    svc.stock >= 1 &&
+    svc.pricingPeriod != null &&
+    isPricingPeriod(svc.pricingPeriod) &&
+    svc.isAvailable !== false
   );
 }
 
@@ -225,10 +254,49 @@ export function CategoryServiceListing({ category, sections }: Props) {
     itemCount,
     subtotalNgn,
   } = useSessionAndCart();
+  const [liveSections, setLiveSections] = useState(sections);
   const [addingServiceId, setAddingServiceId] = useState<string | null>(null);
   const [cartNotice, setCartNotice] = useState<string | null>(null);
   const [listingTypeFilter, setListingTypeFilter] =
     useState<ListingTypeFilter>("all");
+
+  useEffect(() => {
+    setLiveSections(sections);
+  }, [sections]);
+
+  const refetchMarketplaceSections = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_PROXY_PREFIX}/services/marketplace`, {
+        cache: "no-store",
+        credentials: "omit",
+      });
+      if (!res.ok) {
+        return;
+      }
+      const data = (await res.json()) as { services?: MarketplaceServiceRow[] };
+      const rows = Array.isArray(data.services) ? data.services : [];
+      setLiveSections(groupMarketplaceByDepartments(category, rows));
+    } catch {
+      /* keep current liveSections */
+    }
+  }, [category]);
+
+  useEffect(() => {
+    void refetchMarketplaceSections();
+  }, [category.slug, refetchMarketplaceSections]);
+
+  useEffect(() => {
+    function onInvalidate() {
+      void refetchMarketplaceSections();
+    }
+    window.addEventListener(AMBUHUB_MARKETPLACE_INVALIDATE_EVENT, onInvalidate);
+    return () => {
+      window.removeEventListener(
+        AMBUHUB_MARKETPLACE_INVALIDATE_EVENT,
+        onInvalidate,
+      );
+    };
+  }, [refetchMarketplaceSections]);
 
   useEffect(() => {
     if (!cartNotice) {
@@ -249,7 +317,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
       options.set(d.slug, d.name);
     }
 
-    for (const section of sections) {
+    for (const section of liveSections) {
       if (!options.has(section.key)) {
         options.set(section.key, section.heading);
       }
@@ -259,7 +327,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
       slug,
       label,
     }));
-  }, [category.departments, sections]);
+  }, [category.departments, liveSections]);
 
   const filteredSections = useMemo(() => {
     const normalizedQuery = normalizeSearchText(searchQuery);
@@ -293,13 +361,17 @@ export function CategoryServiceListing({ category, sections }: Props) {
         service.listingType ?? "not specified",
         typeof service.price === "number" ? String(service.price) : "",
         typeof service.stock === "number" ? String(service.stock) : "",
+        service.pricingPeriod
+          ? formatPricingPeriodLabel(service.pricingPeriod)
+          : "",
+        service.pricingPeriod ?? "",
       ];
 
       const haystack = normalizeSearchText(searchableParts.join(" "));
       return haystack.includes(normalizedQuery);
     }
 
-    return sections
+    return liveSections
       .map((section) => {
         if (departmentFilter !== "all" && section.key !== departmentFilter) {
           return null;
@@ -318,7 +390,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
         };
       })
       .filter((section): section is DepartmentServiceSection => section !== null);
-  }, [departmentFilter, listingTypeFilter, searchQuery, sections]);
+  }, [departmentFilter, listingTypeFilter, searchQuery, liveSections]);
 
   const tallBannerShellClass =
     "relative mt-6 h-56 max-h-96 w-full overflow-hidden rounded-2xl bg-gradient-to-br from-ambuhub-100 to-ambuhub-200/80 sm:mt-8 sm:h-72 md:mt-10 md:h-96";
@@ -417,75 +489,120 @@ export function CategoryServiceListing({ category, sections }: Props) {
       <div
         className={`mx-auto mt-10 w-full max-w-7xl flex-1 px-4 sm:mt-12 sm:px-6 lg:mt-14 lg:px-8 ${listingBottomPad}`}
       >
-        <div className="mb-6 rounded-2xl border border-white/15 bg-gradient-to-br from-ambuhub-600 to-ambuhub-800 p-5 sm:mb-8 sm:p-6">
-          <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 md:flex-row md:items-end">
-            <div className="min-w-0 flex-[2]">
-              <label
-                htmlFor="services-smart-search"
-                className="block text-sm font-medium text-white"
-              >
-                Search listings
-              </label>
-              <div className="relative mt-1.5">
-                <Search
-                  size={16}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-foreground/45"
-                  aria-hidden
-                />
-                <input
-                  id="services-smart-search"
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search title, description, department, listing type, price, stock..."
-                  className="w-full rounded-xl border border-ambuhub-200 bg-white py-3 pl-9 pr-4 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25"
-                />
-              </div>
-            </div>
-            <div className="md:w-56">
-              <label
-                htmlFor="department-filter"
-                className="block text-sm font-medium text-white"
-              >
-                Department
-              </label>
-              <select
-                id="department-filter"
-                value={departmentFilter}
-                onChange={(e) => setDepartmentFilter(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25"
-              >
-                <option value="all">All departments</option>
-                {departmentOptions.map((option) => (
-                  <option key={option.slug} value={option.slug}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="md:w-52">
-              <label
-                htmlFor="listing-type-filter"
-                className="block text-sm font-medium text-white"
-              >
-                Listing type
-              </label>
-              <select
-                id="listing-type-filter"
-                value={listingTypeFilter}
-                onChange={(e) =>
-                  setListingTypeFilter(e.target.value as ListingTypeFilter)
-                }
-                className="mt-1.5 w-full rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25"
-              >
-                <option value="all">All types</option>
-                <option value="sale">Sale</option>
-                <option value="rent">Rent</option>
-                <option value="none">Not specified</option>
-              </select>
-            </div>
+        <div className="mb-6 overflow-x-auto rounded-2xl border border-ambuhub-100 bg-white/95 p-2 shadow-sm sm:mb-8">
+          <div className="flex min-w-max items-center gap-2">
+            {AMBUHUB_SERVICES.map((svc) => {
+              const active = svc.slug === category.slug;
+              return (
+                <Link
+                  key={svc.slug}
+                  href={`/services/${encodeURIComponent(svc.slug)}`}
+                  className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                    active
+                      ? "bg-ambuhub-brand text-white"
+                      : "bg-ambuhub-50 text-foreground hover:bg-ambuhub-100"
+                  }`}
+                  aria-current={active ? "page" : undefined}
+                >
+                  {svc.title}
+                </Link>
+              );
+            })}
           </div>
         </div>
+
+        <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-8">
+          <aside className="lg:sticky lg:top-24 lg:self-start">
+            <div className="rounded-2xl border border-ambuhub-100 bg-gradient-to-br from-ambuhub-600 to-ambuhub-800 p-5 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-white">Search & filters</p>
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-white/85 underline decoration-white/30 underline-offset-4 hover:text-white"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setDepartmentFilter("all");
+                    setListingTypeFilter("all");
+                  }}
+                >
+                  Reset
+                </button>
+              </div>
+
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label
+                    htmlFor="services-smart-search"
+                    className="block text-sm font-medium text-white"
+                  >
+                    Search listings
+                  </label>
+                  <div className="relative mt-1.5">
+                    <Search
+                      size={16}
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-foreground/45"
+                      aria-hidden
+                    />
+                    <input
+                      id="services-smart-search"
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search title, description, price..."
+                      className="w-full rounded-xl border border-ambuhub-200 bg-white py-3 pl-9 pr-4 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="department-filter"
+                    className="block text-sm font-medium text-white"
+                  >
+                    Department
+                  </label>
+                  <select
+                    id="department-filter"
+                    value={departmentFilter}
+                    onChange={(e) => setDepartmentFilter(e.target.value)}
+                    className="mt-1.5 w-full rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25"
+                  >
+                    <option value="all">All departments</option>
+                    {departmentOptions.map((option) => (
+                      <option key={option.slug} value={option.slug}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="listing-type-filter"
+                    className="block text-sm font-medium text-white"
+                  >
+                    Listing type
+                  </label>
+                  <select
+                    id="listing-type-filter"
+                    value={listingTypeFilter}
+                    onChange={(e) =>
+                      setListingTypeFilter(e.target.value as ListingTypeFilter)
+                    }
+                    className="mt-1.5 w-full rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25"
+                  >
+                    <option value="all">All types</option>
+                    <option value="sale">Sale</option>
+                    <option value="hire">Hire</option>
+                    <option value="book">Book</option>
+                    <option value="none">Not specified</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <div className="min-w-0">
 
         {itemCount > 0 ? (
           <div className="mb-6 hidden items-center justify-between gap-4 rounded-2xl border border-ambuhub-200 bg-white px-5 py-4 shadow-sm sm:flex">
@@ -552,6 +669,25 @@ export function CategoryServiceListing({ category, sections }: Props) {
                               {formatNaira(svc.price)}
                             </p>
                           ) : null}
+                          {svc.listingType === "hire" &&
+                          typeof svc.price === "number" ? (
+                            <p className="mt-2 text-sm font-semibold text-foreground">
+                              {formatNaira(svc.price)}
+                              {svc.pricingPeriod ? (
+                                <span className="font-medium text-foreground/80">
+                                  {" "}
+                                  ({formatHirePricePeriodSuffix(svc.pricingPeriod)})
+                                </span>
+                              ) : null}
+                            </p>
+                          ) : null}
+                          {svc.listingType === "hire" &&
+                          svc.pricingPeriod &&
+                          typeof svc.price !== "number" ? (
+                            <p className="mt-2 text-xs font-medium text-foreground/70">
+                              Period: {formatPricingPeriodLabel(svc.pricingPeriod)}
+                            </p>
+                          ) : null}
                           <p className="mt-1 text-xs font-medium text-foreground/70">
                             {formatStockLabel(svc.listingType, svc.stock)}
                           </p>
@@ -596,6 +732,33 @@ export function CategoryServiceListing({ category, sections }: Props) {
                               )}
                             </div>
                           ) : null}
+                          {svc.listingType === "hire" ? (
+                            <div className="mt-4 border-t border-ambuhub-100 pt-4">
+                              {isHireBookable(svc) ? (
+                                sessionLoading ? (
+                                  <p className="mt-2 text-xs text-foreground/55">Checking session…</p>
+                                ) : user ? (
+                                  <Link
+                                    href={`/hire/${svc.id}`}
+                                    className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ambuhub-brand px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ambuhub-brand-dark"
+                                  >
+                                    Hire now
+                                  </Link>
+                                ) : (
+                                  <Link
+                                    href={`/auth?next=${encodeURIComponent(`/hire/${svc.id}`)}`}
+                                    className="mt-2 inline-flex w-full items-center justify-center rounded-xl border border-ambuhub-brand bg-white px-4 py-2.5 text-sm font-semibold text-ambuhub-brand transition-colors hover:bg-ambuhub-50"
+                                  >
+                                    Log in to hire
+                                  </Link>
+                                )
+                              ) : (
+                                <p className="mt-2 text-xs text-foreground/55">
+                                  This hire listing is not available.
+                                </p>
+                              )}
+                            </div>
+                          ) : null}
                         </div>
                       </article>
                     </li>
@@ -605,6 +768,8 @@ export function CategoryServiceListing({ category, sections }: Props) {
             ))}
           </div>
         )}
+          </div>
+        </div>
 
         <Link
           href="/#services"

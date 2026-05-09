@@ -70,14 +70,15 @@ async function proxyRequest(
   const buf = await upstream.arrayBuffer();
 
   // Invalidate marketplace fetch cache after service listing mutations or checkout (stock).
+  const isSimulatedPaystackCheckout =
+    segments[0] === "orders" &&
+    segments[2] === "simulate-paystack" &&
+    method === "POST" &&
+    (segments[1] === "checkout" || segments[1] === "hire-checkout");
   if (
     upstream.ok &&
     (method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE") &&
-    (segments[0] === "services" ||
-      (segments[0] === "orders" &&
-        segments[1] === "checkout" &&
-        segments[2] === "simulate-paystack" &&
-        method === "POST"))
+    (segments[0] === "services" || isSimulatedPaystackCheckout)
   ) {
     revalidateTag(MARKETPLACE_SERVICES_CACHE_TAG, "max");
   }

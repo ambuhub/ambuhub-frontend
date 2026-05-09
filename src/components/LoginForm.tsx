@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { postAuthPath, type AuthUserRole } from "@/lib/auth-redirect";
 import { API_AUTH_BFF_PREFIX } from "@/lib/api";
+import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
 
 type Props = {
   onSwitchToSignup: () => void;
@@ -23,6 +24,7 @@ function isSafeInternalNextPath(path: string): boolean {
 
 export function LoginForm({ onSwitchToSignup, afterLoginRedirect }: Props) {
   const router = useRouter();
+  const { refresh: refreshSession } = useSessionAndCart();
   const [view, setView] = useState<"login" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -63,6 +65,12 @@ export function LoginForm({ onSwitchToSignup, afterLoginRedirect }: Props) {
       const trimmed = afterLoginRedirect?.trim();
       const next =
         trimmed && isSafeInternalNextPath(trimmed) ? trimmed : defaultNext;
+
+      // Session/cart UI (e.g. marketplace cards) is client-state driven and the
+      // provider stays mounted across navigation. Refresh it now so the next page
+      // immediately reflects the logged-in state without a manual reload.
+      await refreshSession();
+
       router.push(next);
       router.refresh();
     } catch {
