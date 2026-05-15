@@ -1,6 +1,7 @@
 "use client";
 
 import { API_PROXY_PREFIX } from "@/lib/api";
+import { dispatchMarketplaceInvalidate } from "@/lib/cache-tags";
 import { formatHirePricePeriodSuffix } from "@/lib/pricing-period";
 import {
   ArrowLeft,
@@ -99,6 +100,7 @@ export default function ProviderListingDetailPage() {
         }
         throw new Error(message);
       }
+      dispatchMarketplaceInvalidate();
       router.push("/provider/listings");
       router.refresh();
     } catch (e) {

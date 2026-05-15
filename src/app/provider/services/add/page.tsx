@@ -1,6 +1,7 @@
 "use client";
 
 import { API_PROXY_PREFIX } from "@/lib/api";
+import { dispatchMarketplaceInvalidate } from "@/lib/cache-tags";
 import {
   PRICING_PERIODS,
   formatPricingPeriodLabel,
@@ -242,6 +243,7 @@ export default function ProviderAddServicePage() {
         throw new Error(createData.message ?? "Could not publish service");
       }
 
+      dispatchMarketplaceInvalidate();
       router.push("/provider/listings");
     } catch (err) {
       setSubmitError(

@@ -1,6 +1,7 @@
 "use client";
 
 import { API_PROXY_PREFIX } from "@/lib/api";
+import { dispatchMarketplaceInvalidate } from "@/lib/cache-tags";
 import {
   PRICING_PERIODS,
   formatPricingPeriodLabel,
@@ -336,6 +337,7 @@ export default function ProviderEditListingPage() {
         throw new Error(putData.message ?? "Could not update listing");
       }
 
+      dispatchMarketplaceInvalidate();
       router.push(`/provider/listings/${id}`);
       router.refresh();
     } catch (err) {
