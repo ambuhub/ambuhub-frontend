@@ -1,7 +1,10 @@
 const ALLOWED_ROOTS = new Set([
   "cart",
+  "country-codes",
   "orders",
   "receipts",
+  "reviews",
+  "notifications",
   "service-categories",
   "services",
   "uploads",

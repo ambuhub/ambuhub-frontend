@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { API_AUTH_BFF_PREFIX } from "@/lib/api";
+import { ClientNotificationBadge } from "@/components/client/ClientNotificationBadge";
 
 const navItems = [
   { href: "/client/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -100,7 +101,10 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
                 }`}
               >
                 <Icon className="h-5 w-5 shrink-0 opacity-90" aria-hidden />
-                {item.label}
+                <span className="min-w-0 flex-1">{item.label}</span>
+                {item.href === "/client/notifications" ? (
+                  <ClientNotificationBadge />
+                ) : null}
               </Link>
             );
           })}

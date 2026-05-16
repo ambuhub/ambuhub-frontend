@@ -2,12 +2,15 @@
 
 import { API_PROXY_PREFIX } from "@/lib/api";
 import { dispatchMarketplaceInvalidate } from "@/lib/cache-tags";
+import { getCountryNameByCode } from "@/lib/countries";
+import { formatHireReturnWindowSummary, type HireReturnWindow } from "@/lib/hire-return-window";
 import { formatHirePricePeriodSuffix } from "@/lib/pricing-period";
 import {
   ArrowLeft,
   Calendar,
   ImageIcon,
   Layers,
+  MapPin,
   Pencil,
   Tag,
   Trash2,
@@ -35,6 +38,11 @@ type MyService = {
   departmentName: string;
   category: { id: string; slug: string; name: string };
   photoUrls: string[];
+  countryCode: string | null;
+  stateProvince: string | null;
+  stateProvinceName: string | null;
+  officeAddress: string | null;
+  hireReturnWindow: HireReturnWindow | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -310,6 +318,53 @@ export default function ProviderListingDetailPage() {
               {service.description}
             </p>
           </div>
+
+          {service.countryCode ||
+          service.stateProvince ||
+          service.officeAddress ? (
+            <div className="rounded-2xl border border-blue-100 bg-white p-5 shadow-md shadow-slate-200/60 sm:p-7">
+              <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-blue-900/80">
+                <MapPin className="h-4 w-4" aria-hidden />
+                Office location
+              </h2>
+              <dl className="mt-3 space-y-2 text-sm text-slate-700">
+                {service.countryCode ? (
+                  <div>
+                    <dt className="font-semibold text-slate-500">Country</dt>
+                    <dd>
+                      {getCountryNameByCode(service.countryCode) ??
+                        service.countryCode}
+                    </dd>
+                  </div>
+                ) : null}
+                {service.stateProvince || service.stateProvinceName ? (
+                  <div>
+                    <dt className="font-semibold text-slate-500">State / province</dt>
+                    <dd>
+                      {service.stateProvinceName ?? service.stateProvince}
+                    </dd>
+                  </div>
+                ) : null}
+                {service.officeAddress ? (
+                  <div>
+                    <dt className="font-semibold text-slate-500">Address</dt>
+                    <dd className="whitespace-pre-wrap">{service.officeAddress}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            </div>
+          ) : null}
+
+          {service.listingType === "hire" && service.hireReturnWindow ? (
+            <div className="rounded-2xl border border-blue-100 bg-white p-5 shadow-md shadow-slate-200/60 sm:p-7">
+              <h2 className="text-sm font-bold uppercase tracking-wide text-blue-900/80">
+                Return schedule
+              </h2>
+              <p className="mt-3 text-sm text-slate-700">
+                {formatHireReturnWindowSummary(service.hireReturnWindow)}
+              </p>
+            </div>
+          ) : null}
         </div>
       </div>
 

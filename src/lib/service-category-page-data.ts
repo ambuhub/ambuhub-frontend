@@ -3,6 +3,8 @@ import {
   AMBUHUB_SERVICE_SLUGS,
   getServiceBySlug,
 } from "@/lib/ambuhub-services";
+import type { BookingWindow } from "@/lib/booking-window";
+import type { HireReturnWindow } from "@/lib/hire-return-window";
 import type { PricingPeriod } from "@/lib/pricing-period";
 import { MARKETPLACE_SERVICES_CACHE_TAG } from "@/lib/cache-tags";
 
@@ -31,6 +33,13 @@ export type MarketplaceServiceRow = {
   departmentName: string;
   category: { id: string; slug: string; name: string };
   photoUrls: string[];
+  countryCode?: string | null;
+  stateProvince?: string | null;
+  stateProvinceName?: string | null;
+  officeAddress?: string | null;
+  hireReturnWindow?: HireReturnWindow | null;
+  bookingWindow?: BookingWindow | null;
+  bookingGapMinutes?: number | null;
 };
 
 export type DepartmentServiceSection = {
@@ -77,6 +86,44 @@ export async function fetchMarketplaceServices(): Promise<MarketplaceServiceRow[
     return Array.isArray(data.services) ? data.services : [];
   } catch {
     return [];
+  }
+}
+
+function isLikelyMongoObjectId(value: string): boolean {
+  return /^[a-f0-9]{24}$/i.test(value);
+}
+
+/**
+ * Server-only fetch for listing detail pages (uses backend origin + ISR tag).
+ */
+export async function fetchMarketplaceServiceByIdForPage(
+  serviceId: string,
+): Promise<MarketplaceServiceRow | null> {
+  const trimmed = serviceId?.trim() ?? "";
+  if (!trimmed || !isLikelyMongoObjectId(trimmed)) {
+    return null;
+  }
+  const base = getApiBaseUrl();
+  try {
+    const res = await fetch(
+      `${base}/api/services/marketplace/${encodeURIComponent(trimmed)}`,
+      {
+        next: {
+          revalidate: REVALIDATE,
+          tags: [MARKETPLACE_SERVICES_CACHE_TAG],
+        },
+      },
+    );
+    if (res.status === 404) {
+      return null;
+    }
+    if (!res.ok) {
+      return null;
+    }
+    const data = (await res.json()) as { service?: MarketplaceServiceRow };
+    return data.service ?? null;
+  } catch {
+    return null;
   }
 }
 

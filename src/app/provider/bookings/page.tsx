@@ -4,7 +4,9 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   fetchProviderHireBookings,
+  fetchProviderPersonnelBookings,
   type ProviderHireBookingRow,
+  type ProviderPersonnelBookingRow,
 } from "@/lib/provider-bookings";
 import { formatPricingPeriodLabel } from "@/lib/pricing-period";
 
@@ -36,8 +38,16 @@ function isHireActive(hireEndIso: string): boolean {
   }
 }
 
+type Tab = "hire" | "personnel";
+
 export default function ProviderBookingsPage() {
-  const [bookings, setBookings] = useState<ProviderHireBookingRow[] | null>(null);
+  const [tab, setTab] = useState<Tab>("hire");
+  const [hireBookings, setHireBookings] = useState<ProviderHireBookingRow[] | null>(
+    null,
+  );
+  const [personnelBookings, setPersonnelBookings] = useState<
+    ProviderPersonnelBookingRow[] | null
+  >(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,14 +57,19 @@ export default function ProviderBookingsPage() {
       setLoading(true);
       setError(null);
       try {
-        const rows = await fetchProviderHireBookings();
+        const [hire, personnel] = await Promise.all([
+          fetchProviderHireBookings(),
+          fetchProviderPersonnelBookings(),
+        ]);
         if (!cancelled) {
-          setBookings(rows);
+          setHireBookings(hire);
+          setPersonnelBookings(personnel);
         }
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Could not load bookings.");
-          setBookings(null);
+          setHireBookings(null);
+          setPersonnelBookings(null);
         }
       } finally {
         if (!cancelled) {
@@ -67,6 +82,51 @@ export default function ProviderBookingsPage() {
     };
   }, []);
 
+  type DisplayRow = {
+    orderId: string;
+    receiptNumber: string;
+    serviceId: string;
+    listingTitle: string;
+    start: string;
+    end: string;
+    pricingPeriod: string;
+    billableUnits: number;
+    quantity: number;
+    lineTotalNgn: number;
+    customer: ProviderHireBookingRow["customer"];
+  };
+
+  const displayRows: DisplayRow[] | null =
+    tab === "hire" && hireBookings
+      ? hireBookings.map((r) => ({
+          orderId: r.orderId,
+          receiptNumber: r.receiptNumber,
+          serviceId: r.serviceId,
+          listingTitle: r.listingTitle,
+          start: r.hireStart,
+          end: r.hireEnd,
+          pricingPeriod: r.pricingPeriod,
+          billableUnits: r.hireBillableUnits,
+          quantity: r.quantity,
+          lineTotalNgn: r.lineTotalNgn,
+          customer: r.customer,
+        }))
+      : tab === "personnel" && personnelBookings
+        ? personnelBookings.map((r) => ({
+            orderId: r.orderId,
+            receiptNumber: r.receiptNumber,
+            serviceId: r.serviceId,
+            listingTitle: r.listingTitle,
+            start: r.bookStart,
+            end: r.bookEnd,
+            pricingPeriod: r.pricingPeriod,
+            billableUnits: r.bookBillableUnits,
+            quantity: r.quantity,
+            lineTotalNgn: r.lineTotalNgn,
+            customer: r.customer,
+          }))
+        : null;
+
   return (
     <div className="mx-auto max-w-6xl">
       <div>
@@ -74,9 +134,32 @@ export default function ProviderBookingsPage() {
           Bookings
         </h1>
         <p className="mt-2 text-sm text-slate-600">
-          Hire orders for your listings: what was booked, when the hire period ends, and customer
-          contact details.
+          Hire and personnel bookings for your listings, with customer contact details.
         </p>
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setTab("hire")}
+            className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
+              tab === "hire"
+                ? "bg-blue-700 text-white"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+            }`}
+          >
+            Hire
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("personnel")}
+            className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
+              tab === "personnel"
+                ? "bg-blue-700 text-white"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+            }`}
+          >
+            Personnel bookings
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -90,20 +173,21 @@ export default function ProviderBookingsPage() {
         >
           {error}
         </div>
-      ) : !bookings?.length ? (
+      ) : !displayRows?.length ? (
         <div className="mt-10 rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center text-slate-500">
-          No hire bookings yet. When clients complete a hire checkout on your listings, they will
-          appear here.
+          {tab === "hire"
+            ? "No hire bookings yet. When clients complete hire checkout, they will appear here."
+            : "No personnel bookings yet. When clients book your listings, they will appear here."}
         </div>
       ) : (
         <>
           {/* Mobile cards */}
           <ul className="mt-8 space-y-4 md:hidden">
-            {bookings.map((row) => {
-              const active = isHireActive(row.hireEnd);
+            {displayRows.map((row) => {
+              const active = isHireActive(row.end);
               return (
                 <li
-                  key={`${row.orderId}-${row.serviceId}-${row.hireStart}`}
+                  key={`${row.orderId}-${row.serviceId}-${row.start}`}
                   className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -130,11 +214,11 @@ export default function ProviderBookingsPage() {
                   <div className="mt-3 grid gap-1 border-t border-slate-100 pt-3 text-xs text-slate-600">
                     <p>
                       <span className="text-slate-500">Starts:</span>{" "}
-                      {formatDateTime(row.hireStart)}
+                      {formatDateTime(row.start)}
                     </p>
                     <p>
                       <span className="text-slate-500">Ends:</span>{" "}
-                      {formatDateTime(row.hireEnd)}
+                      {formatDateTime(row.end)}
                     </p>
                     <p>
                       <span className="text-slate-500">Period:</span>{" "}
@@ -142,7 +226,7 @@ export default function ProviderBookingsPage() {
                         row.pricingPeriod as "hourly" | "daily" | "weekly" | "monthly" | "yearly",
                       )}
                       {" · "}
-                      {row.hireBillableUnits} unit{row.hireBillableUnits === 1 ? "" : "s"} · Qty{" "}
+                      {row.billableUnits} unit{row.billableUnits === 1 ? "" : "s"} · Qty{" "}
                       {row.quantity}
                     </p>
                     <p className="font-semibold text-slate-900">{formatNgn(row.lineTotalNgn)}</p>
@@ -172,10 +256,10 @@ export default function ProviderBookingsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-800">
-                {bookings.map((row) => {
-                  const active = isHireActive(row.hireEnd);
+                {displayRows.map((row) => {
+                  const active = isHireActive(row.end);
                   return (
-                    <tr key={`${row.orderId}-${row.serviceId}-${row.hireStart}`} className="bg-white">
+                    <tr key={`${row.orderId}-${row.serviceId}-${row.start}`} className="bg-white">
                       <td className="max-w-[10rem] px-4 py-3 font-medium text-slate-900">
                         {row.listingTitle}
                       </td>
@@ -187,10 +271,10 @@ export default function ProviderBookingsPage() {
                         <div className="text-xs text-slate-500">{row.customer.phone}</div>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">
-                        {formatDateTime(row.hireStart)}
+                        {formatDateTime(row.start)}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">
-                        {formatDateTime(row.hireEnd)}
+                        {formatDateTime(row.end)}
                       </td>
                       <td className="px-4 py-3">
                         <span
@@ -213,7 +297,7 @@ export default function ProviderBookingsPage() {
                             | "yearly",
                         )}
                         <span className="text-slate-400"> · </span>
-                        {row.hireBillableUnits}
+                        {row.billableUnits}
                       </td>
                       <td className="px-4 py-3 text-slate-600">{row.quantity}</td>
                       <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-900">

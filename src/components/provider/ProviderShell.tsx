@@ -11,12 +11,13 @@ import {
   List,
   LogOut,
   Menu,
-  MessageSquare,
+  Bell,
   PackagePlus,
   Settings,
   X,
 } from "lucide-react";
 import { API_AUTH_BFF_PREFIX } from "@/lib/api";
+import { ProviderNotificationBadge } from "@/components/provider/ProviderNotificationBadge";
 
 const navItems = [
   {
@@ -45,9 +46,9 @@ const navItems = [
     icon: CalendarClock,
   },
   {
-    href: "/provider/messages",
-    label: "Messages",
-    icon: MessageSquare,
+    href: "/provider/notifications",
+    label: "Notifications",
+    icon: Bell,
   },
   {
     href: "/provider/profile",
@@ -134,7 +135,10 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
                 }`}
               >
                 <Icon className="h-5 w-5 shrink-0 opacity-90" aria-hidden />
-                {item.label}
+                <span className="min-w-0 flex-1">{item.label}</span>
+                {item.href === "/provider/notifications" ? (
+                  <ProviderNotificationBadge />
+                ) : null}
               </Link>
             );
           })}

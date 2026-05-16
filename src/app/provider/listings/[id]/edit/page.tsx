@@ -1,5 +1,13 @@
 "use client";
 
+import { HireReturnWindowFields } from "@/components/provider/HireReturnWindowFields";
+import { CountrySelect } from "@/components/ui/CountrySelect";
+import { StateProvinceSelect } from "@/components/ui/StateProvinceSelect";
+import {
+  EMPTY_HIRE_RETURN_WINDOW,
+  validateHireReturnWindowClient,
+  type HireReturnWindow,
+} from "@/lib/hire-return-window";
 import { API_PROXY_PREFIX } from "@/lib/api";
 import { dispatchMarketplaceInvalidate } from "@/lib/cache-tags";
 import {
@@ -41,6 +49,11 @@ type MyService = {
   departmentName: string;
   category: { id: string; slug: string; name: string };
   photoUrls: string[];
+  countryCode: string | null;
+  stateProvince: string | null;
+  stateProvinceName: string | null;
+  officeAddress: string | null;
+  hireReturnWindow: HireReturnWindow | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -73,17 +86,25 @@ export default function ProviderEditListingPage() {
   const [stock, setStock] = useState("");
   const [price, setPrice] = useState("");
   const [pricingPeriod, setPricingPeriod] = useState<PricingPeriod | "">("");
+  const [hireReturnWindow, setHireReturnWindow] = useState<HireReturnWindow>(
+    EMPTY_HIRE_RETURN_WINDOW,
+  );
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [fileList, setFileList] = useState<File[]>([]);
+  const [countryCode, setCountryCode] = useState("");
+  const [stateProvince, setStateProvince] = useState("");
+  const [officeAddress, setOfficeAddress] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const initialServiceLoadDone = useRef(false);
+  const locationPrefilled = useRef(false);
 
   useEffect(() => {
     initialServiceLoadDone.current = false;
+    locationPrefilled.current = false;
   }, [id]);
 
   useEffect(() => {
@@ -147,6 +168,14 @@ export default function ProviderEditListingPage() {
               : "",
           );
           setExistingPhotoUrls(s.photoUrls ?? []);
+          setCountryCode(s.countryCode ?? "");
+          setStateProvince(s.stateProvince ?? "");
+          setOfficeAddress(s.officeAddress ?? "");
+          if (s.hireReturnWindow) {
+            setHireReturnWindow(s.hireReturnWindow);
+          } else {
+            setHireReturnWindow(EMPTY_HIRE_RETURN_WINDOW);
+          }
         }
       } catch (e) {
         if (!cancelled) {
@@ -220,6 +249,15 @@ export default function ProviderEditListingPage() {
       setListingType("hire");
     }
   }, [isBookListingTypeCategory, isHireListingTypeCategory]);
+
+  useEffect(() => {
+    if (loadingService) return;
+    if (!locationPrefilled.current) {
+      locationPrefilled.current = true;
+      return;
+    }
+    setStateProvince("");
+  }, [countryCode, loadingService]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -295,6 +333,19 @@ export default function ProviderEditListingPage() {
         photoUrls = [...photoUrls, ...(uploadData.urls ?? [])];
       }
 
+      const hasLocation =
+        countryCode.trim() || stateProvince.trim() || officeAddress.trim();
+      const hasReturnWindow =
+        effectiveListingType === "hire" && hireReturnWindow.daysOfWeek.length > 0;
+      if (hasReturnWindow) {
+        const returnErr = validateHireReturnWindowClient(hireReturnWindow);
+        if (returnErr) {
+          setSubmitError(returnErr);
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const putRes = await fetch(`${API_PROXY_PREFIX}/services/${id}`, {
         method: "PUT",
         credentials: "include",
@@ -330,6 +381,14 @@ export default function ProviderEditListingPage() {
               ? pricingPeriod
               : null,
           photoUrls,
+          ...(hasLocation
+            ? {
+                countryCode: countryCode.trim().toUpperCase(),
+                stateProvince: stateProvince.trim(),
+                officeAddress: officeAddress.trim(),
+              }
+            : {}),
+          ...(hasReturnWindow ? { hireReturnWindow } : {}),
         }),
       });
       const putData = (await putRes.json()) as { message?: string };
@@ -451,6 +510,55 @@ export default function ProviderEditListingPage() {
           </select>
         </div>
 
+        <div className="space-y-6 rounded-2xl border border-blue-100/80 bg-white/60 p-4">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-blue-900/80">
+            Office location
+          </h2>
+          <p className="text-xs text-slate-600">
+            Optional for older listings. Fill in all three fields to add or update
+            location.
+          </p>
+          <div>
+            <label htmlFor="edit-service-country" className={labelClass}>
+              Country
+            </label>
+            <CountrySelect
+              id="edit-service-country"
+              value={countryCode}
+              onChange={setCountryCode}
+              className={`${inputClass} ${inputDisabledClass}`}
+            />
+          </div>
+          <div>
+            <label htmlFor="edit-service-state" className={labelClass}>
+              State / province
+            </label>
+            <StateProvinceSelect
+              id="edit-service-state"
+              countryCode={countryCode}
+              value={stateProvince}
+              onChange={setStateProvince}
+              disabled={!countryCode.trim()}
+              className={`${inputClass} ${inputDisabledClass}`}
+            />
+          </div>
+          <div>
+            <label htmlFor="edit-office-address" className={labelClass}>
+              Office address
+            </label>
+            <textarea
+              id="edit-office-address"
+              name="officeAddress"
+              rows={3}
+              value={officeAddress}
+              onChange={(e) => setOfficeAddress(e.target.value)}
+              className={inputClass}
+              placeholder="Street, building, city area"
+              autoComplete="street-address"
+            />
+          </div>
+        </div>
+
         <div>
           <label htmlFor="edit-listing-type" className={labelClass}>
             Listing type
@@ -567,6 +675,23 @@ export default function ProviderEditListingPage() {
             <p className="mt-1 text-xs text-slate-600">
               How the hire price applies (e.g. per hour, per day).
             </p>
+          </div>
+        ) : null}
+
+        {effectiveListingType === "hire" ? (
+          <div className="space-y-4 rounded-2xl border border-blue-100/80 bg-white/60 p-4">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-blue-900/80">
+              Return schedule
+            </h2>
+            <p className="text-xs text-slate-600">
+              Optional for older listings until you configure return days and hours.
+            </p>
+            <HireReturnWindowFields
+              value={hireReturnWindow}
+              onChange={setHireReturnWindow}
+              labelClass={labelClass}
+              inputClass={inputClass}
+            />
           </div>
         ) : null}
 

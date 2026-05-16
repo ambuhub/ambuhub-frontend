@@ -35,6 +35,17 @@ function formatDeadline(iso: string): string {
   }
 }
 
+function linkLabel(type: NotificationDto["type"]): string {
+  if (type === "provider_sale_purchased") return "View listings";
+  if (
+    type === "provider_hire_booked" ||
+    type === "provider_hire_return_reminder"
+  ) {
+    return "View bookings";
+  }
+  return "View details";
+}
+
 function NotificationCard({
   item,
   onMarkRead,
@@ -43,6 +54,7 @@ function NotificationCard({
   onMarkRead: (id: string) => void;
 }) {
   const unread = !item.readAt;
+  const href = notificationLinkHref(item);
 
   async function handleOpen() {
     if (unread) {
@@ -57,31 +69,31 @@ function NotificationCard({
 
   return (
     <article
-      className={`relative overflow-hidden rounded-2xl border p-5 shadow-[0_0_32px_-6px_rgba(34,211,238,0.35)] ring-1 sm:p-6 ${
+      className={`relative overflow-hidden rounded-2xl border p-5 shadow-lg ring-1 sm:p-6 ${
         unread
-          ? "border-cyan-400/55 bg-gradient-to-br from-white via-sky-50/60 to-cyan-100/40 ring-cyan-200/50"
-          : "border-cyan-200/40 bg-white/90 ring-sky-100/40 opacity-90"
+          ? "border-blue-500/40 bg-gradient-to-br from-white via-blue-50/50 to-sky-100/40 ring-blue-200/50 shadow-blue-900/10"
+          : "border-slate-200/80 bg-white/95 ring-slate-100/60 opacity-90"
       }`}
     >
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#004a7c] via-cyan-400 to-sky-400 shadow-[0_0_14px_rgba(34,211,238,0.55)]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-800 via-blue-500 to-cyan-500"
         aria-hidden
       />
       <div className="relative flex items-start gap-3">
         <span
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-lg ring-2 ring-white/70 ${
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-md ring-2 ring-white/70 ${
             unread
-              ? "bg-gradient-to-br from-cyan-500 to-sky-700 shadow-cyan-500/30"
-              : "bg-gradient-to-br from-slate-400 to-slate-600 shadow-slate-400/20"
+              ? "bg-gradient-to-br from-blue-600 to-cyan-600"
+              : "bg-gradient-to-br from-slate-400 to-slate-600"
           }`}
         >
           <Bell className="h-5 w-5" strokeWidth={2} aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-sm font-bold text-[#0c4a6e]">{item.title}</h2>
+            <h2 className="text-sm font-bold text-slate-900">{item.title}</h2>
             {unread ? (
-              <span className="rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cyan-800">
+              <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-800">
                 New
               </span>
             ) : null}
@@ -95,12 +107,17 @@ function NotificationCard({
               Return due: {formatDeadline(item.deadlineAt)}
             </p>
           ) : null}
+          {item.receiptNumber ? (
+            <p className="mt-1 font-mono text-xs text-slate-500">
+              Receipt {item.receiptNumber}
+            </p>
+          ) : null}
           <Link
-            href={notificationLinkHref(item)}
+            href={href}
             onClick={() => void handleOpen()}
-            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-400/50 bg-white/90 px-4 py-2.5 text-sm font-bold text-[#004a7c] shadow-[0_0_20px_-4px_rgba(34,211,238,0.35)] transition hover:border-cyan-300 hover:bg-cyan-50/80 sm:w-auto"
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-blue-300/50 bg-white px-4 py-2.5 text-sm font-bold text-blue-900 shadow-sm transition hover:border-blue-400 hover:bg-blue-50/80 sm:w-auto"
           >
-            View receipt
+            {linkLabel(item.type)}
             <ExternalLink className="h-3.5 w-3.5" aria-hidden />
           </Link>
         </div>
@@ -109,7 +126,7 @@ function NotificationCard({
   );
 }
 
-export default function ClientNotificationsPage() {
+export default function ProviderNotificationsPage() {
   const [items, setItems] = useState<NotificationDto[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -162,12 +179,12 @@ export default function ClientNotificationsPage() {
     <div className="mx-auto max-w-3xl">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="bg-gradient-to-r from-[#004a7c] via-[#0069b4] to-cyan-600 bg-clip-text text-2xl font-bold tracking-tight text-transparent sm:text-3xl">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             Notifications
           </h1>
           <p className="mt-2 text-sm text-slate-600">
-            Reminders about hire return deadlines — 24 hours and 1 hour before your item is due
-            back.
+            Alerts when your listings are sold or hired, plus reminders before customer return
+            deadlines.
           </p>
         </div>
         {unreadCount > 0 ? (
@@ -175,7 +192,7 @@ export default function ClientNotificationsPage() {
             type="button"
             disabled={markAllBusy}
             onClick={() => void handleMarkAllRead()}
-            className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/45 bg-white px-4 py-2 text-sm font-semibold text-[#004a7c] shadow-[0_0_18px_-6px_rgba(34,211,238,0.22)] transition hover:bg-cyan-50/80 disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-xl border border-blue-300/50 bg-white px-4 py-2 text-sm font-semibold text-blue-900 shadow-sm transition hover:bg-blue-50/80 disabled:opacity-60"
           >
             {markAllBusy ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -187,32 +204,17 @@ export default function ClientNotificationsPage() {
 
       {loading ? (
         <div className="mt-12 flex justify-center py-10">
-          <Loader2 className="h-9 w-9 animate-spin text-cyan-500" aria-label="Loading" />
+          <Loader2 className="h-9 w-9 animate-spin text-blue-600" aria-label="Loading" />
         </div>
       ) : error ? (
-        <div className="mt-8 space-y-3" role="alert">
-          <div className="rounded-2xl border border-red-300/50 bg-gradient-to-br from-red-50 to-white px-4 py-3 text-sm text-red-900 shadow-[0_0_20px_-6px_rgba(239,68,68,0.2)]">
-            {error}
-          </div>
-          {error.includes("Sign in") ? (
-            <Link
-              href={`/auth?next=${encodeURIComponent("/client/notifications")}`}
-              className="inline-flex rounded-lg border border-cyan-400/40 bg-white px-3 py-2 text-sm font-semibold text-[#0069b4] shadow-sm transition hover:border-cyan-300 hover:bg-cyan-50/60"
-            >
-              Go to sign in
-            </Link>
-          ) : null}
+        <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900" role="alert">
+          {error}
         </div>
       ) : !items?.length ? (
-        <div className="relative mt-10 overflow-hidden rounded-2xl border border-dashed border-cyan-400/50 bg-white px-6 py-16 text-center shadow-[0_0_28px_-8px_rgba(34,211,238,0.25)]">
-          <div
-            className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-cyan-400/15 blur-2xl"
-            aria-hidden
-          />
-          <Bell className="relative mx-auto h-10 w-10 text-cyan-500/70" aria-hidden />
-          <p className="relative mt-4 text-slate-600">
-            No notifications yet. You will see reminders here when a hire return deadline is
-            approaching.
+        <div className="relative mt-10 overflow-hidden rounded-2xl border border-dashed border-blue-300/50 bg-white px-6 py-16 text-center shadow-sm">
+          <Bell className="mx-auto h-10 w-10 text-blue-500/70" aria-hidden />
+          <p className="mt-4 text-slate-600">
+            No notifications yet. You will be notified when someone buys or hires your listings.
           </p>
         </div>
       ) : (

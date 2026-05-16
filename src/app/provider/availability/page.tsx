@@ -1,10 +1,16 @@
 "use client";
 
+import { BookingScheduleCard } from "@/components/provider/BookingScheduleCard";
 import { API_PROXY_PREFIX } from "@/lib/api";
 import { AMBUHUB_SERVICE_SLUGS } from "@/lib/ambuhub-services";
 import { AMBUHUB_MARKETPLACE_INVALIDATE_EVENT } from "@/lib/cache-tags";
+import type { BookingWindow } from "@/lib/booking-window";
+import type { PricingPeriod } from "@/lib/pricing-period";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+
+const BOOK_CATEGORY_SLUGS = new Set(["personnel", "ambulance-servicing"]);
+type AvailabilityView = "status" | "schedule";
 
 const TAB_SHADE_CLASSES = [
   "from-blue-700 to-cyan-600 border-blue-500/70 text-white shadow-blue-900/35",
@@ -23,6 +29,10 @@ type MyService = {
   description: string;
   listingType: "sale" | "hire" | "book" | null;
   isAvailable?: boolean;
+  price?: number | null;
+  pricingPeriod?: PricingPeriod | null;
+  bookingWindow?: BookingWindow | null;
+  bookingGapMinutes?: number | null;
   departmentName: string;
   category: { id: string; slug: string; name: string };
   photoUrls: string[];
@@ -42,6 +52,8 @@ export default function ProviderAvailabilityPage() {
   const [activeTabSlug, setActiveTabSlug] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<string | null>(null);
+  const [availabilityView, setAvailabilityView] =
+    useState<AvailabilityView>("status");
 
   const load = useCallback(async () => {
     setError(null);
@@ -120,6 +132,16 @@ export default function ProviderAvailabilityPage() {
     () => sections.find((s) => s.slug === activeTabSlug) ?? null,
     [activeTabSlug, sections],
   );
+
+  const activeSectionSupportsBooking = activeSection
+    ? BOOK_CATEGORY_SLUGS.has(activeSection.slug)
+    : false;
+
+  useEffect(() => {
+    if (!activeSectionSupportsBooking) {
+      setAvailabilityView("status");
+    }
+  }, [activeSectionSupportsBooking, activeTabSlug]);
 
   async function handleToggle(item: MyService, next: boolean) {
     const prev = item.isAvailable !== false;
@@ -263,15 +285,46 @@ export default function ProviderAvailabilityPage() {
           </div>
         </div>
 
+        {activeSectionSupportsBooking ? (
+          <div className="mt-4 flex gap-2 border-b border-ambuhub-100 pb-3">
+            <button
+              type="button"
+              onClick={() => setAvailabilityView("status")}
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
+                availabilityView === "status"
+                  ? "bg-ambuhub-brand text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              }`}
+            >
+              Listing status
+            </button>
+            <button
+              type="button"
+              onClick={() => setAvailabilityView("schedule")}
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
+                availabilityView === "schedule"
+                  ? "bg-ambuhub-brand text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              }`}
+            >
+              Booking schedule
+            </button>
+          </div>
+        ) : null}
+
         {activeSection ? (
           <ul className="divide-y divide-ambuhub-100 pt-4">
             {activeSection.items.map((item) => {
               const available = item.isAvailable !== false;
               const busy = savingId === item.id;
+              const showSchedule =
+                activeSectionSupportsBooking &&
+                availabilityView === "schedule" &&
+                item.listingType === "book";
               return (
                 <li
                   key={item.id}
-                  className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 py-4"
                 >
                   <div className="min-w-0 flex gap-3">
                     {item.photoUrls[0] ? (
@@ -299,37 +352,42 @@ export default function ProviderAvailabilityPage() {
                       </Link>
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-3 sm:pl-4">
-                    <span
-                      className={`text-sm font-medium ${
-                        available ? "text-emerald-700" : "text-foreground/50"
-                      }`}
-                    >
-                      {available ? "Available" : "Not available"}
-                    </span>
-                    <label className="inline-flex cursor-pointer items-center gap-2">
-                      <span className="sr-only">Available on marketplace</span>
-                      <input
-                        type="checkbox"
-                        className="peer sr-only"
-                        checked={available}
-                        disabled={busy}
-                        onChange={(e) => void handleToggle(item, e.target.checked)}
-                      />
+                  {!showSchedule ? (
+                    <div className="flex shrink-0 items-center gap-3 sm:pl-[4.25rem]">
                       <span
-                        className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
-                          available ? "bg-emerald-500" : "bg-slate-300"
-                        } ${busy ? "opacity-50" : ""} peer-focus-visible:ring-2 peer-focus-visible:ring-ambuhub-brand peer-focus-visible:ring-offset-2`}
-                        aria-hidden
+                        className={`text-sm font-medium ${
+                          available ? "text-emerald-700" : "text-foreground/50"
+                        }`}
                       >
-                        <span
-                          className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
-                            available ? "translate-x-5" : "translate-x-0"
-                          }`}
-                        />
+                        {available ? "Available" : "Not available"}
                       </span>
-                    </label>
-                  </div>
+                      <label className="inline-flex cursor-pointer items-center gap-2">
+                        <span className="sr-only">Available on marketplace</span>
+                        <input
+                          type="checkbox"
+                          className="peer sr-only"
+                          checked={available}
+                          disabled={busy}
+                          onChange={(e) => void handleToggle(item, e.target.checked)}
+                        />
+                        <span
+                          className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
+                            available ? "bg-emerald-500" : "bg-slate-300"
+                          } ${busy ? "opacity-50" : ""} peer-focus-visible:ring-2 peer-focus-visible:ring-ambuhub-brand peer-focus-visible:ring-offset-2`}
+                          aria-hidden
+                        >
+                          <span
+                            className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                              available ? "translate-x-5" : "translate-x-0"
+                            }`}
+                          />
+                        </span>
+                      </label>
+                    </div>
+                  ) : null}
+                  {showSchedule ? (
+                    <BookingScheduleCard item={item} onSaved={() => void load()} />
+                  ) : null}
                 </li>
               );
             })}

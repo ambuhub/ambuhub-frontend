@@ -1,6 +1,11 @@
-import { Bell, Search, Upload } from "lucide-react";
+import { Search, Upload } from "lucide-react";
+import Link from "next/link";
 
 import { ProviderMonthlySalesChart } from "./ProviderMonthlySalesChart";
+import {
+  ProviderDashboardBellLink,
+  ProviderUnreadNotificationsMetric,
+} from "./ProviderUnreadNotifications";
 import { ProviderWalletBalance } from "./ProviderWalletBalance";
 
 const metricCards = [
@@ -18,14 +23,10 @@ const metricCards = [
     cardClass:
       "border-sky-500/40 bg-gradient-to-br from-sky-900 via-blue-800 to-sky-700 text-white shadow-lg shadow-sky-900/40",
   },
-  {
-    label: "Unread messages",
-    value: "12",
-    delta: "4 urgent",
-    cardClass:
-      "border-indigo-500/40 bg-gradient-to-br from-indigo-900 via-blue-800 to-indigo-700 text-white shadow-lg shadow-indigo-900/40",
-  },
 ] as const;
+
+const notificationsCardClass =
+  "border-indigo-500/40 bg-gradient-to-br from-indigo-900 via-blue-800 to-indigo-700 text-white shadow-lg shadow-indigo-900/40 transition hover:-translate-y-0.5 hover:shadow-xl";
 
 export default function ProviderDashboardPage() {
   return (
@@ -42,20 +43,14 @@ export default function ProviderDashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
-              aria-label="Notifications"
-            >
-              <Bell className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
+            <ProviderDashboardBellLink />
+            <Link
+              href="/provider/services/add"
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-300/50 transition hover:opacity-95"
             >
               <Upload className="h-4 w-4" />
               Upload listing
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -72,7 +67,7 @@ export default function ProviderDashboardPage() {
               <input
                 id="dashboard-search"
                 type="text"
-                placeholder="Search listings, messages, bookings..."
+                placeholder="Search listings, notifications, bookings..."
                 className="w-full rounded-xl border border-slate-200/90 bg-white px-9 py-2.5 text-sm text-slate-800 shadow-md shadow-slate-900/25 outline-none ring-1 ring-white/20 focus:border-blue-500 focus:ring-2 focus:ring-blue-400/45"
               />
             </div>
@@ -91,6 +86,7 @@ export default function ProviderDashboardPage() {
               <p className="mt-1 text-xs font-medium text-cyan-100">{card.delta}</p>
             </article>
           ))}
+          <ProviderUnreadNotificationsMetric cardClass={notificationsCardClass} />
         </div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">

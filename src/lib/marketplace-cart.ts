@@ -189,6 +189,7 @@ export type ReceiptLineClient = {
   hireEnd?: string;
   pricingPeriod?: string;
   hireBillableUnits?: number;
+  primaryPhotoUrl?: string;
 };
 
 export type ReceiptDetailClient = {

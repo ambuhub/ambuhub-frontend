@@ -8,6 +8,14 @@ import {
   type PricingPeriod,
   isPricingPeriod,
 } from "@/lib/pricing-period";
+import { HireReturnWindowFields } from "@/components/provider/HireReturnWindowFields";
+import { CountrySelect } from "@/components/ui/CountrySelect";
+import { StateProvinceSelect } from "@/components/ui/StateProvinceSelect";
+import {
+  EMPTY_HIRE_RETURN_WINDOW,
+  validateHireReturnWindowClient,
+  type HireReturnWindow,
+} from "@/lib/hire-return-window";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -42,8 +50,14 @@ export default function ProviderAddServicePage() {
   const [stock, setStock] = useState("");
   const [price, setPrice] = useState("");
   const [pricingPeriod, setPricingPeriod] = useState<PricingPeriod | "">("");
+  const [hireReturnWindow, setHireReturnWindow] = useState<HireReturnWindow>(
+    () => ({ ...EMPTY_HIRE_RETURN_WINDOW, daysOfWeek: [1, 2, 3, 4, 5] }),
+  );
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [countryCode, setCountryCode] = useState("");
+  const [stateProvince, setStateProvince] = useState("");
+  const [officeAddress, setOfficeAddress] = useState("");
   const [fileList, setFileList] = useState<File[]>([]);
 
   const [submitting, setSubmitting] = useState(false);
@@ -110,6 +124,10 @@ export default function ProviderAddServicePage() {
   }, [categorySlug]);
 
   useEffect(() => {
+    setStateProvince("");
+  }, [countryCode]);
+
+  useEffect(() => {
     if (listingType === "book") {
       setStock("");
       setPrice("");
@@ -174,6 +192,23 @@ export default function ProviderAddServicePage() {
         setSubmitError("Select a pricing period for hire listings.");
         return;
       }
+      const returnErr = validateHireReturnWindowClient(hireReturnWindow);
+      if (returnErr) {
+        setSubmitError(returnErr);
+        return;
+      }
+    }
+    if (!countryCode.trim()) {
+      setSubmitError("Country is required.");
+      return;
+    }
+    if (!stateProvince.trim()) {
+      setSubmitError("State or province is required.");
+      return;
+    }
+    if (!officeAddress.trim()) {
+      setSubmitError("Office address is required.");
+      return;
     }
 
     setSubmitting(true);
@@ -235,7 +270,12 @@ export default function ProviderAddServicePage() {
             effectiveListingType === "hire" && isPricingPeriod(pricingPeriod)
               ? pricingPeriod
               : null,
+          hireReturnWindow:
+            effectiveListingType === "hire" ? hireReturnWindow : undefined,
           photoUrls,
+          countryCode: countryCode.trim().toUpperCase(),
+          stateProvince: stateProvince.trim(),
+          officeAddress: officeAddress.trim(),
         }),
       });
       const createData = (await createRes.json()) as { message?: string };
@@ -328,6 +368,54 @@ export default function ProviderAddServicePage() {
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="space-y-6 rounded-2xl border border-blue-100/80 bg-white/60 p-4">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-blue-900/80">
+            Office location
+          </h2>
+          <div>
+            <label htmlFor="service-country" className={labelClass}>
+              Country
+            </label>
+            <CountrySelect
+              id="service-country"
+              value={countryCode}
+              onChange={setCountryCode}
+              required
+              className={`${inputClass} ${inputDisabledClass}`}
+            />
+          </div>
+          <div>
+            <label htmlFor="service-state" className={labelClass}>
+              State / province
+            </label>
+            <StateProvinceSelect
+              id="service-state"
+              countryCode={countryCode}
+              value={stateProvince}
+              onChange={setStateProvince}
+              required
+              disabled={!countryCode.trim()}
+              className={`${inputClass} ${inputDisabledClass}`}
+            />
+          </div>
+          <div>
+            <label htmlFor="office-address" className={labelClass}>
+              Office address
+            </label>
+            <textarea
+              id="office-address"
+              name="officeAddress"
+              required
+              rows={3}
+              value={officeAddress}
+              onChange={(e) => setOfficeAddress(e.target.value)}
+              className={inputClass}
+              placeholder="Street, building, city area"
+              autoComplete="street-address"
+            />
+          </div>
         </div>
 
         <div>
@@ -446,6 +534,20 @@ export default function ProviderAddServicePage() {
             <p className="mt-1 text-xs text-slate-600">
               How the hire price applies (e.g. per hour, per day).
             </p>
+          </div>
+        ) : null}
+
+        {effectiveListingType === "hire" ? (
+          <div className="space-y-4 rounded-2xl border border-blue-100/80 bg-white/60 p-4">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-blue-900/80">
+              Return schedule
+            </h2>
+            <HireReturnWindowFields
+              value={hireReturnWindow}
+              onChange={setHireReturnWindow}
+              labelClass={labelClass}
+              inputClass={inputClass}
+            />
           </div>
         ) : null}
 

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Loader2, Search, ShoppingCart, X } from "lucide-react";
+import { Heart, Loader2, Search, ShoppingCart, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
 import { API_PROXY_PREFIX } from "@/lib/api";
@@ -11,11 +11,18 @@ import { FALLBACK_THUMB, isCloudinaryHost } from "@/lib/landing-service-categori
 import { AMBUHUB_SERVICES } from "@/lib/ambuhub-services";
 import { postCartItem } from "@/lib/marketplace-cart";
 import {
+  addFavoriteService,
+  fetchMyFavoriteServices,
+  removeFavoriteService,
+} from "@/lib/service-favorites";
+import {
   formatHirePricePeriodSuffix,
   formatPricingPeriodLabel,
   isPricingPeriod,
 } from "@/lib/pricing-period";
 import { AMBUHUB_MARKETPLACE_INVALIDATE_EVENT } from "@/lib/cache-tags";
+import { isBookBookable } from "@/lib/book-bookable";
+import { hasValidHireReturnWindow } from "@/lib/hire-return-window";
 import {
   getCategoryPageTitleDescription,
   groupMarketplaceByDepartments,
@@ -88,7 +95,8 @@ function isHireBookable(svc: MarketplaceServiceRow): boolean {
     svc.stock >= 1 &&
     svc.pricingPeriod != null &&
     isPricingPeriod(svc.pricingPeriod) &&
-    svc.isAvailable !== false
+    svc.isAvailable !== false &&
+    hasValidHireReturnWindow(svc.hireReturnWindow)
   );
 }
 
@@ -167,7 +175,7 @@ function CategoryBannerImage({
   );
 }
 
-function ServiceCardImage({
+export function ServiceCardImage({
   photoUrl,
   alt,
 }: {
@@ -256,6 +264,15 @@ export function CategoryServiceListing({ category, sections }: Props) {
   } = useSessionAndCart();
   const [liveSections, setLiveSections] = useState(sections);
   const [addingServiceId, setAddingServiceId] = useState<string | null>(null);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [favoritesLoadState, setFavoritesLoadState] = useState<
+    "idle" | "loading" | "ready"
+  >("idle");
+  const [favoriteTogglingId, setFavoriteTogglingId] = useState<string | null>(
+    null,
+  );
   const [cartNotice, setCartNotice] = useState<string | null>(null);
   const [listingTypeFilter, setListingTypeFilter] =
     useState<ListingTypeFilter>("all");
@@ -286,6 +303,38 @@ export function CategoryServiceListing({ category, sections }: Props) {
   }, [category.slug, refetchMarketplaceSections]);
 
   useEffect(() => {
+    if (sessionLoading) {
+      return;
+    }
+    if (!user) {
+      setFavoriteIds(new Set());
+      setFavoritesLoadState("ready");
+      return;
+    }
+    let cancelled = false;
+    setFavoritesLoadState("loading");
+    (async () => {
+      try {
+        const rows = await fetchMyFavoriteServices();
+        if (!cancelled) {
+          setFavoriteIds(new Set(rows.map((r) => r.id)));
+        }
+      } catch {
+        if (!cancelled) {
+          setFavoriteIds(new Set());
+        }
+      } finally {
+        if (!cancelled) {
+          setFavoritesLoadState("ready");
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, sessionLoading]);
+
+  useEffect(() => {
     function onInvalidate() {
       void refetchMarketplaceSections();
     }
@@ -302,7 +351,10 @@ export function CategoryServiceListing({ category, sections }: Props) {
     if (!cartNotice) {
       return;
     }
-    const isSuccess = cartNotice.startsWith("Added");
+    const isSuccess =
+      cartNotice.startsWith("Added") ||
+      cartNotice.startsWith("Saved") ||
+      cartNotice.startsWith("Removed");
     const ms = isSuccess ? 3500 : 9000;
     const id = window.setTimeout(() => setCartNotice(null), ms);
     return () => window.clearTimeout(id);
@@ -414,10 +466,39 @@ export function CategoryServiceListing({ category, sections }: Props) {
     }
   }
 
+  async function handleToggleFavorite(serviceId: string) {
+    if (!user || favoritesLoadState !== "ready") {
+      return;
+    }
+    setFavoriteTogglingId(serviceId);
+    setCartNotice(null);
+    try {
+      const isFav = favoriteIds.has(serviceId);
+      const rows = isFav
+        ? await removeFavoriteService(serviceId)
+        : await addFavoriteService(serviceId);
+      setFavoriteIds(new Set(rows.map((r) => r.id)));
+      setCartNotice(
+        isFav ? "Removed from favorites." : "Saved to favorites.",
+      );
+    } catch (err) {
+      setCartNotice(
+        err instanceof Error ? err.message : "Could not update favorites.",
+      );
+    } finally {
+      setFavoriteTogglingId(null);
+    }
+  }
+
   const listingBottomPad =
     itemCount > 0 ? "pb-28 sm:pb-20" : "pb-14 sm:pb-16 lg:pb-20";
 
-  const cartNoticeIsSuccess = cartNotice?.startsWith("Added") ?? false;
+  const cartNoticeIsSuccess = Boolean(
+    cartNotice &&
+      (cartNotice.startsWith("Added") ||
+        cartNotice.startsWith("Saved") ||
+        cartNotice.startsWith("Removed")),
+  );
 
   return (
     <>
@@ -471,13 +552,13 @@ export function CategoryServiceListing({ category, sections }: Props) {
           </p>
           {!sessionLoading && !user ? (
             <div className="mt-5 rounded-2xl border border-ambuhub-200 bg-ambuhub-50 px-4 py-3 text-sm leading-relaxed text-foreground/90 sm:mt-6 sm:px-5 sm:py-4">
-              <p className="font-semibold text-foreground">Purchasing sale listings</p>
+              <p className="font-semibold text-foreground">Purchasing & saving listings</p>
               <p className="mt-1.5">
                 You need to{" "}
                 <Link href={loginHref} className="font-semibold text-ambuhub-brand underline">
                   log in
                 </Link>{" "}
-                before &quot;Add to cart&quot; will work. Both{" "}
+                before &quot;Add to cart&quot; or the heart (save to favorites) will work. Both{" "}
                 <strong>client</strong> and <strong>service provider</strong> accounts can
                 buy sale items—the cart and badge only appear after you are signed in.
               </p>
@@ -647,55 +728,115 @@ export function CategoryServiceListing({ category, sections }: Props) {
                   {section.heading}
                 </h2>
                 <ul className="mt-5 grid grid-cols-1 gap-5 min-w-0 sm:grid-cols-2 sm:gap-5 lg:mt-6 lg:grid-cols-4 lg:gap-6">
-                  {section.services.map((svc) => (
+                  {section.services.map((svc) => {
+                    const listingDetailHref = `/services/${encodeURIComponent(category.slug)}/${encodeURIComponent(svc.id)}`;
+                    return (
                     <li key={svc.id} className="min-w-0">
                       <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-ambuhub-100 bg-white shadow-sm">
                         <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-ambuhub-100">
-                          <ServiceCardImage
-                            photoUrl={svc.photoUrls[0]}
-                            alt={svc.title}
-                          />
-                          <span className="absolute bottom-3 left-3 rounded-md bg-black/85 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
+                          <Link
+                            href={listingDetailHref}
+                            className="absolute inset-0 z-0 block outline-none focus-visible:ring-2 focus-visible:ring-ambuhub-brand focus-visible:ring-offset-2"
+                          >
+                            <span className="sr-only">
+                              View full details: {svc.title}
+                            </span>
+                            <ServiceCardImage
+                              photoUrl={svc.photoUrls[0]}
+                              alt={svc.title}
+                            />
+                          </Link>
+                          <span className="pointer-events-none absolute bottom-3 left-3 z-[1] rounded-md bg-black/85 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
                             {formatListingTypeLabel(svc.listingType)}
                           </span>
+                          <div className="absolute right-3 top-3 z-10">
+                            {sessionLoading ? null : user ? (
+                              <button
+                                type="button"
+                                disabled={
+                                  favoritesLoadState !== "ready" ||
+                                  favoriteTogglingId === svc.id
+                                }
+                                onClick={() => void handleToggleFavorite(svc.id)}
+                                className="rounded-full bg-black/45 p-2 backdrop-blur-sm transition-opacity hover:bg-black/55 disabled:cursor-not-allowed disabled:opacity-50"
+                                aria-label={
+                                  favoriteIds.has(svc.id)
+                                    ? "Remove from favorites"
+                                    : "Add to favorites"
+                                }
+                              >
+                                {favoriteTogglingId === svc.id ? (
+                                  <Loader2
+                                    className="h-5 w-5 animate-spin text-white"
+                                    aria-hidden
+                                  />
+                                ) : (
+                                  <Heart
+                                    className={`h-5 w-5 ${
+                                      favoriteIds.has(svc.id)
+                                        ? "fill-red-500 text-red-500"
+                                        : "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
+                                    }`}
+                                    aria-hidden
+                                  />
+                                )}
+                              </button>
+                            ) : (
+                              <Link
+                                href={loginHref}
+                                className="block rounded-full bg-black/45 p-2 backdrop-blur-sm transition-opacity hover:bg-black/55"
+                                aria-label="Sign in to save favorites"
+                              >
+                                <Heart
+                                  className="h-5 w-5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
+                                  aria-hidden
+                                />
+                              </Link>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex flex-1 flex-col p-5 sm:p-6">
-                          <h3 className="text-base font-semibold text-foreground">
-                            {svc.title}
-                          </h3>
-                          {svc.listingType === "sale" &&
-                          typeof svc.price === "number" ? (
-                            <p className="mt-2 text-sm font-semibold text-foreground">
-                              {formatNaira(svc.price)}
+                        <div className="flex flex-1 flex-col">
+                          <Link
+                            href={listingDetailHref}
+                            className="group flex min-h-0 flex-1 flex-col px-5 pt-5 sm:px-6 sm:pt-6"
+                          >
+                            <h3 className="text-base font-semibold text-foreground group-hover:underline">
+                              {svc.title}
+                            </h3>
+                            {svc.listingType === "sale" &&
+                            typeof svc.price === "number" ? (
+                              <p className="mt-2 text-sm font-semibold text-foreground">
+                                {formatNaira(svc.price)}
+                              </p>
+                            ) : null}
+                            {svc.listingType === "hire" &&
+                            typeof svc.price === "number" ? (
+                              <p className="mt-2 text-sm font-semibold text-foreground">
+                                {formatNaira(svc.price)}
+                                {svc.pricingPeriod ? (
+                                  <span className="font-medium text-foreground/80">
+                                    {" "}
+                                    ({formatHirePricePeriodSuffix(svc.pricingPeriod)})
+                                  </span>
+                                ) : null}
+                              </p>
+                            ) : null}
+                            {svc.listingType === "hire" &&
+                            svc.pricingPeriod &&
+                            typeof svc.price !== "number" ? (
+                              <p className="mt-2 text-xs font-medium text-foreground/70">
+                                Period: {formatPricingPeriodLabel(svc.pricingPeriod)}
+                              </p>
+                            ) : null}
+                            <p className="mt-1 text-xs font-medium text-foreground/70">
+                              {formatStockLabel(svc.listingType, svc.stock)}
                             </p>
-                          ) : null}
-                          {svc.listingType === "hire" &&
-                          typeof svc.price === "number" ? (
-                            <p className="mt-2 text-sm font-semibold text-foreground">
-                              {formatNaira(svc.price)}
-                              {svc.pricingPeriod ? (
-                                <span className="font-medium text-foreground/80">
-                                  {" "}
-                                  ({formatHirePricePeriodSuffix(svc.pricingPeriod)})
-                                </span>
-                              ) : null}
+                            <p className="mt-2 line-clamp-3 flex-1 text-sm leading-relaxed text-foreground/70">
+                              {svc.description}
                             </p>
-                          ) : null}
-                          {svc.listingType === "hire" &&
-                          svc.pricingPeriod &&
-                          typeof svc.price !== "number" ? (
-                            <p className="mt-2 text-xs font-medium text-foreground/70">
-                              Period: {formatPricingPeriodLabel(svc.pricingPeriod)}
-                            </p>
-                          ) : null}
-                          <p className="mt-1 text-xs font-medium text-foreground/70">
-                            {formatStockLabel(svc.listingType, svc.stock)}
-                          </p>
-                          <p className="mt-2 line-clamp-3 flex-1 text-sm leading-relaxed text-foreground/70">
-                            {svc.description}
-                          </p>
+                          </Link>
                           {isSalePurchasable(svc) ? (
-                            <div className="mt-4 border-t border-ambuhub-100 pt-4">
+                            <div className="mt-4 border-t border-ambuhub-100 px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
                               {cart.items.some((i) => i.serviceId === svc.id) ? (
                                 <p className="text-xs font-semibold text-ambuhub-brand">
                                   In cart:{" "}
@@ -732,8 +873,35 @@ export function CategoryServiceListing({ category, sections }: Props) {
                               )}
                             </div>
                           ) : null}
+                          {svc.listingType === "book" ? (
+                            <div className="mt-4 border-t border-ambuhub-100 px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
+                              {isBookBookable(svc) ? (
+                                sessionLoading ? (
+                                  <p className="mt-2 text-xs text-foreground/55">Checking session…</p>
+                                ) : user ? (
+                                  <Link
+                                    href={`/book/${svc.id}`}
+                                    className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ambuhub-brand px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ambuhub-brand-dark"
+                                  >
+                                    Book now
+                                  </Link>
+                                ) : (
+                                  <Link
+                                    href={`/auth?next=${encodeURIComponent(`/book/${svc.id}`)}`}
+                                    className="mt-2 inline-flex w-full items-center justify-center rounded-xl border border-ambuhub-brand bg-white px-4 py-2.5 text-sm font-semibold text-ambuhub-brand transition-colors hover:bg-ambuhub-50"
+                                  >
+                                    Log in to book
+                                  </Link>
+                                )
+                              ) : (
+                                <p className="mt-2 text-xs text-foreground/55">
+                                  This listing is not available for booking.
+                                </p>
+                              )}
+                            </div>
+                          ) : null}
                           {svc.listingType === "hire" ? (
-                            <div className="mt-4 border-t border-ambuhub-100 pt-4">
+                            <div className="mt-4 border-t border-ambuhub-100 px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
                               {isHireBookable(svc) ? (
                                 sessionLoading ? (
                                   <p className="mt-2 text-xs text-foreground/55">Checking session…</p>
@@ -762,7 +930,8 @@ export function CategoryServiceListing({ category, sections }: Props) {
                         </div>
                       </article>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               </section>
             ))}
