@@ -21,6 +21,7 @@ export type ProviderHireBookingRow = {
   quantity: number;
   lineTotalNgn: number;
   customer: ProviderHireBookingCustomer;
+  primaryPhotoUrl?: string;
 };
 
 export async function fetchProviderHireBookings(): Promise<ProviderHireBookingRow[]> {
@@ -53,6 +54,7 @@ export type ProviderPersonnelBookingRow = {
   quantity: number;
   lineTotalNgn: number;
   customer: ProviderHireBookingCustomer;
+  primaryPhotoUrl?: string;
 };
 
 export async function fetchProviderPersonnelBookings(): Promise<

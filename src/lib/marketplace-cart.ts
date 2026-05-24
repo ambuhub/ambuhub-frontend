@@ -126,7 +126,7 @@ export async function deleteCartItem(serviceId: string): Promise<CartClient> {
 
 export type OrderLineClient = {
   serviceId: string;
-  lineKind?: "sale" | "hire";
+  lineKind?: "sale" | "hire" | "book";
   title: string;
   unitPriceNgn: number;
   quantity: number;
@@ -138,6 +138,7 @@ export type OrderLineClient = {
   hireEnd?: string;
   pricingPeriod?: string;
   hireBillableUnits?: number;
+  photoUrls?: string[];
 };
 
 export type OrderDetailClient = {
@@ -178,7 +179,7 @@ export async function postSimulateCheckout(): Promise<{
 
 export type ReceiptLineClient = {
   serviceId: string;
-  lineKind?: "sale" | "hire";
+  lineKind?: "sale" | "hire" | "book";
   title: string;
   unitPriceNgn: number;
   quantity: number;

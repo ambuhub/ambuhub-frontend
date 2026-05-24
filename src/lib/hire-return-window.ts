@@ -250,6 +250,32 @@ function toDatetimeLocalValue(d: Date): string {
   return `${p.year}-${pad2(p.month)}-${pad2(p.day)}T${pad2(h)}:${pad2(m)}`;
 }
 
+const DATETIME_LOCAL_LAGOS_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/;
+
+/** Format an instant for `<input type="datetime-local">` (Africa/Lagos wall clock). */
+export function formatInstantAsDatetimeLocalLagos(d: Date): string {
+  return toDatetimeLocalValue(d);
+}
+
+/** Format an instant for `<input type="date">` (calendar day in Africa/Lagos). */
+export function formatInstantAsDateInputLagos(d: Date): string {
+  return toDateInputValue(d);
+}
+
+/** Parse datetime-local value as Africa/Lagos wall clock (not browser local). */
+export function parseDatetimeLocalLagos(raw: string): Date | null {
+  const m = raw.trim().match(DATETIME_LOCAL_LAGOS_RE);
+  if (!m) {
+    return null;
+  }
+  return lagosWallClockToDate(
+    parseInt(m[1], 10),
+    parseInt(m[2], 10),
+    parseInt(m[3], 10),
+    `${m[4]}:${m[5]}`,
+  );
+}
+
 /** Next hire start/end that satisfy the return window (WAT). */
 export function suggestNextValidHirePeriod(
   window: HireReturnWindow,

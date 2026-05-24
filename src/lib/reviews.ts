@@ -14,7 +14,7 @@ export type ReviewDto = {
   body: string;
   serviceTitle: string;
   categorySlug: string;
-  lineKind: "sale" | "hire" | null;
+  lineKind: "sale" | "hire" | "book" | null;
   reviewerDisplayName: string;
   createdAt: string;
 };
@@ -25,10 +25,35 @@ export type EligibleReviewDto = {
   receiptNumber: string;
   serviceTitle: string;
   categorySlug: string;
-  lineKind: "sale" | "hire" | null;
+  lineKind: "sale" | "hire" | "book" | null;
   paidAt: string;
   hireEnd: string | null;
+  bookEnd: string | null;
 };
+
+/** Post-checkout redirect: open the review form for the first order line. */
+export function postCheckoutReviewUrl(order: {
+  id: string;
+  lines: { serviceId: string }[];
+}): string {
+  const line = order.lines[0];
+  if (!line) {
+    return "/client/reviews";
+  }
+  const params = new URLSearchParams({
+    orderId: order.id,
+    serviceId: line.serviceId,
+  });
+  return `/client/reviews?${params.toString()}`;
+}
+
+function lineKindLabel(kind: EligibleReviewDto["lineKind"]): string {
+  if (kind === "hire") return "Hire";
+  if (kind === "book") return "Booking";
+  return "Purchase";
+}
+
+export { lineKindLabel };
 
 export type ServiceReviewSummary = {
   averageRating: number | null;

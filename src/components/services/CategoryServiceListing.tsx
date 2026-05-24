@@ -7,6 +7,7 @@ import { Heart, Loader2, Search, ShoppingCart, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
 import { API_PROXY_PREFIX } from "@/lib/api";
+import { getCountryNameByCode } from "@/lib/countries";
 import { FALLBACK_THUMB, isCloudinaryHost } from "@/lib/landing-service-categories";
 import { AMBUHUB_SERVICES } from "@/lib/ambuhub-services";
 import { postCartItem } from "@/lib/marketplace-cart";
@@ -35,6 +36,11 @@ const BANNER_SIZES = "100vw";
 const CARD_SIZES =
   "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw";
 
+const filterLabelClass = "block text-xs font-medium text-white";
+const filterControlClass =
+  "w-full rounded-lg border border-ambuhub-200 bg-white px-3 py-2 text-sm text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25 disabled:cursor-not-allowed disabled:opacity-60";
+const filterControlDisabledClass = `${filterControlClass} disabled:cursor-not-allowed disabled:opacity-60`;
+
 const bannerImgBase = "h-full w-full object-cover";
 const nairaNumberFormatter = new Intl.NumberFormat("en-NG", {
   maximumFractionDigits: 2,
@@ -48,6 +54,50 @@ type ListingTypeFilter = "all" | "sale" | "hire" | "book" | "none";
 
 function normalizeSearchText(value: string): string {
   return value.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+/** Parse filter input: digits with optional commas/decimals. */
+function parsePriceFilterInput(value: string): number | null {
+  const trimmed = value.trim().replace(/,/g, "");
+  if (!trimmed) {
+    return null;
+  }
+  const n = Number(trimmed);
+  if (!Number.isFinite(n) || n < 0) {
+    return null;
+  }
+  return n;
+}
+
+function serviceListingPriceNgn(service: MarketplaceServiceRow): number | null {
+  if (typeof service.price !== "number" || !Number.isFinite(service.price)) {
+    return null;
+  }
+  return service.price;
+}
+
+function stateFilterOptionValue(option: {
+  code: string;
+  countryCode: string;
+}): string {
+  if (option.countryCode) {
+    return `${option.countryCode}|${option.code}`;
+  }
+  return option.code;
+}
+
+function parseStateFilterValue(value: string): {
+  countryCode: string;
+  stateCode: string;
+} {
+  const pipe = value.indexOf("|");
+  if (pipe === -1) {
+    return { countryCode: "", stateCode: value };
+  }
+  return {
+    countryCode: value.slice(0, pipe),
+    stateCode: value.slice(pipe + 1),
+  };
 }
 
 function formatListingTypeLabel(listingType: "sale" | "hire" | "book" | null): string {
@@ -361,6 +411,10 @@ export function CategoryServiceListing({ category, sections }: Props) {
   }, [cartNotice]);
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [priceMinInput, setPriceMinInput] = useState("");
+  const [priceMaxInput, setPriceMaxInput] = useState("");
+  const [countryFilter, setCountryFilter] = useState("all");
+  const [stateFilter, setStateFilter] = useState("all");
 
   const departmentOptions = useMemo(() => {
     const options = new Map<string, string>();
@@ -381,8 +435,110 @@ export function CategoryServiceListing({ category, sections }: Props) {
     }));
   }, [category.departments, liveSections]);
 
+  const priceBounds = useMemo(() => {
+    let min = Infinity;
+    let max = -Infinity;
+    for (const section of liveSections) {
+      for (const service of section.services) {
+        const price = serviceListingPriceNgn(service);
+        if (price === null) {
+          continue;
+        }
+        min = Math.min(min, price);
+        max = Math.max(max, price);
+      }
+    }
+    if (!Number.isFinite(min) || !Number.isFinite(max)) {
+      return { min: 0, max: 0, hasPrices: false };
+    }
+    return { min, max, hasPrices: true };
+  }, [liveSections]);
+
+  const parsedPriceMin = useMemo(
+    () => parsePriceFilterInput(priceMinInput),
+    [priceMinInput],
+  );
+  const parsedPriceMax = useMemo(
+    () => parsePriceFilterInput(priceMaxInput),
+    [priceMaxInput],
+  );
+
+  const priceFilterActive =
+    parsedPriceMin !== null || parsedPriceMax !== null;
+
+  const locationOptions = useMemo(() => {
+    const countries = new Map<string, string>();
+    const statesByKey = new Map<
+      string,
+      { code: string; label: string; countryCode: string }
+    >();
+
+    for (const section of liveSections) {
+      for (const service of section.services) {
+        const countryCode = service.countryCode?.trim().toLowerCase() ?? "";
+        if (countryCode) {
+          countries.set(
+            countryCode,
+            getCountryNameByCode(countryCode) ?? countryCode.toUpperCase(),
+          );
+        }
+
+        const stateCode = service.stateProvince?.trim() ?? "";
+        if (!stateCode) {
+          continue;
+        }
+        const label =
+          service.stateProvinceName?.trim() || stateCode;
+        const key = countryCode
+          ? `${countryCode}|${stateCode}`
+          : `|${stateCode}`;
+        statesByKey.set(key, {
+          code: stateCode,
+          label,
+          countryCode,
+        });
+      }
+    }
+
+    const countryList = Array.from(countries.entries())
+      .map(([code, label]) => ({ code, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+
+    const stateList = Array.from(statesByKey.values()).sort((a, b) =>
+      a.label.localeCompare(b.label),
+    );
+
+    return {
+      countries: countryList,
+      states: stateList,
+      hasCountries: countryList.length > 0,
+      hasStates: stateList.length > 0,
+    };
+  }, [liveSections]);
+
+  const stateFilterOptions = useMemo(() => {
+    if (countryFilter === "all") {
+      return locationOptions.states;
+    }
+    return locationOptions.states.filter(
+      (s) => s.countryCode === countryFilter,
+    );
+  }, [countryFilter, locationOptions.states]);
+
+  const locationFilterActive =
+    countryFilter !== "all" || stateFilter !== "all";
+
   const filteredSections = useMemo(() => {
     const normalizedQuery = normalizeSearchText(searchQuery);
+    const effectiveMin = parsedPriceMin;
+    let effectiveMax = parsedPriceMax;
+    if (
+      effectiveMin !== null &&
+      effectiveMax !== null &&
+      effectiveMin > effectiveMax
+    ) {
+      effectiveMax = effectiveMin;
+    }
 
     function matchesListingType(service: MarketplaceServiceRow): boolean {
       if (listingTypeFilter === "all") {
@@ -417,10 +573,57 @@ export function CategoryServiceListing({ category, sections }: Props) {
           ? formatPricingPeriodLabel(service.pricingPeriod)
           : "",
         service.pricingPeriod ?? "",
+        service.countryCode ?? "",
+        service.countryCode
+          ? getCountryNameByCode(service.countryCode) ?? ""
+          : "",
+        service.stateProvince ?? "",
+        service.stateProvinceName ?? "",
       ];
 
       const haystack = normalizeSearchText(searchableParts.join(" "));
       return haystack.includes(normalizedQuery);
+    }
+
+    function matchesLocation(service: MarketplaceServiceRow): boolean {
+      if (!locationFilterActive) {
+        return true;
+      }
+
+      const svcCountry = service.countryCode?.trim().toLowerCase() ?? "";
+      const svcState = service.stateProvince?.trim() ?? "";
+
+      if (countryFilter !== "all" && svcCountry !== countryFilter) {
+        return false;
+      }
+      if (stateFilter !== "all") {
+        const { countryCode: filterCountry, stateCode: filterState } =
+          parseStateFilterValue(stateFilter);
+        if (filterState && svcState !== filterState) {
+          return false;
+        }
+        if (filterCountry && svcCountry !== filterCountry) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function matchesPriceRange(service: MarketplaceServiceRow): boolean {
+      if (!priceFilterActive) {
+        return true;
+      }
+      const price = serviceListingPriceNgn(service);
+      if (price === null) {
+        return false;
+      }
+      if (effectiveMin !== null && price < effectiveMin) {
+        return false;
+      }
+      if (effectiveMax !== null && price > effectiveMax) {
+        return false;
+      }
+      return true;
     }
 
     return liveSections
@@ -430,7 +633,11 @@ export function CategoryServiceListing({ category, sections }: Props) {
         }
 
         const services = section.services.filter(
-          (service) => matchesListingType(service) && matchesSearch(service, section),
+          (service) =>
+            matchesListingType(service) &&
+            matchesSearch(service, section) &&
+            matchesLocation(service) &&
+            matchesPriceRange(service),
         );
         if (services.length === 0) {
           return null;
@@ -442,7 +649,18 @@ export function CategoryServiceListing({ category, sections }: Props) {
         };
       })
       .filter((section): section is DepartmentServiceSection => section !== null);
-  }, [departmentFilter, listingTypeFilter, searchQuery, liveSections]);
+  }, [
+    departmentFilter,
+    listingTypeFilter,
+    searchQuery,
+    liveSections,
+    priceFilterActive,
+    parsedPriceMin,
+    parsedPriceMax,
+    locationFilterActive,
+    countryFilter,
+    stateFilter,
+  ]);
 
   const tallBannerShellClass =
     "relative mt-6 h-56 max-h-96 w-full overflow-hidden rounded-2xl bg-gradient-to-br from-ambuhub-100 to-ambuhub-200/80 sm:mt-8 sm:h-72 md:mt-10 md:h-96";
@@ -593,8 +811,8 @@ export function CategoryServiceListing({ category, sections }: Props) {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-8">
-          <aside className="lg:sticky lg:top-24 lg:self-start">
-            <div className="rounded-2xl border border-ambuhub-100 bg-gradient-to-br from-ambuhub-600 to-ambuhub-800 p-5 shadow-sm">
+          <aside className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-6.5rem)] lg:self-start">
+            <div className="rounded-2xl border border-ambuhub-100 bg-gradient-to-br from-ambuhub-600 to-ambuhub-800 p-4 shadow-sm lg:max-h-[inherit] lg:overflow-y-auto">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-semibold text-white">Search & filters</p>
                 <button
@@ -604,24 +822,25 @@ export function CategoryServiceListing({ category, sections }: Props) {
                     setSearchQuery("");
                     setDepartmentFilter("all");
                     setListingTypeFilter("all");
+                    setPriceMinInput("");
+                    setPriceMaxInput("");
+                    setCountryFilter("all");
+                    setStateFilter("all");
                   }}
                 >
                   Reset
                 </button>
               </div>
 
-              <div className="mt-4 space-y-4">
+              <div className="mt-3 space-y-2.5">
                 <div>
-                  <label
-                    htmlFor="services-smart-search"
-                    className="block text-sm font-medium text-white"
-                  >
+                  <label htmlFor="services-smart-search" className={filterLabelClass}>
                     Search listings
                   </label>
-                  <div className="relative mt-1.5">
+                  <div className="relative mt-1">
                     <Search
-                      size={16}
-                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-foreground/45"
+                      size={15}
+                      className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-foreground/45"
                       aria-hidden
                     />
                     <input
@@ -630,23 +849,20 @@ export function CategoryServiceListing({ category, sections }: Props) {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search title, description, price..."
-                      className="w-full rounded-xl border border-ambuhub-200 bg-white py-3 pl-9 pr-4 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25"
+                      className={`${filterControlClass} py-2 pl-8 pr-3`}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="department-filter"
-                    className="block text-sm font-medium text-white"
-                  >
+                  <label htmlFor="department-filter" className={filterLabelClass}>
                     Department
                   </label>
                   <select
                     id="department-filter"
                     value={departmentFilter}
                     onChange={(e) => setDepartmentFilter(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25"
+                    className={`mt-1 ${filterControlClass}`}
                   >
                     <option value="all">All departments</option>
                     {departmentOptions.map((option) => (
@@ -658,10 +874,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="listing-type-filter"
-                    className="block text-sm font-medium text-white"
-                  >
+                  <label htmlFor="listing-type-filter" className={filterLabelClass}>
                     Listing type
                   </label>
                   <select
@@ -670,7 +883,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
                     onChange={(e) =>
                       setListingTypeFilter(e.target.value as ListingTypeFilter)
                     }
-                    className="mt-1.5 w-full rounded-xl border border-ambuhub-200 bg-white px-4 py-3 text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25"
+                    className={`mt-1 ${filterControlClass}`}
                   >
                     <option value="all">All types</option>
                     <option value="sale">Sale</option>
@@ -679,6 +892,132 @@ export function CategoryServiceListing({ category, sections }: Props) {
                     <option value="none">Not specified</option>
                   </select>
                 </div>
+
+                <div>
+                  <label htmlFor="country-filter" className={filterLabelClass}>
+                    Country
+                  </label>
+                  <select
+                    id="country-filter"
+                    value={countryFilter}
+                    onChange={(e) => {
+                      setCountryFilter(e.target.value);
+                      setStateFilter("all");
+                    }}
+                    disabled={!locationOptions.hasCountries}
+                    className={`mt-1 ${filterControlDisabledClass}`}
+                  >
+                    <option value="all">All countries</option>
+                    {locationOptions.countries.map((option) => (
+                      <option key={option.code} value={option.code}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  {!locationOptions.hasCountries ? (
+                    <p className="mt-1 text-xs text-white/75">
+                      No country set on listings in this category.
+                    </p>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label htmlFor="state-filter" className={filterLabelClass}>
+                    State / province
+                  </label>
+                  <select
+                    id="state-filter"
+                    value={stateFilter}
+                    onChange={(e) => setStateFilter(e.target.value)}
+                    disabled={
+                      !locationOptions.hasStates || stateFilterOptions.length === 0
+                    }
+                    className={`mt-1 ${filterControlDisabledClass}`}
+                  >
+                    <option value="all">All states / provinces</option>
+                    {stateFilterOptions.map((option) => (
+                      <option
+                        key={stateFilterOptionValue(option)}
+                        value={stateFilterOptionValue(option)}
+                      >
+                        {option.label}
+                        {countryFilter === "all" && option.countryCode
+                          ? ` (${getCountryNameByCode(option.countryCode) ?? option.countryCode.toUpperCase()})`
+                          : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {!locationOptions.hasStates ? (
+                    <p className="mt-1 text-xs text-white/75">
+                      No state or province set on listings in this category.
+                    </p>
+                  ) : countryFilter !== "all" &&
+                    stateFilterOptions.length === 0 ? (
+                    <p className="mt-1 text-xs text-white/75">
+                      No states listed for this country in this category.
+                    </p>
+                  ) : null}
+                </div>
+
+                <fieldset className="min-w-0">
+                  <legend className={filterLabelClass}>Price range (₦)</legend>
+                  {priceBounds.hasPrices ? (
+                    <p className="mt-0.5 text-[11px] leading-snug text-white/75">
+                      {formatNaira(priceBounds.min)} – {formatNaira(priceBounds.max)}
+                    </p>
+                  ) : (
+                    <p className="mt-0.5 text-[11px] leading-snug text-white/75">
+                      No priced listings in this category yet.
+                    </p>
+                  )}
+                  <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                    <div className="min-w-0">
+                      <label
+                        htmlFor="price-min-filter"
+                        className="sr-only"
+                      >
+                        Minimum price
+                      </label>
+                      <input
+                        id="price-min-filter"
+                        type="text"
+                        inputMode="decimal"
+                        autoComplete="off"
+                        value={priceMinInput}
+                        onChange={(e) => setPriceMinInput(e.target.value)}
+                        placeholder="Min"
+                        disabled={!priceBounds.hasPrices}
+                        className={`${filterControlDisabledClass} placeholder:text-foreground/45`}
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <label
+                        htmlFor="price-max-filter"
+                        className="sr-only"
+                      >
+                        Maximum price
+                      </label>
+                      <input
+                        id="price-max-filter"
+                        type="text"
+                        inputMode="decimal"
+                        autoComplete="off"
+                        value={priceMaxInput}
+                        onChange={(e) => setPriceMaxInput(e.target.value)}
+                        placeholder="Max"
+                        disabled={!priceBounds.hasPrices}
+                        className={`${filterControlDisabledClass} placeholder:text-foreground/45`}
+                      />
+                    </div>
+                  </div>
+                  {parsedPriceMin !== null &&
+                  parsedPriceMax !== null &&
+                  parsedPriceMin > parsedPriceMax ? (
+                    <p className="mt-1.5 text-xs text-amber-200">
+                      Min is above max — showing listings at or above min only.
+                    </p>
+                  ) : null}
+                </fieldset>
               </div>
             </div>
           </aside>

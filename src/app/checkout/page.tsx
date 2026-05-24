@@ -12,6 +12,7 @@ import {
   patchCartItemQuantity,
   postSimulateCheckout,
 } from "@/lib/marketplace-cart";
+import { postCheckoutReviewUrl } from "@/lib/reviews";
 
 const naira = new Intl.NumberFormat("en-NG", { maximumFractionDigits: 2 });
 
@@ -70,7 +71,7 @@ export default function CheckoutPage() {
     try {
       const { order } = await postSimulateCheckout();
       await refresh();
-      router.push(`/receipts/${order.id}`);
+      router.push(postCheckoutReviewUrl(order));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Payment could not be completed");
     } finally {

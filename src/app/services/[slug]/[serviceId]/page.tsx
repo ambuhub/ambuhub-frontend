@@ -5,7 +5,11 @@ import { Header } from "@/components/Header";
 import { ListingDetailExtras } from "@/components/reviews/ListingDetailExtras";
 import { ListingDetailMarketplaceActions } from "@/components/services/ListingDetailMarketplaceActions";
 import { MarketplaceListingDetail } from "@/components/services/MarketplaceListingDetail";
-import { fetchMarketplaceServiceByIdForPage } from "@/lib/service-category-page-data";
+import { pickListingRecommendations } from "@/lib/listing-recommendations";
+import {
+  fetchMarketplaceServiceByIdForPage,
+  fetchMarketplaceServices,
+} from "@/lib/service-category-page-data";
 
 type PageProps = {
   params: Promise<{ slug: string; serviceId: string }>;
@@ -41,6 +45,8 @@ export default async function MarketplaceListingDetailPage({
   }
 
   const authReturnPath = `/services/${encodeURIComponent(slug)}/${encodeURIComponent(serviceId)}`;
+  const marketplace = await fetchMarketplaceServices();
+  const recommendations = pickListingRecommendations(service, marketplace);
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-gradient-to-b from-slate-50/95 via-sky-50/30 to-white">
@@ -59,7 +65,13 @@ export default async function MarketplaceListingDetailPage({
             />
           }
         >
-          <ListingDetailExtras serviceId={service.id} variant="public" />
+          <ListingDetailExtras
+            serviceId={service.id}
+            variant="public"
+            recommendations={recommendations}
+            categorySlug={slug}
+            categoryName={service.category.name}
+          />
         </MarketplaceListingDetail>
       </main>
       <Footer />

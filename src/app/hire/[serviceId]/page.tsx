@@ -40,6 +40,7 @@ import {
   postHireSimulateCheckout,
 } from "@/lib/marketplace-hire";
 import type { MarketplaceServiceRow } from "@/lib/service-category-page-data";
+import { postCheckoutReviewUrl } from "@/lib/reviews";
 
 const naira = new Intl.NumberFormat("en-NG", { maximumFractionDigits: 2 });
 
@@ -262,7 +263,7 @@ export default function HireCheckoutPage() {
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event(AMBUHUB_MARKETPLACE_INVALIDATE_EVENT));
       }
-      router.push(`/receipts/${order.id}`);
+      router.push(postCheckoutReviewUrl(order));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Payment could not be completed");
     } finally {

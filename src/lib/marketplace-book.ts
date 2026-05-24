@@ -1,7 +1,14 @@
 import { API_PROXY_PREFIX } from "@/lib/api";
+import { gapMinutesToHours } from "@/lib/booking-gap";
 import type { BookingWindow } from "@/lib/booking-window";
+import type {
+  HourlyBookingDayDto,
+  HourlyBookingSchedule,
+} from "@/lib/hourly-booking-schedule";
 import type { OrderDetailClient } from "@/lib/marketplace-cart";
 import type { PricingPeriod } from "@/lib/pricing-period";
+
+export type { HourlyBookingDayDto };
 
 function proxyUrl(path: string): string {
   const base = API_PROXY_PREFIX.replace(/\/$/, "");
@@ -11,11 +18,14 @@ function proxyUrl(path: string): string {
 
 export type BookingAvailabilityResponse = {
   bookingWindow: BookingWindow | null;
+  hourlyBookingSchedule?: HourlyBookingSchedule | null;
   bookingGapMinutes: number;
+  bookingGapHours: number;
   price: number | null;
   pricingPeriod: PricingPeriod | null;
   busyIntervals: { start: string; end: string }[];
   freeRanges: { start: string; end: string }[];
+  days?: HourlyBookingDayDto[];
 };
 
 export async function fetchBookingAvailability(
@@ -34,6 +44,9 @@ export async function fetchBookingAvailability(
   if (!res.ok) {
     throw new Error(data.message ?? "Could not load availability");
   }
+  if (typeof data.bookingGapHours !== "number") {
+    data.bookingGapHours = gapMinutesToHours(data.bookingGapMinutes ?? 0);
+  }
   return data;
 }
 
@@ -41,6 +54,9 @@ export async function patchBookingSettings(
   serviceId: string,
   payload: {
     bookingWindow?: BookingWindow;
+    hourlyBookingSchedule?: HourlyBookingSchedule;
+    bookingGapHours?: number;
+    /** @deprecated Use bookingGapHours */
     bookingGapMinutes?: number;
     price?: number | null;
     pricingPeriod?: PricingPeriod | null;

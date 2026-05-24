@@ -32,7 +32,9 @@ type MyService = {
   price?: number | null;
   pricingPeriod?: PricingPeriod | null;
   bookingWindow?: BookingWindow | null;
+  hourlyBookingSchedule?: import("@/lib/hourly-booking-schedule").HourlyBookingSchedule | null;
   bookingGapMinutes?: number | null;
+  bookingGapHours?: number | null;
   departmentName: string;
   category: { id: string; slug: string; name: string };
   photoUrls: string[];

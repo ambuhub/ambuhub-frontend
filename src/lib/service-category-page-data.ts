@@ -4,6 +4,7 @@ import {
   getServiceBySlug,
 } from "@/lib/ambuhub-services";
 import type { BookingWindow } from "@/lib/booking-window";
+import type { HourlyBookingSchedule } from "@/lib/hourly-booking-schedule";
 import type { HireReturnWindow } from "@/lib/hire-return-window";
 import type { PricingPeriod } from "@/lib/pricing-period";
 import { MARKETPLACE_SERVICES_CACHE_TAG } from "@/lib/cache-tags";
@@ -18,6 +19,15 @@ export type ServiceCategoryPageDto = {
   thumbnailUrl?: string;
   bannerUrl?: string;
   note?: string;
+};
+
+export type MarketplaceListingProvider = {
+  businessName: string;
+  website: string | null;
+  physicalAddress: string;
+  phone: string | null;
+  countryCode: string | null;
+  contactName: string | null;
 };
 
 export type MarketplaceServiceRow = {
@@ -39,7 +49,11 @@ export type MarketplaceServiceRow = {
   officeAddress?: string | null;
   hireReturnWindow?: HireReturnWindow | null;
   bookingWindow?: BookingWindow | null;
+  hourlyBookingSchedule?: HourlyBookingSchedule | null;
   bookingGapMinutes?: number | null;
+  bookingGapHours?: number | null;
+  /** Set on marketplace detail-by-id responses. */
+  provider?: MarketplaceListingProvider | null;
 };
 
 export type DepartmentServiceSection = {

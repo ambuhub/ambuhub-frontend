@@ -13,6 +13,7 @@ import {
   formatPricingPeriodLabel,
   isPricingPeriod,
 } from "@/lib/pricing-period";
+import { ListingProviderSection } from "@/components/services/ListingProviderSection";
 import type { MarketplaceServiceRow } from "@/lib/service-category-page-data";
 
 const nairaFmt = new Intl.NumberFormat("en-NG", { maximumFractionDigits: 2 });
@@ -420,6 +421,10 @@ export function MarketplaceListingDetail({
               ) : null}
             </div>
           </article>
+
+          {service.provider ? (
+            <ListingProviderSection provider={service.provider} variant={variant} />
+          ) : null}
 
           <article className={`${descCardClass} p-5 sm:p-6`}>
             {isPublic ? <div className={neonTopBar} aria-hidden /> : null}

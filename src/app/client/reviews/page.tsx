@@ -8,6 +8,7 @@ import { ReviewForm } from "@/components/reviews/ReviewForm";
 import {
   fetchEligibleReviews,
   fetchMyReviews,
+  lineKindLabel,
   type EligibleReviewDto,
   type ReviewDto,
 } from "@/lib/reviews";
@@ -88,9 +89,19 @@ function ReviewsPageContent() {
           Reviews
         </h1>
         <p className="mt-2 text-sm text-slate-600">
-          Leave feedback only for listings you have purchased or hired. Hire
-          reviews unlock after the hire period ends.
+          Leave feedback right after you complete a purchase, hire, or booking.
         </p>
+        {preselectOrderId ? (
+          <p className="mt-2 text-sm text-slate-600">
+            <Link
+              href={`/receipts/${encodeURIComponent(preselectOrderId)}`}
+              className="font-semibold text-[#0069b4] hover:underline"
+            >
+              View receipt
+            </Link>{" "}
+            for this order.
+          </p>
+        ) : null}
       </div>
 
       {loading ? (
@@ -119,8 +130,8 @@ function ReviewsPageContent() {
             </h2>
             {!eligible?.length ? (
               <p className="mt-4 rounded-2xl border border-dashed border-cyan-300/50 bg-white px-6 py-10 text-center text-sm text-slate-600">
-                Nothing to review right now. After you buy or complete a hire, eligible
-                listings will appear here and on your receipt.
+                Nothing to review right now. After you buy, hire, or book a listing,
+                it will appear here so you can share feedback right away.
               </p>
             ) : (
               <ul className="mt-4 flex flex-col gap-4">
@@ -138,10 +149,12 @@ function ReviewsPageContent() {
                             {item.serviceTitle}
                           </p>
                           <p className="mt-1 text-xs text-slate-600">
-                            Receipt {item.receiptNumber} ·{" "}
-                            {item.lineKind === "hire" ? "Hire" : "Purchase"}
+                            Receipt {item.receiptNumber} · {lineKindLabel(item.lineKind)}
                             {item.hireEnd
-                              ? ` · ended ${new Date(item.hireEnd).toLocaleDateString()}`
+                              ? ` · hire ends ${new Date(item.hireEnd).toLocaleDateString()}`
+                              : null}
+                            {item.bookEnd
+                              ? ` · session ends ${new Date(item.bookEnd).toLocaleDateString()}`
                               : null}
                           </p>
                         </div>

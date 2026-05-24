@@ -10,7 +10,18 @@ import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider
 import { bookUnavailableReason, isBookBookable } from "@/lib/book-bookable";
 import { formatBookingWindowSummary } from "@/lib/booking-window";
 import { AMBUHUB_MARKETPLACE_INVALIDATE_EVENT } from "@/lib/cache-tags";
-import { previewHireLineTotalNgn } from "@/lib/hire-pricing-client";
+import { HourlyBookCheckout } from "@/components/book/HourlyBookCheckout";
+import type { PickedFreeSlot } from "@/lib/book-form-datetime";
+import {
+  bookFormToCheckoutPayload,
+  formatBookRangeLabel,
+  formValuesMatchPickedSlot,
+  freeRangeToFormValues,
+  isBookRangeWithinFreeSlots,
+  previewBookLineTotalNgn,
+} from "@/lib/book-form-datetime";
+import { parseHourlyBookPayload } from "@/lib/hourly-book-slots";
+import { formatHourlyScheduleSummary, resolveHourlyBookingSchedule } from "@/lib/hourly-booking-schedule";
 import { fetchMarketplaceServiceById } from "@/lib/marketplace-hire";
 import {
   fetchBookingAvailability,
@@ -23,22 +34,12 @@ import {
   isPricingPeriod,
 } from "@/lib/pricing-period";
 import type { MarketplaceServiceRow } from "@/lib/service-category-page-data";
+import { postCheckoutReviewUrl } from "@/lib/reviews";
 
 const naira = new Intl.NumberFormat("en-NG", { maximumFractionDigits: 2 });
 
 function formatNaira(value: number): string {
   return `₦${naira.format(value)}`;
-}
-
-function formatRangeLabel(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
-  } catch {
-    return iso;
-  }
 }
 
 export default function BookCheckoutPage() {
@@ -55,6 +56,7 @@ export default function BookCheckoutPage() {
   const [loadingService, setLoadingService] = useState(true);
   const [bookStart, setBookStart] = useState("");
   const [bookEnd, setBookEnd] = useState("");
+  const [pickedSlot, setPickedSlot] = useState<PickedFreeSlot | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -108,41 +110,86 @@ export default function BookCheckoutPage() {
       ? service.pricingPeriod
       : null;
 
+  const bookingWindow =
+    service?.bookingWindow ?? availability?.bookingWindow ?? null;
+
   const preview = useMemo(() => {
     if (!service || !period || !isBookBookable(service)) {
       return null;
     }
     const unit = service.price ?? 0;
-    return previewHireLineTotalNgn(period, bookStart, bookEnd, unit, 1);
-  }, [service, period, bookStart, bookEnd]);
+    return previewBookLineTotalNgn(
+      period,
+      bookStart,
+      bookEnd,
+      unit,
+      bookingWindow,
+    );
+  }, [service, period, bookStart, bookEnd, bookingWindow]);
+
+  const isHourly = period === "hourly";
 
   const rangeInFree = useMemo(() => {
-    if (!availability?.freeRanges.length || !bookStart.trim() || !bookEnd.trim()) {
+    if (!period || !availability) {
       return null;
     }
-    try {
-      const start = new Date(bookStart).getTime();
-      const end = new Date(bookEnd).getTime();
-      if (Number.isNaN(start) || Number.isNaN(end) || end <= start) {
+    if (isHourly) {
+      const payload = parseHourlyBookPayload(bookStart, bookEnd);
+      if (!payload) {
         return false;
       }
       return availability.freeRanges.some((r) => {
         const fs = new Date(r.start).getTime();
         const fe = new Date(r.end).getTime();
-        return start >= fs && end <= fe;
+        return (
+          new Date(payload.bookStart).getTime() >= fs &&
+          new Date(payload.bookEnd).getTime() <= fe
+        );
       });
-    } catch {
-      return false;
     }
-  }, [availability, bookStart, bookEnd]);
+    if (!availability.freeRanges.length) {
+      return null;
+    }
+    if (
+      pickedSlot &&
+      formValuesMatchPickedSlot(period, bookStart, bookEnd, pickedSlot)
+    ) {
+      return true;
+    }
+    return isBookRangeWithinFreeSlots(
+      period,
+      bookStart,
+      bookEnd,
+      availability.freeRanges,
+      bookingWindow,
+    );
+  }, [
+    availability,
+    bookStart,
+    bookEnd,
+    period,
+    bookingWindow,
+    pickedSlot,
+    isHourly,
+  ]);
 
-  const pickFromFree = useCallback((isoStart: string) => {
-    setBookStart(isoStart.slice(0, 16));
-    const end = new Date(isoStart);
-    end.setHours(end.getHours() + 1);
-    setBookEnd(end.toISOString().slice(0, 16));
-    setError(null);
-  }, []);
+  const pickFromFree = useCallback(
+    (isoStart: string, isoEnd: string) => {
+      if (!period) {
+        return;
+      }
+      const values = freeRangeToFormValues(period, isoStart, isoEnd);
+      if (!values) {
+        setError("Could not apply this time slot.");
+        return;
+      }
+      setPickedSlot({ isoStart, isoEnd });
+      setBookStart(values.bookStart);
+      setBookEnd(values.bookEnd);
+      setError(null);
+    },
+    [period],
+  );
 
   async function handleCheckout() {
     setError(null);
@@ -158,29 +205,27 @@ export default function BookCheckoutPage() {
       setError("Selected time must fall within an available slot.");
       return;
     }
-    let startPayload = bookStart.trim();
-    let endPayload = bookEnd.trim();
+    let payload: { bookStart: string; bookEnd: string } | null;
     if (period === "hourly") {
-      const s = new Date(bookStart);
-      const e = new Date(bookEnd);
-      if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) {
-        setError("Enter valid start and end date-times.");
-        return;
-      }
-      startPayload = s.toISOString();
-      endPayload = e.toISOString();
+      payload = parseHourlyBookPayload(bookStart, bookEnd);
+    } else {
+      payload = bookFormToCheckoutPayload(period, bookStart, bookEnd, bookingWindow);
+    }
+    if (!payload) {
+      setError("Choose valid booking start and end times.");
+      return;
     }
     setBusy(true);
     try {
       const { order } = await postBookSimulateCheckout({
         serviceId: service.id,
-        bookStart: startPayload,
-        bookEnd: endPayload,
+        bookStart: payload.bookStart,
+        bookEnd: payload.bookEnd,
       });
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event(AMBUHUB_MARKETPLACE_INVALIDATE_EVENT));
       }
-      router.push(`/receipts/${order.id}`);
+      router.push(postCheckoutReviewUrl(order));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Payment could not be completed");
     } finally {
@@ -191,12 +236,18 @@ export default function BookCheckoutPage() {
   const loginNext = serviceId ? `/book/${encodeURIComponent(serviceId)}` : "/book";
   const loginHref = `/auth?next=${encodeURIComponent(loginNext)}`;
   const bookable = service ? isBookBookable(service) : false;
+  const hourlySchedule = resolveHourlyBookingSchedule(
+    service?.hourlyBookingSchedule ?? availability?.hourlyBookingSchedule,
+    service?.bookingWindow ?? availability?.bookingWindow,
+  );
   const windowSummary =
-    service?.bookingWindow != null
-      ? formatBookingWindowSummary(service.bookingWindow)
-      : availability?.bookingWindow
-        ? formatBookingWindowSummary(availability.bookingWindow)
-        : null;
+    period === "hourly" && hourlySchedule
+      ? formatHourlyScheduleSummary(hourlySchedule)
+      : service?.bookingWindow != null
+        ? formatBookingWindowSummary(service.bookingWindow)
+        : availability?.bookingWindow
+          ? formatBookingWindowSummary(availability.bookingWindow)
+          : null;
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-slate-50/80">
@@ -240,84 +291,128 @@ export default function BookCheckoutPage() {
                     <p className="flex items-start gap-2 text-sm text-foreground/80">
                       <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700" />
                       <span>
-                        <strong className="font-semibold">Weekly hours:</strong>{" "}
+                        <strong className="font-semibold">
+                          {isHourly ? "Default weekly hours:" : "Weekly hours:"}
+                        </strong>{" "}
                         {windowSummary}
-                        {availability && availability.bookingGapMinutes > 0
-                          ? ` · ${availability.bookingGapMinutes} min gap between bookings`
+                        {availability && (availability.bookingGapHours ?? 0) > 0
+                          ? ` · ${availability.bookingGapHours}h buffer after each booking`
                           : null}
                       </span>
                     </p>
                   ) : null}
 
-                  {availability && availability.freeRanges.length > 0 ? (
-                    <div className="rounded-2xl border border-cyan-200/60 bg-white p-4 shadow-sm">
-                      <h2 className="text-sm font-semibold text-foreground">
-                        Available times (next 30 days)
-                      </h2>
-                      <ul className="mt-3 max-h-48 space-y-2 overflow-y-auto text-sm">
-                        {availability.freeRanges.slice(0, 24).map((r) => (
-                          <li key={`${r.start}-${r.end}`}>
-                            <button
-                              type="button"
-                              onClick={() => pickFromFree(r.start)}
-                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left hover:border-cyan-400 hover:bg-cyan-50/50"
-                            >
-                              {formatRangeLabel(r.start)} – {formatRangeLabel(r.end)}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                  {isHourly && availability ? (
+                    <HourlyBookCheckout
+                      service={service}
+                      availability={availability}
+                      bookStart={bookStart}
+                      bookEnd={bookEnd}
+                      onBookStartChange={setBookStart}
+                      onBookEndChange={setBookEnd}
+                      onClearError={() => setError(null)}
+                    />
                   ) : (
-                    <p className="text-sm text-foreground/60">
-                      No open slots in the next 30 days. Try another listing or check back
-                      later.
-                    </p>
+                    <>
+                      {availability && availability.freeRanges.length > 0 ? (
+                        <div className="rounded-2xl border border-cyan-200/60 bg-white p-4 shadow-sm">
+                          <h2 className="text-sm font-semibold text-foreground">
+                            Available times (next 30 days)
+                          </h2>
+                          <ul className="mt-3 max-h-48 space-y-2 overflow-y-auto text-sm">
+                            {availability.freeRanges.slice(0, 24).map((r) => (
+                              <li key={`${r.start}-${r.end}`}>
+                                <button
+                                  type="button"
+                                  onClick={() => pickFromFree(r.start, r.end)}
+                                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left hover:border-cyan-400 hover:bg-cyan-50/50"
+                                >
+                                  {formatBookRangeLabel(r.start)} –{" "}
+                                  {formatBookRangeLabel(r.end)}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-foreground/60">
+                          No open slots in the next 30 days. Try another listing or check
+                          back later.
+                        </p>
+                      )}
+
+                      <div className="rounded-2xl border border-cyan-200/60 bg-white p-5 shadow-sm">
+                        <h2 className="text-sm font-semibold text-foreground">
+                          Your booking
+                        </h2>
+                        <p className="mt-1 text-xs text-foreground/60">
+                          Dates use the provider’s booking calendar days (WAT). Click a
+                          slot or pick start and end dates on available days.
+                        </p>
+                        {pickedSlot ? (
+                          <p className="mt-2 text-xs font-medium text-cyan-900/80">
+                            One day selected — provider hours (
+                            {formatBookRangeLabel(pickedSlot.isoStart)} –{" "}
+                            {formatBookRangeLabel(pickedSlot.isoEnd)}) apply on that date.
+                          </p>
+                        ) : null}
+                        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-700">
+                              Start date
+                            </label>
+                            <input
+                              type="date"
+                              value={bookStart}
+                              onChange={(e) => {
+                                setError(null);
+                                setPickedSlot(null);
+                                setBookStart(e.target.value);
+                              }}
+                              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-700">
+                              End date
+                            </label>
+                            <input
+                              type="date"
+                              value={bookEnd}
+                              onChange={(e) => {
+                                setError(null);
+                                setPickedSlot(null);
+                                setBookEnd(e.target.value);
+                              }}
+                              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                            />
+                          </div>
+                        </div>
+                        {rangeInFree === false && bookStart && bookEnd ? (
+                          <p className="mt-2 text-xs text-amber-800">
+                            Selected range is outside available hours or overlaps another
+                            booking.
+                          </p>
+                        ) : null}
+                        {preview ? (
+                          <p className="mt-4 text-lg font-semibold text-foreground">
+                            Total: {formatNaira(preview.lineTotalNgn)}
+                            <span className="ml-2 text-sm font-normal text-foreground/60">
+                              ({preview.billableUnits} × {formatPricingPeriodLabel(period!)})
+                            </span>
+                          </p>
+                        ) : null}
+                      </div>
+
+                      {error ? (
+                        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+                          {error}
+                        </p>
+                      ) : null}
+                    </>
                   )}
 
-                  <div className="rounded-2xl border border-cyan-200/60 bg-white p-5 shadow-sm">
-                    <h2 className="text-sm font-semibold text-foreground">Your booking</h2>
-                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700">
-                          Start
-                        </label>
-                        <input
-                          type={period === "hourly" ? "datetime-local" : "date"}
-                          value={bookStart}
-                          onChange={(e) => setBookStart(e.target.value)}
-                          className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700">
-                          End
-                        </label>
-                        <input
-                          type={period === "hourly" ? "datetime-local" : "date"}
-                          value={bookEnd}
-                          onChange={(e) => setBookEnd(e.target.value)}
-                          className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                        />
-                      </div>
-                    </div>
-                    {rangeInFree === false && bookStart && bookEnd ? (
-                      <p className="mt-2 text-xs text-amber-800">
-                        Selected range is outside available hours or overlaps another
-                        booking.
-                      </p>
-                    ) : null}
-                    {preview ? (
-                      <p className="mt-4 text-lg font-semibold text-foreground">
-                        Total: {formatNaira(preview.lineTotalNgn)}
-                        <span className="ml-2 text-sm font-normal text-foreground/60">
-                          ({preview.billableUnits} × {formatPricingPeriodLabel(period)})
-                        </span>
-                      </p>
-                    ) : null}
-                  </div>
-
-                  {error ? (
+                  {isHourly && error ? (
                     <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
                       {error}
                     </p>
@@ -328,7 +423,7 @@ export default function BookCheckoutPage() {
                   ) : user ? (
                     <button
                       type="button"
-                      disabled={busy || !preview}
+                      disabled={busy || !preview || rangeInFree === false}
                       onClick={() => void handleCheckout()}
                       className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#004a7c] to-cyan-600 px-6 py-3 text-sm font-semibold text-white shadow-lg disabled:opacity-50 sm:w-auto"
                     >

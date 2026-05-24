@@ -97,7 +97,7 @@ export function ListingDetailReviewPrompt({
             >
               Sign in
             </Link>{" "}
-            to leave a review after you have purchased or completed a hire.
+            to leave a review after you purchase, hire, or book a listing.
           </p>
         </div>
       );
@@ -107,7 +107,7 @@ export function ListingDetailReviewPrompt({
         <Link href={loginHref} className="font-semibold text-ambuhub-brand underline">
           Sign in
         </Link>{" "}
-        to leave a review after you have purchased or completed a hire.
+        to leave a review after you purchase, hire, or book a listing.
       </p>
     );
   }
