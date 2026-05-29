@@ -107,15 +107,15 @@ export function HourlyBookCheckout({
       bookStart,
       bookEnd,
       service.price,
-      availability.hourlyBookingSchedule ?? service.bookingWindow,
+      availability.bookingWindow ?? service.bookingWindow,
     );
   }, [
     payload,
     service.price,
     bookStart,
     bookEnd,
-    availability.hourlyBookingSchedule,
     availability.bookingWindow,
+    service.bookingWindow,
   ]);
 
   const rangeValid = useMemo(() => {
