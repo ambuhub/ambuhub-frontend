@@ -1,4 +1,4 @@
-import { getApiBaseUrl } from "@/lib/api";
+import { cache } from "react";
 import {
   AMBUHUB_SERVICE_SLUGS,
   getServiceBySlug,
@@ -8,8 +8,44 @@ import type { HourlyBookingSchedule } from "@/lib/hourly-booking-schedule";
 import type { HireReturnWindow } from "@/lib/hire-return-window";
 import type { PricingPeriod } from "@/lib/pricing-period";
 import { MARKETPLACE_SERVICES_CACHE_TAG } from "@/lib/cache-tags";
+import { getServerBackendOrigin } from "@/lib/server-backend-origin";
 
 const REVALIDATE = 120;
+const CATEGORIES_REVALIDATE = 3600;
+
+const RETRYABLE_STATUSES = new Set([429, 502, 503]);
+const RETRY_DELAYS_MS = [300, 800];
+
+function normalizeCategorySlug(slug: string): string {
+  return slug.trim().toLowerCase();
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+): Promise<Response> {
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      const res = await fetch(url, init);
+      if (
+        !RETRYABLE_STATUSES.has(res.status) ||
+        attempt === RETRY_DELAYS_MS.length
+      ) {
+        return res;
+      }
+    } catch (err) {
+      if (attempt === RETRY_DELAYS_MS.length) {
+        throw err;
+      }
+    }
+    await sleep(RETRY_DELAYS_MS[attempt] ?? 800);
+  }
+  throw new Error("fetchWithRetry exhausted retries");
+}
 
 export type ServiceCategoryPageDto = {
   id: string;
@@ -62,30 +98,43 @@ export type DepartmentServiceSection = {
   services: MarketplaceServiceRow[];
 };
 
+/** Shared cached list fetch for all SSR category consumers. Never throws. */
+export const fetchServiceCategoriesList = cache(
+  async (): Promise<ServiceCategoryPageDto[]> => {
+    const base = getServerBackendOrigin();
+    try {
+      const res = await fetchWithRetry(`${base}/api/service-categories`, {
+        next: { revalidate: CATEGORIES_REVALIDATE },
+      });
+      if (!res.ok) {
+        return [];
+      }
+      const data = (await res.json()) as {
+        serviceCategories?: ServiceCategoryPageDto[];
+      };
+      return Array.isArray(data.serviceCategories) ? data.serviceCategories : [];
+    } catch {
+      return [];
+    }
+  },
+);
+
 /**
- * @returns `null` when category is missing (404).
- * @throws on other HTTP failures or network errors.
+ * @returns `null` when category is missing or the API is temporarily unavailable.
  */
 export async function fetchServiceCategoryBySlug(
   slug: string,
 ): Promise<ServiceCategoryPageDto | null> {
-  const base = getApiBaseUrl();
-  const res = await fetch(
-    `${base}/api/service-categories/${encodeURIComponent(slug)}`,
-    { next: { revalidate: REVALIDATE } },
+  const rows = await fetchServiceCategoriesList();
+  return (
+    rows.find(
+      (c) => normalizeCategorySlug(c.slug) === normalizeCategorySlug(slug),
+    ) ?? null
   );
-  if (res.status === 404) {
-    return null;
-  }
-  if (!res.ok) {
-    throw new Error(`Failed to load service category (${res.status})`);
-  }
-  const data = (await res.json()) as { serviceCategory?: ServiceCategoryPageDto };
-  return data.serviceCategory ?? null;
 }
 
 export async function fetchMarketplaceServices(): Promise<MarketplaceServiceRow[]> {
-  const base = getApiBaseUrl();
+  const base = getServerBackendOrigin();
   try {
     const res = await fetch(`${base}/api/services/marketplace`, {
       next: {
@@ -117,7 +166,7 @@ export async function fetchMarketplaceServiceByIdForPage(
   if (!trimmed || !isLikelyMongoObjectId(trimmed)) {
     return null;
   }
-  const base = getApiBaseUrl();
+  const base = getServerBackendOrigin();
   try {
     const res = await fetch(
       `${base}/api/services/marketplace/${encodeURIComponent(trimmed)}`,
@@ -145,25 +194,11 @@ export async function fetchMarketplaceServiceByIdForPage(
 export async function fetchServiceCategorySlugsForStaticParams(): Promise<
   string[]
 > {
-  const base = getApiBaseUrl();
-  try {
-    const res = await fetch(`${base}/api/service-categories`, {
-      next: { revalidate: 3600 },
-    });
-    if (!res.ok) {
-      return [...AMBUHUB_SERVICE_SLUGS];
-    }
-    const data = (await res.json()) as {
-      serviceCategories?: { slug: string }[];
-    };
-    const rows = data.serviceCategories;
-    if (!Array.isArray(rows) || rows.length === 0) {
-      return [...AMBUHUB_SERVICE_SLUGS];
-    }
-    return rows.map((c) => c.slug);
-  } catch {
+  const rows = await fetchServiceCategoriesList();
+  if (rows.length === 0) {
     return [...AMBUHUB_SERVICE_SLUGS];
   }
+  return rows.map((c) => c.slug);
 }
 
 export function getCategoryPageTitleDescription(

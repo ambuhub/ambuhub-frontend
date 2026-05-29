@@ -24,19 +24,15 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  try {
-    const category = await fetchServiceCategoryBySlug(slug);
-    if (!category) {
-      return { title: "Services" };
-    }
-    const { title, description } = getCategoryPageTitleDescription(category);
-    return {
-      title: `${title} | Ambuhub`,
-      description,
-    };
-  } catch {
+  const category = await fetchServiceCategoryBySlug(slug);
+  if (!category) {
     return { title: "Services" };
   }
+  const { title, description } = getCategoryPageTitleDescription(category);
+  return {
+    title: `${title} | Ambuhub`,
+    description,
+  };
 }
 
 export default async function ServiceDetailPage({ params }: PageProps) {

@@ -1,5 +1,5 @@
-import { getApiBaseUrl } from "@/lib/api";
 import { AMBUHUB_SERVICE_SLUGS } from "@/lib/ambuhub-services";
+import { fetchServiceCategoriesList } from "@/lib/service-category-page-data";
 
 export type LandingServiceCategory = {
   id: string;
@@ -23,28 +23,12 @@ export function normalizeSlug(slug: string): string {
 }
 
 /**
- * Fetch categories for the home page (server). Uses ISR-style revalidation.
+ * Fetch categories for the home page (server). Uses shared cached list fetch.
  */
 export async function fetchLandingServiceCategories(): Promise<
   LandingServiceCategory[]
 > {
-  const base = getApiBaseUrl();
-  try {
-    const res = await fetch(`${base}/api/service-categories`, {
-      next: { revalidate: 120 },
-    });
-    if (!res.ok) {
-      return [];
-    }
-    const data = (await res.json()) as {
-      serviceCategories?: LandingServiceCategory[];
-    };
-    return Array.isArray(data.serviceCategories)
-      ? data.serviceCategories
-      : [];
-  } catch {
-    return [];
-  }
+  return fetchServiceCategoriesList();
 }
 
 /**
