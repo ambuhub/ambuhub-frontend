@@ -83,7 +83,7 @@ function toSaleDisplayRows(rows: ProviderSaleRow[]): ProviderBookingDisplayRow[]
 }
 
 export default function ProviderBookingsPage() {
-  const [tab, setTab] = useState<Tab>("sales");
+  const [tab, setTab] = useState<Tab>("hire");
   const [hireBookings, setHireBookings] = useState<ProviderHireBookingRow[] | null>(
     null,
   );
