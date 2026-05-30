@@ -78,3 +78,33 @@ export async function fetchProviderPersonnelBookings(): Promise<
   }
   return Array.isArray(data.bookings) ? data.bookings : [];
 }
+
+export type ProviderSaleRow = {
+  orderId: string;
+  receiptNumber: string;
+  paidAt: string;
+  serviceId: string;
+  listingTitle: string;
+  quantity: number;
+  unitPriceNgn: number;
+  lineTotalNgn: number;
+  customer: ProviderHireBookingCustomer;
+  primaryPhotoUrl?: string;
+};
+
+export async function fetchProviderSales(): Promise<ProviderSaleRow[]> {
+  const res = await fetch(`${API_PROXY_PREFIX}/orders/provider/sales`, {
+    credentials: "include",
+  });
+  const data = (await res.json()) as { sales?: ProviderSaleRow[]; message?: string };
+  if (res.status === 401) {
+    throw new Error("Sign in to view sales.");
+  }
+  if (res.status === 403) {
+    throw new Error("Only service providers can view sales.");
+  }
+  if (!res.ok) {
+    throw new Error(data.message ?? "Could not load sales.");
+  }
+  return Array.isArray(data.sales) ? data.sales : [];
+}

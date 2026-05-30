@@ -15,11 +15,21 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const backend = getServerBackendOrigin();
-  const upstream = await fetch(`${backend}/api/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  let upstream: Response;
+  try {
+    upstream = await fetch(`${backend}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    return NextResponse.json(
+      {
+        message: `Cannot reach API at ${backend}. Is the backend running?`,
+      },
+      { status: 502 },
+    );
+  }
 
   const text = await upstream.text();
   let payload: unknown;

@@ -19,7 +19,7 @@ import type { ProviderHireBookingCustomer } from "@/lib/provider-bookings";
 
 export type ProviderBookingDisplayRow = {
   key: string;
-  kind: "hire" | "personnel";
+  kind: "hire" | "personnel" | "sale";
   orderId: string;
   receiptNumber: string;
   paidAt: string;
@@ -27,9 +27,10 @@ export type ProviderBookingDisplayRow = {
   listingTitle: string;
   start: string;
   end: string;
-  pricingPeriod: string;
-  billableUnits: number;
+  pricingPeriod?: string;
+  billableUnits?: number;
   quantity: number;
+  unitPriceNgn?: number;
   lineTotalNgn: number;
   customer: ProviderHireBookingCustomer;
   primaryPhotoUrl?: string;
@@ -144,10 +145,17 @@ export function ProviderBookingDetailPanel({
     );
   }
 
-  const active = isBookingActive(row.end);
-  const periodLabel = isPricingPeriod(row.pricingPeriod)
-    ? formatPricingPeriodLabel(row.pricingPeriod)
-    : row.pricingPeriod;
+  const active = row.kind !== "sale" && isBookingActive(row.end);
+  const periodLabel =
+    row.pricingPeriod && isPricingPeriod(row.pricingPeriod)
+      ? formatPricingPeriodLabel(row.pricingPeriod)
+      : row.pricingPeriod;
+  const kindLabel =
+    row.kind === "hire"
+      ? "Hire booking"
+      : row.kind === "personnel"
+        ? "Personnel booking"
+        : "Sale order";
 
   return (
     <article
@@ -175,22 +183,24 @@ export function ProviderBookingDetailPanel({
           <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wider text-cyan-300/90">
-              {row.kind === "hire" ? "Hire booking" : "Personnel booking"}
+              {kindLabel}
             </p>
             <h2 className="mt-1 line-clamp-2 text-lg font-bold leading-snug">
               {row.listingTitle}
             </h2>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <span
-              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                active
-                  ? "bg-emerald-400/20 text-emerald-200 ring-1 ring-emerald-400/40"
-                  : "bg-white/10 text-slate-300 ring-1 ring-white/20"
-              }`}
-            >
-              {active ? "Active" : "Ended"}
-            </span>
+            {row.kind !== "sale" ? (
+              <span
+                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                  active
+                    ? "bg-emerald-400/20 text-emerald-200 ring-1 ring-emerald-400/40"
+                    : "bg-white/10 text-slate-300 ring-1 ring-white/20"
+                }`}
+              >
+                {active ? "Active" : "Ended"}
+              </span>
+            ) : null}
             {showClose && onClose ? (
               <button
                 type="button"
@@ -233,21 +243,23 @@ export function ProviderBookingDetailPanel({
           </div>
         </section>
 
-        <section>
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-            <Clock className="h-4 w-4 text-blue-600" aria-hidden />
-            Schedule
-          </h3>
-          <dl className="mt-3 space-y-3 rounded-xl border border-cyan-100/80 bg-gradient-to-br from-cyan-50/50 to-white p-4">
-            <DetailRow label="Starts" value={formatDateTime(row.start)} />
-            <DetailRow label="Ends" value={formatDateTime(row.end)} />
-            <DetailRow
-              label="Billing"
-              value={`${periodLabel} · ${row.billableUnits} unit${row.billableUnits === 1 ? "" : "s"}`}
-            />
-            <DetailRow label="Quantity" value={row.quantity} />
-          </dl>
-        </section>
+        {row.kind !== "sale" ? (
+          <section>
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <Clock className="h-4 w-4 text-blue-600" aria-hidden />
+              Schedule
+            </h3>
+            <dl className="mt-3 space-y-3 rounded-xl border border-cyan-100/80 bg-gradient-to-br from-cyan-50/50 to-white p-4">
+              <DetailRow label="Starts" value={formatDateTime(row.start)} />
+              <DetailRow label="Ends" value={formatDateTime(row.end)} />
+              <DetailRow
+                label="Billing"
+                value={`${periodLabel} · ${row.billableUnits} unit${row.billableUnits === 1 ? "" : "s"}`}
+              />
+              <DetailRow label="Quantity" value={row.quantity} />
+            </dl>
+          </section>
+        ) : null}
 
         <section>
           <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
@@ -255,6 +267,10 @@ export function ProviderBookingDetailPanel({
             Payment
           </h3>
           <dl className="mt-3 space-y-3 rounded-xl border border-blue-100 bg-blue-50/40 p-4">
+            {row.kind === "sale" && row.unitPriceNgn != null ? (
+              <DetailRow label="Unit price" value={formatNgn(row.unitPriceNgn)} />
+            ) : null}
+            <DetailRow label="Quantity" value={row.quantity} />
             <DetailRow label="Line total" value={formatNgn(row.lineTotalNgn)} />
             <DetailRow label="Paid at" value={formatDateTime(row.paidAt)} />
             <DetailRow label="Order ID" value={row.orderId} mono />

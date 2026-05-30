@@ -85,7 +85,7 @@ export function CountrySelect({
   );
 
   const listboxId = `${id}-listbox`;
-  const triggerClass = `${className} flex w-full items-center justify-between gap-2 text-left`;
+  const triggerClass = `cursor-pointer hover:border-slate-300 ${className} flex w-full items-center justify-between gap-2 text-left`;
 
   const onTriggerKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
     if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
@@ -168,7 +168,7 @@ export function CountrySelect({
           )}
         </span>
         <ChevronDown
-          className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`h-4 w-4 shrink-0 text-slate-600 transition-transform ${open ? "rotate-180" : ""}`}
           aria-hidden
         />
       </button>

@@ -1,5 +1,7 @@
 const ALLOWED_ROOTS = new Set([
+  "admin",
   "cart",
+  "concierge",
   "country-codes",
   "orders",
   "receipts",

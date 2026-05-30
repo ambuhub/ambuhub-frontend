@@ -1,4 +1,4 @@
-export type AuthUserRole = "client" | "service_provider" | "patient";
+export type AuthUserRole = "client" | "service_provider" | "patient" | "admin";
 
 export type PublicAuthUser = {
   id: string;
@@ -18,6 +18,9 @@ export type PublicAuthUser = {
 };
 
 export function postAuthPath(role: AuthUserRole): string {
+  if (role === "admin") {
+    return "/admin/dashboard";
+  }
   if (role === "service_provider") {
     return "/provider/dashboard";
   }

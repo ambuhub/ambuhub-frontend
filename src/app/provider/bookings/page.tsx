@@ -13,11 +13,13 @@ import {
 import {
   fetchProviderHireBookings,
   fetchProviderPersonnelBookings,
+  fetchProviderSales,
   type ProviderHireBookingRow,
   type ProviderPersonnelBookingRow,
+  type ProviderSaleRow,
 } from "@/lib/provider-bookings";
 
-type Tab = "hire" | "personnel";
+type Tab = "hire" | "personnel" | "sales";
 
 function toHireDisplayRows(rows: ProviderHireBookingRow[]): ProviderBookingDisplayRow[] {
   return rows.map((r) => ({
@@ -61,14 +63,34 @@ function toPersonnelDisplayRows(
   }));
 }
 
+function toSaleDisplayRows(rows: ProviderSaleRow[]): ProviderBookingDisplayRow[] {
+  return rows.map((r) => ({
+    key: bookingRowKey({ orderId: r.orderId, serviceId: r.serviceId, start: r.paidAt }),
+    kind: "sale",
+    orderId: r.orderId,
+    receiptNumber: r.receiptNumber,
+    paidAt: r.paidAt,
+    serviceId: r.serviceId,
+    listingTitle: r.listingTitle,
+    start: r.paidAt,
+    end: r.paidAt,
+    quantity: r.quantity,
+    unitPriceNgn: r.unitPriceNgn,
+    lineTotalNgn: r.lineTotalNgn,
+    customer: r.customer,
+    primaryPhotoUrl: r.primaryPhotoUrl,
+  }));
+}
+
 export default function ProviderBookingsPage() {
-  const [tab, setTab] = useState<Tab>("hire");
+  const [tab, setTab] = useState<Tab>("sales");
   const [hireBookings, setHireBookings] = useState<ProviderHireBookingRow[] | null>(
     null,
   );
   const [personnelBookings, setPersonnelBookings] = useState<
     ProviderPersonnelBookingRow[] | null
   >(null);
+  const [sales, setSales] = useState<ProviderSaleRow[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -79,19 +101,22 @@ export default function ProviderBookingsPage() {
       setLoading(true);
       setError(null);
       try {
-        const [hire, personnel] = await Promise.all([
+        const [hire, personnel, saleRows] = await Promise.all([
           fetchProviderHireBookings(),
           fetchProviderPersonnelBookings(),
+          fetchProviderSales(),
         ]);
         if (!cancelled) {
           setHireBookings(hire);
           setPersonnelBookings(personnel);
+          setSales(saleRows);
         }
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Could not load bookings.");
           setHireBookings(null);
           setPersonnelBookings(null);
+          setSales(null);
         }
       } finally {
         if (!cancelled) {
@@ -111,8 +136,11 @@ export default function ProviderBookingsPage() {
     if (tab === "personnel" && personnelBookings) {
       return toPersonnelDisplayRows(personnelBookings);
     }
+    if (tab === "sales" && sales) {
+      return toSaleDisplayRows(sales);
+    }
     return [];
-  }, [tab, hireBookings, personnelBookings]);
+  }, [tab, hireBookings, personnelBookings, sales]);
 
   useEffect(() => {
     if (displayRows.length === 0) {
@@ -145,11 +173,22 @@ export default function ProviderBookingsPage() {
               Bookings
             </h1>
             <p className="mt-2 text-sm text-slate-600">
-              Hire and personnel bookings for your listings. Select a row to view
-              full details.
+              Sales, hire, and personnel bookings for your listings. Select a row to
+              view full details.
             </p>
           </div>
-          <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1 shadow-inner">
+          <div className="flex flex-wrap rounded-xl border border-slate-200 bg-slate-50 p-1 shadow-inner">
+            <button
+              type="button"
+              onClick={() => setTab("sales")}
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                tab === "sales"
+                  ? "bg-gradient-to-r from-blue-700 to-cyan-600 text-white shadow-md"
+                  : "text-slate-600 hover:bg-white hover:text-slate-900"
+              }`}
+            >
+              Sales
+            </button>
             <button
               type="button"
               onClick={() => setTab("hire")}
@@ -170,7 +209,7 @@ export default function ProviderBookingsPage() {
                   : "text-slate-600 hover:bg-white hover:text-slate-900"
               }`}
             >
-              Personnel
+              Booking
             </button>
           </div>
         </div>
@@ -192,9 +231,11 @@ export default function ProviderBookingsPage() {
         ) : displayRows.length === 0 ? (
           <div className="mt-10 rounded-2xl border border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-blue-50/30 px-6 py-16 text-center">
             <p className="text-slate-600">
-              {tab === "hire"
-                ? "No hire bookings yet. When clients complete hire checkout, they will appear here."
-                : "No personnel bookings yet. When clients book your listings, they will appear here."}
+              {tab === "sales"
+                ? "No sales yet. When clients purchase your listings, they will appear here."
+                : tab === "hire"
+                  ? "No hire bookings yet. When clients complete hire checkout, they will appear here."
+                  : "No personnel bookings yet. When clients book your listings, they will appear here."}
             </p>
           </div>
         ) : (
@@ -215,7 +256,7 @@ export default function ProviderBookingsPage() {
               {/* Mobile cards */}
               <ul className="space-y-2 md:hidden">
                 {displayRows.map((row) => {
-                  const active = isBookingActive(row.end);
+                  const active = row.kind !== "sale" && isBookingActive(row.end);
                   const selected = row.key === selectedKey;
                   return (
                     <li key={row.key}>
@@ -232,22 +273,26 @@ export default function ProviderBookingsPage() {
                           <p className="font-semibold text-slate-900">
                             {row.listingTitle}
                           </p>
-                          <span
-                            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                              active
-                                ? "bg-emerald-100 text-emerald-800"
-                                : "bg-slate-100 text-slate-600"
-                            }`}
-                          >
-                            {active ? "Active" : "Ended"}
-                          </span>
+                          {row.kind !== "sale" ? (
+                            <span
+                              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                active
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : "bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              {active ? "Active" : "Ended"}
+                            </span>
+                          ) : null}
                         </div>
                         <p className="mt-1 text-xs text-slate-500">
                           {row.customer.firstName} {row.customer.lastName} ·{" "}
                           {formatNgn(row.lineTotalNgn)}
                         </p>
                         <p className="mt-1 text-xs text-slate-400">
-                          {formatDateTime(row.start)} → {formatDateTime(row.end)}
+                          {tab === "sales"
+                            ? `Paid ${formatDateTime(row.paidAt)} · Qty ${row.quantity}`
+                            : `${formatDateTime(row.start)} → ${formatDateTime(row.end)}`}
                         </p>
                       </button>
                     </li>
@@ -263,15 +308,24 @@ export default function ProviderBookingsPage() {
                       <tr className="border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/50 text-xs font-semibold uppercase tracking-wide text-slate-500">
                         <th className="px-4 py-3">Listing</th>
                         <th className="px-4 py-3">Customer</th>
-                        <th className="px-4 py-3">Start</th>
-                        <th className="px-4 py-3">Ends</th>
-                        <th className="px-4 py-3">Status</th>
+                        {tab === "sales" ? (
+                          <>
+                            <th className="px-4 py-3">Paid</th>
+                            <th className="px-4 py-3">Qty</th>
+                          </>
+                        ) : (
+                          <>
+                            <th className="px-4 py-3">Start</th>
+                            <th className="px-4 py-3">Ends</th>
+                            <th className="px-4 py-3">Status</th>
+                          </>
+                        )}
                         <th className="px-4 py-3">Total</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {displayRows.map((row) => {
-                        const active = isBookingActive(row.end);
+                        const active = row.kind !== "sale" && isBookingActive(row.end);
                         const selected = row.key === selectedKey;
                         return (
                           <tr
@@ -306,23 +360,34 @@ export default function ProviderBookingsPage() {
                                 {row.customer.email}
                               </div>
                             </td>
-                            <td className="whitespace-nowrap px-4 py-3.5 text-slate-600">
-                              {formatDateTime(row.start)}
-                            </td>
-                            <td className="whitespace-nowrap px-4 py-3.5 text-slate-600">
-                              {formatDateTime(row.end)}
-                            </td>
-                            <td className="px-4 py-3.5">
-                              <span
-                                className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                  active
-                                    ? "bg-emerald-100 text-emerald-800"
-                                    : "bg-slate-100 text-slate-600"
-                                }`}
-                              >
-                                {active ? "Active" : "Ended"}
-                              </span>
-                            </td>
+                            {tab === "sales" ? (
+                              <>
+                                <td className="whitespace-nowrap px-4 py-3.5 text-slate-600">
+                                  {formatDateTime(row.paidAt)}
+                                </td>
+                                <td className="px-4 py-3.5 text-slate-600">{row.quantity}</td>
+                              </>
+                            ) : (
+                              <>
+                                <td className="whitespace-nowrap px-4 py-3.5 text-slate-600">
+                                  {formatDateTime(row.start)}
+                                </td>
+                                <td className="whitespace-nowrap px-4 py-3.5 text-slate-600">
+                                  {formatDateTime(row.end)}
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <span
+                                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                      active
+                                        ? "bg-emerald-100 text-emerald-800"
+                                        : "bg-slate-100 text-slate-600"
+                                    }`}
+                                  >
+                                    {active ? "Active" : "Ended"}
+                                  </span>
+                                </td>
+                              </>
+                            )}
                             <td className="whitespace-nowrap px-4 py-3.5 font-semibold text-slate-900">
                               {formatNgn(row.lineTotalNgn)}
                             </td>
@@ -333,8 +398,9 @@ export default function ProviderBookingsPage() {
                   </table>
                 </div>
                 <p className="border-t border-slate-100 bg-slate-50/80 px-4 py-2 text-xs text-slate-500">
-                  {displayRows.length} booking{displayRows.length === 1 ? "" : "s"} ·
-                  Click a row for details
+                  {displayRows.length}{" "}
+                  {tab === "sales" ? "sale" : "booking"}
+                  {displayRows.length === 1 ? "" : "s"} · Click a row for details
                 </p>
               </div>
             </div>

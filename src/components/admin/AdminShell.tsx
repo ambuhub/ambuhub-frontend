@@ -6,38 +6,40 @@ import { usePathname } from "next/navigation";
 import {
   Bell,
   ConciergeBell,
-  Heart,
+  FolderTree,
   LayoutDashboard,
   LogOut,
   Menu,
-  Share2,
+  Package,
+  Settings,
   ShoppingBag,
   Star,
-  User,
+  Users,
   X,
 } from "lucide-react";
 import { API_AUTH_BFF_PREFIX } from "@/lib/api";
-import { ClientNotificationBadge } from "@/components/client/ClientNotificationBadge";
+import { AdminNotificationBadge } from "@/components/admin/AdminNotificationBadge";
 
 const navItems = [
-  { href: "/client/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/client/profile", label: "Profile", icon: User },
-  { href: "/client/orders", label: "Orders", icon: ShoppingBag },
-  { href: "/client/favorite", label: "Favorite", icon: Heart },
-  { href: "/client/concierge", label: "Concierge", icon: ConciergeBell },
-  { href: "/client/reviews", label: "Reviews", icon: Star },
-  { href: "/client/referral", label: "Referral", icon: Share2 },
-  { href: "/client/notifications", label: "Notifications", icon: Bell },
+  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
+  { href: "/admin/listings", label: "Listings", icon: Package },
+  { href: "/admin/categories", label: "Categories", icon: FolderTree },
+  { href: "/admin/concierge-requests", label: "Concierge requests", icon: ConciergeBell },
+  { href: "/admin/notifications", label: "Notifications", icon: Bell },
+  { href: "/admin/reviews", label: "Reviews", icon: Star },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ] as const;
 
 function isActivePath(pathname: string, href: string) {
-  if (href === "/client/dashboard") {
+  if (href === "/admin/dashboard") {
     return pathname === href;
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function ClientShell({ children }: { children: React.ReactNode }) {
+export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -65,17 +67,22 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
       )}
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex min-h-[100dvh] w-64 shrink-0 flex-col border-r border-blue-900/60 bg-gradient-to-b from-blue-950 via-slate-950 to-slate-950 shadow-xl shadow-blue-950/40 transition-transform duration-200 md:relative md:z-0 md:h-[100dvh] md:min-h-[100dvh] md:self-stretch md:translate-x-0 md:shadow-none ${
+        className={`fixed top-0 bottom-0 left-0 z-50 flex min-h-[100dvh] w-64 shrink-0 flex-col border-r border-indigo-900/60 bg-gradient-to-b from-indigo-950 via-slate-950 to-slate-950 shadow-xl shadow-indigo-950/40 transition-transform duration-200 md:relative md:z-0 md:h-[100dvh] md:min-h-[100dvh] md:self-stretch md:translate-x-0 md:shadow-none ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex h-14 items-center justify-between border-b border-blue-900/60 px-4 md:h-16">
+        <div className="flex h-14 items-center justify-between border-b border-indigo-900/60 px-4 md:h-16">
           <Link
-            href="/client/dashboard"
-            className="text-lg font-semibold tracking-tight text-blue-200"
+            href="/admin/dashboard"
+            className="flex min-w-0 items-center gap-2"
             onClick={() => setSidebarOpen(false)}
           >
-            Ambuhub
+            <span className="truncate text-lg font-semibold tracking-tight text-indigo-200">
+              Ambuhub
+            </span>
+            <span className="shrink-0 rounded-md bg-indigo-500/25 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-100 ring-1 ring-indigo-400/30">
+              Admin
+            </span>
           </Link>
           <button
             type="button"
@@ -87,7 +94,10 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overflow-x-hidden p-3" aria-label="Client">
+        <nav
+          className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overflow-x-hidden p-3"
+          aria-label="Admin"
+        >
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActivePath(pathname, item.href);
@@ -98,21 +108,21 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                   active
-                    ? "bg-blue-500/20 text-blue-100 ring-1 ring-blue-400/30"
+                    ? "bg-indigo-500/20 text-indigo-100 ring-1 ring-indigo-400/30"
                     : "text-slate-300 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 <Icon className="h-5 w-5 shrink-0 opacity-90" aria-hidden />
                 <span className="min-w-0 flex-1">{item.label}</span>
-                {item.href === "/client/notifications" ? (
-                  <ClientNotificationBadge />
+                {item.href === "/admin/notifications" ? (
+                  <AdminNotificationBadge />
                 ) : null}
               </Link>
             );
           })}
         </nav>
 
-        <div className="border-t border-blue-900/60 p-3">
+        <div className="border-t border-indigo-900/60 p-3">
           <Link
             href="/"
             className="mb-2 block rounded-xl px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
@@ -131,7 +141,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col self-stretch md:min-h-[100dvh]">
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-blue-900/60 bg-slate-950 px-4 md:hidden">
+        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-indigo-900/60 bg-slate-950 px-4 md:hidden">
           <button
             type="button"
             className="rounded-lg p-2 text-slate-200 hover:bg-white/10"
@@ -140,9 +150,9 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="text-sm font-semibold text-blue-100">Client</span>
+          <span className="text-sm font-semibold text-indigo-100">Admin</span>
         </header>
-        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-slate-100 via-blue-50/30 to-slate-100 p-4 sm:p-6 lg:p-8">
+        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-slate-100 via-indigo-50/20 to-slate-100 p-4 sm:p-6 lg:p-8">
           {children}
         </main>
       </div>

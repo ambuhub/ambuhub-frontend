@@ -6,6 +6,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isProvider = pathname.startsWith("/provider");
   const isClient = pathname.startsWith("/client");
+  const isAdmin = pathname.startsWith("/admin");
 
   const secret = process.env.JWT_SECRET;
   if (!secret) {
@@ -25,7 +26,27 @@ export async function middleware(request: NextRequest) {
     );
     const role = typeof payload.role === "string" ? payload.role : "";
 
+    if (isAdmin) {
+      if (role === "admin") {
+        return NextResponse.next();
+      }
+      if (role === "service_provider") {
+        return NextResponse.redirect(
+          new URL("/provider/dashboard", request.url),
+        );
+      }
+      if (role === "client" || role === "patient") {
+        return NextResponse.redirect(
+          new URL("/client/dashboard", request.url),
+        );
+      }
+      return NextResponse.redirect(new URL("/auth", request.url));
+    }
+
     if (isProvider) {
+      if (role === "admin") {
+        return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+      }
       if (role === "service_provider") {
         return NextResponse.next();
       }
@@ -38,6 +59,9 @@ export async function middleware(request: NextRequest) {
     }
 
     if (isClient) {
+      if (role === "admin") {
+        return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+      }
       if (role === "client" || role === "patient") {
         return NextResponse.next();
       }
@@ -56,5 +80,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/provider/:path*", "/client/:path*"],
+  matcher: ["/provider/:path*", "/client/:path*", "/admin/:path*"],
 };

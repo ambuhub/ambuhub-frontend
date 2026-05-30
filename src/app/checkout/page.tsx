@@ -74,6 +74,7 @@ export default function CheckoutPage() {
       router.push(postCheckoutReviewUrl(order));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Payment could not be completed");
+      await refresh();
     } finally {
       setBusy(false);
     }
