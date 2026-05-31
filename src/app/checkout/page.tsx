@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Minus, Plus, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { CheckoutSuccessPanel } from "@/components/checkout/CheckoutSuccessPanel";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
@@ -23,6 +23,34 @@ function formatNaira(value: number): string {
 }
 
 export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-full flex-1 flex-col bg-white">
+          <Header />
+          <main className="flex flex-1 flex-col pt-4 sm:pt-6 lg:pt-8">
+            <div className="mx-auto w-full max-w-3xl flex-1 px-4 pb-16 sm:px-6 lg:px-8">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                Checkout
+              </h1>
+              <div className="mt-10 flex justify-center">
+                <Loader2
+                  className="h-8 w-8 animate-spin text-ambuhub-brand"
+                  aria-label="Loading"
+                />
+              </div>
+            </div>
+          </main>
+          <Footer />
+        </div>
+      }
+    >
+      <CheckoutPageContent />
+    </Suspense>
+  );
+}
+
+function CheckoutPageContent() {
   const searchParams = useSearchParams();
   const { user, cart, loading, refresh, itemCount, subtotalNgn } = useSessionAndCart();
   const [busy, setBusy] = useState(false);
