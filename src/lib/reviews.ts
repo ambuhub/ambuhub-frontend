@@ -118,12 +118,22 @@ export async function postReview(payload: {
   return data.review;
 }
 
-export async function fetchServiceReviews(serviceId: string): Promise<{
+export async function fetchServiceReviews(
+  serviceId: string,
+  options?: { limit?: number },
+): Promise<{
   summary: ServiceReviewSummary;
   reviews: ReviewDto[];
 }> {
+  const search = new URLSearchParams();
+  if (options?.limit != null) {
+    search.set("limit", String(options.limit));
+  }
+  const qs = search.toString();
   const res = await fetch(
-    proxyUrl(`reviews/by-service/${encodeURIComponent(serviceId)}`),
+    proxyUrl(
+      `reviews/by-service/${encodeURIComponent(serviceId)}${qs ? `?${qs}` : ""}`,
+    ),
     { credentials: "omit", cache: "no-store" },
   );
   const data = (await res.json()) as {

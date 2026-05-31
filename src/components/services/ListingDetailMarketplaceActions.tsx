@@ -17,6 +17,11 @@ import {
   isPricingPeriod,
 } from "@/lib/pricing-period";
 import type { MarketplaceServiceRow } from "@/lib/service-category-page-data";
+import {
+  getListingPrice,
+  isSalePurchasable,
+  saleUnavailableReason,
+} from "@/lib/marketplace-listing";
 
 const nairaNumberFormatter = new Intl.NumberFormat("en-NG", {
   maximumFractionDigits: 2,
@@ -24,15 +29,6 @@ const nairaNumberFormatter = new Intl.NumberFormat("en-NG", {
 
 function formatNaira(value: number): string {
   return `₦${nairaNumberFormatter.format(value)}`;
-}
-
-function isSalePurchasable(svc: MarketplaceServiceRow): boolean {
-  return (
-    svc.listingType === "sale" &&
-    typeof svc.price === "number" &&
-    typeof svc.stock === "number" &&
-    svc.stock >= 1
-  );
 }
 
 function isHireBookable(svc: MarketplaceServiceRow): boolean {
@@ -256,7 +252,7 @@ export function ListingDetailMarketplaceActions({
       {isSalePurchasable(service) ? (
         <div className={saleBlockClass}>
           <p className="text-sm font-semibold text-foreground">
-            {formatNaira(service.price as number)}
+            {formatNaira(getListingPrice(service) as number)}
           </p>
           {cart.items.some((i) => i.serviceId === service.id) ? (
             <p className="mt-1 text-xs font-semibold text-ambuhub-brand">
@@ -285,6 +281,13 @@ export function ListingDetailMarketplaceActions({
               Log in to purchase
             </Link>
           )}
+        </div>
+      ) : service.listingType === "sale" ? (
+        <div className={saleBlockClass}>
+          <p className="mt-2 text-xs text-foreground/60">
+            {saleUnavailableReason(service) ??
+              "This listing is not available for purchase right now."}
+          </p>
         </div>
       ) : null}
 

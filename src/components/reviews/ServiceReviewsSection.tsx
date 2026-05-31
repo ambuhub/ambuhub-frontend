@@ -19,7 +19,7 @@ function StarRow({ rating }: { rating: number }) {
   );
 }
 
-type ReviewVariant = "public" | "client" | "provider";
+type ReviewVariant = "public" | "client" | "provider" | "admin";
 
 function ReviewCard({
   review,
@@ -33,14 +33,27 @@ function ReviewCard({
       ? "rounded-xl border border-cyan-300/45 bg-white/95 p-4 shadow-[0_0_22px_-8px_rgba(34,211,238,0.28)] ring-1 ring-sky-100/50"
       : variant === "provider"
         ? "rounded-xl border border-cyan-300/45 bg-white/95 p-4 shadow-[0_0_22px_-8px_rgba(34,211,238,0.28)] ring-1 ring-sky-100/50"
-        : "rounded-xl border border-ambuhub-100 bg-white p-4 shadow-sm";
+        : variant === "admin"
+          ? "rounded-xl border border-slate-200 bg-slate-50/60 p-4"
+          : "rounded-xl border border-ambuhub-100 bg-white p-4 shadow-sm";
 
   return (
     <article className={cardClass}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-foreground">
-          {review.reviewerDisplayName}
-        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm font-semibold text-foreground">
+            {review.reviewerDisplayName}
+          </p>
+          {variant === "admin" && review.lineKind ? (
+            <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+              {review.lineKind === "hire"
+                ? "Hire"
+                : review.lineKind === "book"
+                  ? "Booking"
+                  : "Purchase"}
+            </span>
+          ) : null}
+        </div>
         <time
           dateTime={review.createdAt}
           className="text-xs text-foreground/55"
@@ -63,11 +76,13 @@ function ReviewCard({
 type Props = {
   serviceId: string;
   variant?: ReviewVariant;
+  limit?: number;
 };
 
 export function ServiceReviewsSection({
   serviceId,
   variant = "public",
+  limit,
 }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,7 +96,7 @@ export function ServiceReviewsSection({
       setLoading(true);
       setError(null);
       try {
-        const data = await fetchServiceReviews(serviceId);
+        const data = await fetchServiceReviews(serviceId, { limit });
         if (!cancelled) {
           setAverageRating(data.summary.averageRating);
           setReviewCount(data.summary.reviewCount);
@@ -100,22 +115,27 @@ export function ServiceReviewsSection({
     return () => {
       cancelled = true;
     };
-  }, [serviceId]);
+  }, [serviceId, limit]);
 
   const isPublic = variant === "public";
   const isProvider = variant === "provider";
+  const isAdmin = variant === "admin";
 
   const sectionClass = isPublic
     ? "relative overflow-hidden rounded-2xl border border-cyan-400/45 bg-gradient-to-br from-white via-sky-50/40 to-cyan-50/25 p-6 shadow-[0_0_32px_-8px_rgba(34,211,238,0.35)] ring-1 ring-cyan-200/40 sm:p-8"
     : isProvider
       ? "relative overflow-hidden rounded-2xl border border-cyan-400/45 bg-gradient-to-br from-white via-sky-50/40 to-cyan-50/25 p-5 shadow-[0_0_32px_-8px_rgba(34,211,238,0.35),0_8px_24px_-12px_rgba(0,74,124,0.12)] ring-1 ring-cyan-200/40 sm:p-7"
-      : "mt-10 border-t border-ambuhub-100 pt-8";
+      : isAdmin
+        ? "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+        : "mt-10 border-t border-ambuhub-100 pt-8";
 
   const headingClass = isPublic
     ? "text-lg font-semibold text-[#004a7c]"
     : isProvider
       ? "text-sm font-bold uppercase tracking-wide text-[#004a7c]"
-      : "text-lg font-semibold text-[#0c4a6e]";
+      : isAdmin
+        ? "text-sm font-semibold uppercase tracking-wide text-slate-500"
+        : "text-lg font-semibold text-[#0c4a6e]";
 
   return (
     <section className={sectionClass}>
@@ -127,12 +147,18 @@ export function ServiceReviewsSection({
       ) : null}
       <div className={isPublic || isProvider ? "relative" : undefined}>
       <h2 className={isPublic ? "text-lg font-semibold text-[#004a7c]" : headingClass}>
-        {isProvider ? "Reviews & rating" : "Reviews"}
+        {isProvider || isAdmin ? "Reviews & ratings" : "Reviews"}
       </h2>
       {loading ? (
         <div className="mt-6 flex justify-center py-8">
           <Loader2
-            className={`h-8 w-8 animate-spin ${isProvider ? "text-cyan-600" : "text-ambuhub-brand"}`}
+            className={`h-8 w-8 animate-spin ${
+              isProvider
+                ? "text-cyan-600"
+                : isAdmin
+                  ? "text-indigo-600"
+                  : "text-ambuhub-brand"
+            }`}
             aria-label="Loading"
           />
         </div>
@@ -145,12 +171,16 @@ export function ServiceReviewsSection({
           className={
             isProvider
               ? "mt-3 text-sm text-slate-600/90"
-              : "mt-4 text-sm text-foreground/65"
+              : isAdmin
+                ? "mt-3 text-sm text-slate-600"
+                : "mt-4 text-sm text-foreground/65"
           }
         >
           {isProvider
             ? "No customer reviews yet. Ratings appear here after verified purchases, hires, or bookings."
-            : "No reviews yet. Verified buyers, hirers, and bookers can leave the first review right after checkout."}
+            : isAdmin
+              ? "No reviews for this listing yet."
+              : "No reviews yet. Verified buyers, hirers, and bookers can leave the first review right after checkout."}
         </p>
       ) : (
         <>
@@ -158,14 +188,18 @@ export function ServiceReviewsSection({
             className={
               isProvider
                 ? "mt-3 flex flex-wrap items-center gap-3"
-                : "mt-2 flex flex-wrap items-center gap-2 text-sm text-foreground/80"
+                : isAdmin
+                  ? "mt-4 flex flex-wrap items-center gap-3"
+                  : "mt-2 flex flex-wrap items-center gap-2 text-sm text-foreground/80"
             }
           >
             <span
               className={
                 isProvider
                   ? "inline-flex items-center gap-2 rounded-xl border border-amber-300/70 bg-amber-50 px-3 py-2 text-lg font-bold text-amber-950 shadow-[0_0_20px_-6px_rgba(251,191,36,0.45)]"
-                  : "inline-flex items-center gap-1 font-semibold text-foreground"
+                  : isAdmin
+                    ? "inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-lg font-bold text-amber-950"
+                    : "inline-flex items-center gap-1 font-semibold text-foreground"
               }
             >
               <Star className="h-5 w-5 fill-amber-400 text-amber-400" aria-hidden />
@@ -173,12 +207,15 @@ export function ServiceReviewsSection({
             </span>
             <span
               className={
-                isProvider
+                isProvider || isAdmin
                   ? "text-sm font-medium text-slate-600"
                   : undefined
               }
             >
               Overall · {reviewCount} review{reviewCount === 1 ? "" : "s"}
+              {isAdmin && reviews.length < reviewCount
+                ? ` · showing latest ${reviews.length}`
+                : ""}
             </span>
           </p>
           <ul className="mt-6 flex flex-col gap-4">

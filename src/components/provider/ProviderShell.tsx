@@ -7,6 +7,7 @@ import {
   Building2,
   Calendar,
   CalendarClock,
+  CreditCard,
   LayoutDashboard,
   List,
   LogOut,
@@ -54,6 +55,11 @@ const navItems = [
     href: "/provider/profile",
     label: "Business profile",
     icon: Building2,
+  },
+  {
+    href: "/provider/subscription",
+    label: "Subscription",
+    icon: CreditCard,
   },
   {
     href: "/provider/settings",

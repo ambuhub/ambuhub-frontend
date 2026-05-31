@@ -1,18 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Loader2, Minus, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { CheckoutSuccessPanel } from "@/components/checkout/CheckoutSuccessPanel";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
+import { marketplaceCategoryHref } from "@/lib/marketplace-navigation";
 import {
   deleteCartItem,
   patchCartItemQuantity,
   postSimulateCheckout,
+  type OrderDetailClient,
 } from "@/lib/marketplace-cart";
-import { postCheckoutReviewUrl } from "@/lib/reviews";
 
 const naira = new Intl.NumberFormat("en-NG", { maximumFractionDigits: 2 });
 
@@ -21,10 +23,13 @@ function formatNaira(value: number): string {
 }
 
 export default function CheckoutPage() {
-  const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, cart, loading, refresh, itemCount, subtotalNgn } = useSessionAndCart();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkoutComplete, setCheckoutComplete] = useState(false);
+  const [completedOrder, setCompletedOrder] = useState<OrderDetailClient | null>(null);
+  const [marketplaceHref, setMarketplaceHref] = useState("/#services");
 
   useEffect(() => {
     void refresh();
@@ -69,9 +74,17 @@ export default function CheckoutPage() {
     setError(null);
     setBusy(true);
     try {
+      const categorySlug =
+        searchParams.get("category")?.trim() ||
+        cart.items[0]?.category.slug ||
+        null;
       const { order } = await postSimulateCheckout();
+      const resolvedSlug =
+        categorySlug || order.lines[0]?.categorySlug || null;
+      setCompletedOrder(order);
+      setMarketplaceHref(marketplaceCategoryHref(resolvedSlug));
+      setCheckoutComplete(true);
       await refresh();
-      router.push(postCheckoutReviewUrl(order));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Payment could not be completed");
       await refresh();
@@ -107,6 +120,11 @@ export default function CheckoutPage() {
                 Log in
               </Link>
             </div>
+          ) : checkoutComplete && completedOrder ? (
+            <CheckoutSuccessPanel
+              receiptNumber={completedOrder.receiptNumber}
+              marketplaceHref={marketplaceHref}
+            />
           ) : itemCount === 0 ? (
             <div className="mt-10 rounded-2xl border border-dashed border-ambuhub-200 bg-ambuhub-surface/40 p-8 text-center">
               <p className="text-foreground/80">Your cart is empty.</p>

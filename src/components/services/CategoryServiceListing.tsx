@@ -31,6 +31,12 @@ import {
   type MarketplaceServiceRow,
   type ServiceCategoryPageDto,
 } from "@/lib/service-category-page-data";
+import {
+  formatStockLabel,
+  getListingPrice,
+  isSalePurchasable,
+  saleUnavailableReason,
+} from "@/lib/marketplace-listing";
 
 const BANNER_SIZES = "100vw";
 const CARD_SIZES =
@@ -70,10 +76,7 @@ function parsePriceFilterInput(value: string): number | null {
 }
 
 function serviceListingPriceNgn(service: MarketplaceServiceRow): number | null {
-  if (typeof service.price !== "number" || !Number.isFinite(service.price)) {
-    return null;
-  }
-  return service.price;
+  return getListingPrice(service);
 }
 
 function stateFilterOptionValue(option: {
@@ -111,29 +114,6 @@ function formatListingTypeLabel(listingType: "sale" | "hire" | "book" | null): s
     return "BOOK";
   }
   return "N/A";
-}
-
-function formatStockLabel(
-  listingType: "sale" | "hire" | "book" | null,
-  stock: number | null,
-): string {
-  if (
-    (listingType === "sale" || listingType === "hire") &&
-    typeof stock === "number" &&
-    Number.isFinite(stock)
-  ) {
-    return `Stock: ${stock}`;
-  }
-  return "Stock: N/A";
-}
-
-function isSalePurchasable(svc: MarketplaceServiceRow): boolean {
-  return (
-    svc.listingType === "sale" &&
-    typeof svc.price === "number" &&
-    typeof svc.stock === "number" &&
-    svc.stock >= 1
-  );
 }
 
 function isHireBookable(svc: MarketplaceServiceRow): boolean {
@@ -333,10 +313,13 @@ export function CategoryServiceListing({ category, sections }: Props) {
 
   const refetchMarketplaceSections = useCallback(async () => {
     try {
-      const res = await fetch(`${API_PROXY_PREFIX}/services/marketplace`, {
+      const res = await fetch(
+        `${API_PROXY_PREFIX}/services/marketplace?categorySlug=${encodeURIComponent(category.slug)}`,
+        {
         cache: "no-store",
         credentials: "omit",
-      });
+        },
+      );
       if (!res.ok) {
         return;
       }
@@ -1034,7 +1017,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
               </p>
             </div>
             <Link
-              href="/checkout"
+              href={`/checkout?category=${encodeURIComponent(category.slug)}`}
               className="shrink-0 rounded-xl bg-ambuhub-brand px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ambuhub-brand-dark"
             >
               Checkout
@@ -1143,15 +1126,15 @@ export function CategoryServiceListing({ category, sections }: Props) {
                               {svc.title}
                             </h3>
                             {svc.listingType === "sale" &&
-                            typeof svc.price === "number" ? (
+                            getListingPrice(svc) != null ? (
                               <p className="mt-2 text-sm font-semibold text-foreground">
-                                {formatNaira(svc.price)}
+                                {formatNaira(getListingPrice(svc)!)}
                               </p>
                             ) : null}
                             {svc.listingType === "hire" &&
-                            typeof svc.price === "number" ? (
+                            getListingPrice(svc) != null ? (
                               <p className="mt-2 text-sm font-semibold text-foreground">
-                                {formatNaira(svc.price)}
+                                {formatNaira(getListingPrice(svc)!)}
                                 {svc.pricingPeriod ? (
                                   <span className="font-medium text-foreground/80">
                                     {" "}
@@ -1210,6 +1193,13 @@ export function CategoryServiceListing({ category, sections }: Props) {
                                   Log in to purchase
                                 </Link>
                               )}
+                            </div>
+                          ) : svc.listingType === "sale" ? (
+                            <div className="mt-4 border-t border-ambuhub-100 px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
+                              <p className="text-xs text-foreground/55">
+                                {saleUnavailableReason(svc) ??
+                                  "This listing is not available for purchase."}
+                              </p>
                             </div>
                           ) : null}
                           {svc.listingType === "book" ? (
@@ -1298,7 +1288,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
               </p>
             </div>
             <Link
-              href="/checkout"
+              href={`/checkout?category=${encodeURIComponent(category.slug)}`}
               className="shrink-0 rounded-xl bg-ambuhub-brand px-4 py-2.5 text-sm font-semibold text-white"
             >
               Checkout

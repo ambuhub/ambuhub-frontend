@@ -23,6 +23,12 @@ import {
   isPricingPeriod,
 } from "@/lib/pricing-period";
 import type { MarketplaceServiceRow } from "@/lib/service-category-page-data";
+import {
+  formatStockLabel,
+  getListingPrice,
+  isSalePurchasable,
+  saleUnavailableReason,
+} from "@/lib/marketplace-listing";
 
 const nairaNumberFormatter = new Intl.NumberFormat("en-NG", {
   maximumFractionDigits: 2,
@@ -39,29 +45,6 @@ function formatListingTypeLabel(
   if (listingType === "hire") return "HIRE";
   if (listingType === "book") return "BOOK";
   return "N/A";
-}
-
-function formatStockLabel(
-  listingType: "sale" | "hire" | "book" | null,
-  stock: number | null,
-): string {
-  if (
-    (listingType === "sale" || listingType === "hire") &&
-    typeof stock === "number" &&
-    Number.isFinite(stock)
-  ) {
-    return `Stock: ${stock}`;
-  }
-  return "Stock: N/A";
-}
-
-function isSalePurchasable(svc: MarketplaceServiceRow): boolean {
-  return (
-    svc.listingType === "sale" &&
-    typeof svc.price === "number" &&
-    typeof svc.stock === "number" &&
-    svc.stock >= 1
-  );
 }
 
 function isHireBookable(svc: MarketplaceServiceRow): boolean {
@@ -144,8 +127,10 @@ function FavoriteNeonCard({
       </div>
 
       <div className="relative mt-3 min-h-0 flex-1">
-        {svc.listingType === "sale" && typeof svc.price === "number" ? (
-          <p className="text-sm font-bold text-[#004a7c]">{formatNaira(svc.price)}</p>
+        {svc.listingType === "sale" && getListingPrice(svc) != null ? (
+          <p className="text-sm font-bold text-[#004a7c]">
+            {formatNaira(getListingPrice(svc)!)}
+          </p>
         ) : null}
         {svc.listingType === "hire" && typeof svc.price === "number" ? (
           <p className="text-sm font-bold text-[#004a7c]">
@@ -204,6 +189,11 @@ function FavoriteNeonCard({
               </Link>
             )}
           </div>
+        ) : svc.listingType === "sale" ? (
+          <p className="text-center text-xs text-slate-500">
+            {saleUnavailableReason(svc) ??
+              "This listing is not available for purchase."}
+          </p>
         ) : null}
         {svc.listingType === "hire" ? (
           isHireBookable(svc) ? (

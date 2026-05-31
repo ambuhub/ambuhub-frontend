@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   CalendarClock,
   CalendarRange,
@@ -17,6 +17,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { CheckoutSuccessPanel } from "@/components/checkout/CheckoutSuccessPanel";
 import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
 import { AMBUHUB_MARKETPLACE_INVALIDATE_EVENT } from "@/lib/cache-tags";
 import { getCountryNameByCode } from "@/lib/countries";
@@ -39,8 +40,9 @@ import {
   fetchMarketplaceServiceById,
   postHireSimulateCheckout,
 } from "@/lib/marketplace-hire";
+import type { OrderDetailClient } from "@/lib/marketplace-cart";
+import { marketplaceCategoryHref } from "@/lib/marketplace-navigation";
 import type { MarketplaceServiceRow } from "@/lib/service-category-page-data";
-import { postCheckoutReviewUrl } from "@/lib/reviews";
 
 const naira = new Intl.NumberFormat("en-NG", { maximumFractionDigits: 2 });
 
@@ -92,7 +94,6 @@ function hireUnavailableReason(svc: MarketplaceServiceRow): string {
 
 export default function HireCheckoutPage() {
   const params = useParams();
-  const router = useRouter();
   const serviceId = typeof params?.serviceId === "string" ? params.serviceId : "";
   const { user, loading: sessionLoading } = useSessionAndCart();
 
@@ -105,6 +106,9 @@ export default function HireCheckoutPage() {
   const [datesInitialized, setDatesInitialized] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkoutComplete, setCheckoutComplete] = useState(false);
+  const [completedOrder, setCompletedOrder] = useState<OrderDetailClient | null>(null);
+  const [marketplaceHref, setMarketplaceHref] = useState("/#services");
 
   useEffect(() => {
     setDatesInitialized(false);
@@ -263,7 +267,10 @@ export default function HireCheckoutPage() {
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event(AMBUHUB_MARKETPLACE_INVALIDATE_EVENT));
       }
-      router.push(postCheckoutReviewUrl(order));
+      const resolvedSlug = service.category.slug || order.lines[0]?.categorySlug || null;
+      setCompletedOrder(order);
+      setMarketplaceHref(marketplaceCategoryHref(resolvedSlug));
+      setCheckoutComplete(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Payment could not be completed");
     } finally {
@@ -308,6 +315,11 @@ export default function HireCheckoutPage() {
             <div className="mt-10 flex justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-cyan-500" aria-label="Loading" />
             </div>
+          ) : checkoutComplete && completedOrder ? (
+            <CheckoutSuccessPanel
+              receiptNumber={completedOrder.receiptNumber}
+              marketplaceHref={marketplaceHref}
+            />
           ) : !service ? (
             <div className="relative mt-10 overflow-hidden rounded-2xl border border-dashed border-cyan-400/55 bg-white p-8 text-center shadow-[0_0_28px_-6px_rgba(34,211,238,0.35),0_0_1px_rgba(0,105,180,0.2)]">
               <div

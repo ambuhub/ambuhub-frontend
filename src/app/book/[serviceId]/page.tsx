@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { CalendarClock, CreditCard, Loader2, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { CheckoutSuccessPanel } from "@/components/checkout/CheckoutSuccessPanel";
 import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
 import { bookUnavailableReason, isBookBookable } from "@/lib/book-bookable";
 import { formatBookingWindowSummary } from "@/lib/booking-window";
@@ -28,13 +29,14 @@ import {
   postBookSimulateCheckout,
   type BookingAvailabilityResponse,
 } from "@/lib/marketplace-book";
+import type { OrderDetailClient } from "@/lib/marketplace-cart";
+import { marketplaceCategoryHref } from "@/lib/marketplace-navigation";
 import {
   formatHirePricePeriodSuffix,
   formatPricingPeriodLabel,
   isPricingPeriod,
 } from "@/lib/pricing-period";
 import type { MarketplaceServiceRow } from "@/lib/service-category-page-data";
-import { postCheckoutReviewUrl } from "@/lib/reviews";
 
 const naira = new Intl.NumberFormat("en-NG", { maximumFractionDigits: 2 });
 
@@ -44,7 +46,6 @@ function formatNaira(value: number): string {
 
 export default function BookCheckoutPage() {
   const params = useParams();
-  const router = useRouter();
   const serviceId = typeof params?.serviceId === "string" ? params.serviceId : "";
   const { user, loading: sessionLoading } = useSessionAndCart();
 
@@ -59,6 +60,9 @@ export default function BookCheckoutPage() {
   const [pickedSlot, setPickedSlot] = useState<PickedFreeSlot | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkoutComplete, setCheckoutComplete] = useState(false);
+  const [completedOrder, setCompletedOrder] = useState<OrderDetailClient | null>(null);
+  const [marketplaceHref, setMarketplaceHref] = useState("/#services");
 
   useEffect(() => {
     if (!serviceId) {
@@ -225,7 +229,10 @@ export default function BookCheckoutPage() {
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event(AMBUHUB_MARKETPLACE_INVALIDATE_EVENT));
       }
-      router.push(postCheckoutReviewUrl(order));
+      const resolvedSlug = service.category.slug || order.lines[0]?.categorySlug || null;
+      setCompletedOrder(order);
+      setMarketplaceHref(marketplaceCategoryHref(resolvedSlug));
+      setCheckoutComplete(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Payment could not be completed");
     } finally {
@@ -264,6 +271,11 @@ export default function BookCheckoutPage() {
               <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
               Loading listing…
             </p>
+          ) : checkoutComplete && completedOrder ? (
+            <CheckoutSuccessPanel
+              receiptNumber={completedOrder.receiptNumber}
+              marketplaceHref={marketplaceHref}
+            />
           ) : loadError ? (
             <p className="mt-8 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
               {loadError}
