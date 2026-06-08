@@ -1,7 +1,7 @@
 "use client";
 
 import { BookingWindowFields } from "@/components/provider/BookingWindowFields";
-import { HourlyScheduleEditor } from "@/components/provider/HourlyScheduleEditor";
+import { DailyScheduleOverridesEditor } from "@/components/provider/DailyScheduleOverridesEditor";
 import { AMBUHUB_MARKETPLACE_INVALIDATE_EVENT } from "@/lib/cache-tags";
 import {
   EMPTY_BOOKING_WINDOW,
@@ -9,42 +9,28 @@ import {
   type BookingWindow,
 } from "@/lib/booking-window";
 import {
-  gapHoursToInputLabel,
-  gapMinutesToHours,
-  parseGapHoursForPatch,
-} from "@/lib/booking-gap";
-import { patchBookingSettings } from "@/lib/marketplace-book";
+  currencyForCountry,
+  getCurrencySymbol,
+  parseSupportedCurrency,
+} from "@/lib/currency";
 import {
-  PRICING_PERIODS,
-  formatPricingPeriodLabel,
-  isPricingPeriod,
-  type PricingPeriod,
-} from "@/lib/pricing-period";
-import { useCallback, useEffect, useState } from "react";
-
-function gapHoursFromItem(item: {
-  bookingGapHours?: number | null;
-  bookingGapMinutes?: number | null;
-}): number {
-  if (typeof item.bookingGapHours === "number") {
-    return item.bookingGapHours;
-  }
-  if (typeof item.bookingGapMinutes === "number") {
-    return gapMinutesToHours(item.bookingGapMinutes);
-  }
-  return 0;
-}
+  validateHourlyScheduleClient,
+  type HourlyBookingSchedule,
+  type HourlyScheduleOverride,
+} from "@/lib/hourly-booking-schedule";
+import { patchBookingSettings } from "@/lib/marketplace-book";
+import { LISTING_PRICING_PERIOD } from "@/lib/pricing-period";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type ServiceRow = {
   id: string;
   title: string;
   listingType: "sale" | "hire" | "book" | null;
   price?: number | null;
-  pricingPeriod?: PricingPeriod | null;
+  currency?: string | null;
+  countryCode?: string | null;
   bookingWindow?: BookingWindow | null;
-  hourlyBookingSchedule?: import("@/lib/hourly-booking-schedule").HourlyBookingSchedule | null;
-  bookingGapMinutes?: number | null;
-  bookingGapHours?: number | null;
+  hourlyBookingSchedule?: HourlyBookingSchedule | null;
 };
 
 type Props = {
@@ -56,33 +42,38 @@ export function BookingScheduleCard({ item, onSaved }: Props) {
   const [bookingWindow, setBookingWindow] = useState<BookingWindow>(
     item.bookingWindow ?? EMPTY_BOOKING_WINDOW,
   );
-  const [gapHours, setGapHours] = useState(gapHoursToInputLabel(gapHoursFromItem(item)));
-  const [price, setPrice] = useState(item.price != null ? String(item.price) : "");
-  const [pricingPeriod, setPricingPeriod] = useState<PricingPeriod | "">(
-    item.pricingPeriod && isPricingPeriod(item.pricingPeriod) ? item.pricingPeriod : "",
+  const [overrides, setOverrides] = useState<HourlyScheduleOverride[]>(
+    item.hourlyBookingSchedule?.overrides ?? [],
   );
+  const [price, setPrice] = useState(item.price != null ? String(item.price) : "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     setBookingWindow(item.bookingWindow ?? EMPTY_BOOKING_WINDOW);
-    setGapHours(gapHoursToInputLabel(gapHoursFromItem(item)));
+    setOverrides(item.hourlyBookingSchedule?.overrides ?? []);
     setPrice(item.price != null ? String(item.price) : "");
-    setPricingPeriod(
-      item.pricingPeriod && isPricingPeriod(item.pricingPeriod) ? item.pricingPeriod : "",
-    );
   }, [item]);
 
-  const isHourly = pricingPeriod === "hourly";
+  const listingCurrency = useMemo(
+    () =>
+      item.currency
+        ? parseSupportedCurrency(item.currency)
+        : currencyForCountry(item.countryCode),
+    [item.countryCode, item.currency],
+  );
 
   const ready =
     hasValidBookingWindow(bookingWindow) &&
     price.trim() !== "" &&
     Number.isFinite(Number(price)) &&
-    Number(price) >= 0 &&
-    pricingPeriod !== "" &&
-    isPricingPeriod(pricingPeriod);
+    Number(price) >= 0;
+
+  const schedule = useMemo<HourlyBookingSchedule>(
+    () => ({ default: bookingWindow, overrides }),
+    [bookingWindow, overrides],
+  );
 
   const save = useCallback(async () => {
     setError(null);
@@ -96,22 +87,18 @@ export function BookingScheduleCard({ item, onSaved }: Props) {
       setError("Enter a valid price.");
       return;
     }
-    if (!pricingPeriod || !isPricingPeriod(pricingPeriod)) {
-      setError("Select a pricing period.");
-      return;
-    }
-    const gap = parseGapHoursForPatch(gapHours);
-    if (gap === null) {
-      setError("Gap between bookings must be a non-negative number of hours (max 24).");
+    const validation = validateHourlyScheduleClient(schedule);
+    if (validation) {
+      setError(validation);
       return;
     }
     setSaving(true);
     try {
       await patchBookingSettings(item.id, {
         bookingWindow,
-        bookingGapHours: gap,
+        hourlyBookingSchedule: schedule,
         price: parsedPrice,
-        pricingPeriod,
+        pricingPeriod: LISTING_PRICING_PERIOD,
       });
       setSuccess(true);
       window.dispatchEvent(new CustomEvent(AMBUHUB_MARKETPLACE_INVALIDATE_EVENT));
@@ -121,18 +108,7 @@ export function BookingScheduleCard({ item, onSaved }: Props) {
     } finally {
       setSaving(false);
     }
-  }, [bookingWindow, gapHours, price, pricingPeriod, item.id, onSaved]);
-
-  if (isHourly) {
-    return (
-      <HourlyScheduleEditor
-        item={item}
-        pricingPeriod={pricingPeriod}
-        onPricingPeriodChange={setPricingPeriod}
-        onSaved={onSaved}
-      />
-    );
-  }
+  }, [bookingWindow, schedule, price, item.id, onSaved]);
 
   return (
     <div className="mt-4 rounded-2xl border border-cyan-100 bg-cyan-50/40 p-4">
@@ -148,29 +124,16 @@ export function BookingScheduleCard({ item, onSaved }: Props) {
           </span>
         )}
       </div>
+      <p className="mt-2 text-xs text-slate-600">
+        Bookings are billed daily ({LISTING_PRICING_PERIOD} rate).
+      </p>
       <div className="mt-4 space-y-4">
         <BookingWindowFields value={bookingWindow} onChange={setBookingWindow} />
-        <div>
-          <label className="block text-sm font-semibold text-slate-800">
-            Gap between bookings (hours)
-          </label>
-          <p className="mt-0.5 text-xs text-slate-600">
-            Time required after a booking ends before the next can start. Example: booking
-            11:00–15:00 with a 2h gap → next slot from 17:00.
-          </p>
-          <input
-            type="number"
-            min={0}
-            max={24}
-            step={0.5}
-            value={gapHours}
-            onChange={(e) => setGapHours(e.target.value)}
-            className="mt-1.5 w-full max-w-xs rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-          />
-        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-semibold text-slate-800">Price (₦)</label>
+            <label className="block text-sm font-semibold text-slate-800">
+              Price ({getCurrencySymbol(listingCurrency)})
+            </label>
             <input
               type="number"
               min={0}
@@ -179,34 +142,29 @@ export function BookingScheduleCard({ item, onSaved }: Props) {
               onChange={(e) => setPrice(e.target.value)}
               className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
             />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-slate-800">Billing period</label>
-            <select
-              value={pricingPeriod}
-              onChange={(e) =>
-                setPricingPeriod(isPricingPeriod(e.target.value) ? e.target.value : "")
-              }
-              className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-            >
-              <option value="">Select period</option>
-              {PRICING_PERIODS.map((p) => (
-                <option key={p} value={p}>
-                  {formatPricingPeriodLabel(p)}
-                </option>
-              ))}
-            </select>
+            <p className="mt-1 text-xs text-slate-500">Per day</p>
           </div>
         </div>
-        {error ? <p className="text-sm text-red-700">{error}</p> : null}
-        {success ? <p className="text-sm text-emerald-700">Booking settings saved.</p> : null}
+        {ready ? (
+          <DailyScheduleOverridesEditor overrides={overrides} onChange={setOverrides} />
+        ) : null}
+        {error ? (
+          <p className="text-sm text-red-700" role="alert">
+            {error}
+          </p>
+        ) : null}
+        {success ? (
+          <p className="text-sm text-emerald-800" role="status">
+            Saved.
+          </p>
+        ) : null}
         <button
           type="button"
-          disabled={saving}
+          disabled={saving || !ready}
           onClick={() => void save()}
-          className="rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow disabled:opacity-50"
+          className="rounded-xl bg-cyan-800 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-900 disabled:opacity-50"
         >
-          {saving ? "Saving…" : "Save booking settings"}
+          {saving ? "Saving…" : "Save schedule"}
         </button>
       </div>
     </div>

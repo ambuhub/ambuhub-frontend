@@ -30,11 +30,11 @@ import {
   parseHireEndForValidation,
   suggestNextValidHirePeriod,
 } from "@/lib/hire-return-window";
-import { previewHireLineTotalNgn } from "@/lib/hire-pricing-client";
+import { previewHireLineTotal } from "@/lib/hire-pricing-client";
 import {
   formatHirePricePeriodSuffix,
   formatPricingPeriodLabel,
-  isPricingPeriod,
+  LISTING_PRICING_PERIOD,
 } from "@/lib/pricing-period";
 import {
   fetchMarketplaceServiceById,
@@ -42,13 +42,9 @@ import {
 } from "@/lib/marketplace-hire";
 import type { OrderDetailClient } from "@/lib/marketplace-cart";
 import { marketplaceCategoryHref } from "@/lib/marketplace-navigation";
+import { formatMoney } from "@/lib/currency";
+import { getListingCurrency } from "@/lib/marketplace-listing";
 import type { MarketplaceServiceRow } from "@/lib/service-category-page-data";
-
-const naira = new Intl.NumberFormat("en-NG", { maximumFractionDigits: 2 });
-
-function formatNaira(value: number): string {
-  return `₦${naira.format(value)}`;
-}
 
 function descriptionSnippet(text: string, max = 200): string {
   const t = text.trim();
@@ -62,7 +58,6 @@ function isHireBookable(svc: MarketplaceServiceRow): boolean {
     typeof svc.price === "number" &&
     svc.price >= 0 &&
     svc.pricingPeriod != null &&
-    isPricingPeriod(svc.pricingPeriod) &&
     typeof svc.stock === "number" &&
     svc.stock >= 1 &&
     svc.isAvailable !== false &&
@@ -80,7 +75,7 @@ function hireUnavailableReason(svc: MarketplaceServiceRow): string {
   if (typeof svc.price !== "number" || svc.price < 0) {
     return "This listing does not have a valid hire price.";
   }
-  if (!svc.pricingPeriod || !isPricingPeriod(svc.pricingPeriod)) {
+  if (!svc.pricingPeriod) {
     return "This listing is missing a billing period.";
   }
   if (typeof svc.stock !== "number" || svc.stock < 1) {
@@ -156,12 +151,11 @@ export default function HireCheckoutPage() {
     if (!service || !isHireBookable(service) || datesInitialized) {
       return;
     }
-    const period = service.pricingPeriod;
     const window = service.hireReturnWindow;
-    if (!period || !isPricingPeriod(period) || !window) {
+    if (!window) {
       return;
     }
-    const suggested = suggestNextValidHirePeriod(window, period);
+    const suggested = suggestNextValidHirePeriod(window);
     if (suggested) {
       setHireStart(suggested.hireStart);
       setHireEnd(suggested.hireEnd);
@@ -177,46 +171,34 @@ export default function HireCheckoutPage() {
     : null;
 
   const preview = useMemo(() => {
-    if (!service || !isHireBookable(service) || !service.pricingPeriod) {
-      return null;
-    }
-    const period = service.pricingPeriod;
-    if (!isPricingPeriod(period)) {
+    if (!service || !isHireBookable(service)) {
       return null;
     }
     const unit = service.price ?? 0;
-    return previewHireLineTotalNgn(period, hireStart, hireEnd, unit, clampedQty);
+    return previewHireLineTotal(hireStart, hireEnd, unit, clampedQty);
   }, [service, hireStart, hireEnd, clampedQty]);
 
   const returnValidation = useMemo(() => {
-    if (!service?.pricingPeriod || !returnWindow || !hireEnd.trim()) {
+    if (!returnWindow || !hireEnd.trim()) {
       return null;
     }
-    const period = service.pricingPeriod;
-    if (!isPricingPeriod(period)) {
-      return null;
-    }
-    const end = parseHireEndForValidation(hireEnd, period);
+    const end = parseHireEndForValidation(hireEnd);
     if (!end) {
-      return "Choose a valid return date or time.";
+      return "Choose a valid return date.";
     }
-    return assertHireEndAllowedClient(end, returnWindow, period);
-  }, [service, returnWindow, hireEnd]);
+    return assertHireEndAllowedClient(end, returnWindow);
+  }, [returnWindow, hireEnd]);
 
   const returnDeadline = useMemo(() => {
-    if (returnValidation || !returnWindow || !service?.pricingPeriod || !hireEnd.trim()) {
+    if (returnValidation || !returnWindow || !hireEnd.trim()) {
       return null;
     }
-    const period = service.pricingPeriod;
-    if (!isPricingPeriod(period)) {
-      return null;
-    }
-    const end = parseHireEndForValidation(hireEnd, period);
+    const end = parseHireEndForValidation(hireEnd);
     if (!end) {
       return null;
     }
-    return formatReturnDeadlineClient(end, returnWindow, period);
-  }, [service, returnWindow, hireEnd, returnValidation]);
+    return formatReturnDeadlineClient(end, returnWindow);
+  }, [returnWindow, hireEnd, returnValidation]);
 
   const adjustQty = useCallback(
     (next: number) => {
@@ -236,26 +218,15 @@ export default function HireCheckoutPage() {
       return;
     }
     if (!preview) {
-      setError("Choose valid hire dates and times.");
+      setError("Choose valid hire dates.");
       return;
     }
     if (returnValidation) {
       setError(returnValidation);
       return;
     }
-    const period = service.pricingPeriod;
-    let startPayload = hireStart.trim();
-    let endPayload = hireEnd.trim();
-    if (period === "hourly") {
-      const s = new Date(hireStart);
-      const e = new Date(hireEnd);
-      if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) {
-        setError("Enter valid start and end date-times.");
-        return;
-      }
-      startPayload = s.toISOString();
-      endPayload = e.toISOString();
-    }
+    const startPayload = hireStart.trim();
+    const endPayload = hireEnd.trim();
     setBusy(true);
     try {
       const { order } = await postHireSimulateCheckout({
@@ -445,7 +416,9 @@ export default function HireCheckoutPage() {
                     ) : null}
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <span className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#004a7c] via-[#0069b4] to-cyan-600 px-3 py-1.5 text-sm font-bold text-white shadow-md shadow-cyan-500/25">
-                        {typeof service.price === "number" ? formatNaira(service.price) : "—"}
+                        {typeof service.price === "number"
+                          ? formatMoney(service.price, getListingCurrency(service))
+                          : "—"}
                         <span className="font-medium opacity-90">
                           {formatHirePricePeriodSuffix(service.pricingPeriod)}
                         </span>
@@ -574,71 +547,38 @@ export default function HireCheckoutPage() {
                     <p className="text-xs text-teal-900/65">Start and return within the window</p>
                   </div>
                 </div>
-                {service.pricingPeriod === "hourly" ? (
-                  <div className="relative mt-5 grid gap-4 sm:grid-cols-2">
-                    <label className="block text-xs font-medium text-foreground/70">
-                      Start
-                      <input
-                        type="datetime-local"
-                        value={hireStart}
-                        onChange={(e) => {
-                          setError(null);
-                          setHireStart(e.target.value);
-                        }}
-                        className="mt-1 w-full rounded-xl border border-teal-300/60 bg-white/95 px-3 py-2 text-sm text-foreground shadow-[0_0_16px_-4px_rgba(20,184,166,0.18)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-400/35"
-                      />
-                    </label>
-                    <label className="block text-xs font-medium text-foreground/70">
-                      Return by
-                      <input
-                        type="datetime-local"
-                        value={hireEnd}
-                        onChange={(e) => {
-                          setError(null);
-                          setHireEnd(e.target.value);
-                        }}
-                        className="mt-1 w-full rounded-xl border border-teal-300/60 bg-white/95 px-3 py-2 text-sm text-foreground shadow-[0_0_16px_-4px_rgba(20,184,166,0.18)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-400/35"
-                      />
+                <div className="relative mt-5 grid gap-4 sm:grid-cols-2">
+                  <label className="block text-xs font-medium text-foreground/70">
+                    Start date
+                    <input
+                      type="date"
+                      value={hireStart}
+                      onChange={(e) => {
+                        setError(null);
+                        setHireStart(e.target.value);
+                      }}
+                      className="mt-1 w-full rounded-xl border border-teal-300/60 bg-white/95 px-3 py-2 text-sm text-foreground shadow-[0_0_16px_-4px_rgba(20,184,166,0.18)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-400/35"
+                    />
+                  </label>
+                  <label className="block text-xs font-medium text-foreground/70">
+                    Return by (date)
+                    <input
+                      type="date"
+                      value={hireEnd}
+                      onChange={(e) => {
+                        setError(null);
+                        setHireEnd(e.target.value);
+                      }}
+                      className="mt-1 w-full rounded-xl border border-teal-300/60 bg-white/95 px-3 py-2 text-sm text-foreground shadow-[0_0_16px_-4px_rgba(20,184,166,0.18)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-400/35"
+                    />
+                    {returnWindow ? (
                       <span className="mt-1 block text-[11px] text-foreground/55">
-                        Return time must be within the provider&apos;s schedule, interpreted in
-                        West Africa Time (WAT).
+                        Item must be returned by{" "}
+                        {formatHm12(returnWindow.timeEnd)} WAT on the selected day.
                       </span>
-                    </label>
-                  </div>
-                ) : (
-                  <div className="relative mt-5 grid gap-4 sm:grid-cols-2">
-                    <label className="block text-xs font-medium text-foreground/70">
-                      Start date
-                      <input
-                        type="date"
-                        value={hireStart}
-                        onChange={(e) => {
-                          setError(null);
-                          setHireStart(e.target.value);
-                        }}
-                        className="mt-1 w-full rounded-xl border border-teal-300/60 bg-white/95 px-3 py-2 text-sm text-foreground shadow-[0_0_16px_-4px_rgba(20,184,166,0.18)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-400/35"
-                      />
-                    </label>
-                    <label className="block text-xs font-medium text-foreground/70">
-                      Return by (date)
-                      <input
-                        type="date"
-                        value={hireEnd}
-                        onChange={(e) => {
-                          setError(null);
-                          setHireEnd(e.target.value);
-                        }}
-                        className="mt-1 w-full rounded-xl border border-teal-300/60 bg-white/95 px-3 py-2 text-sm text-foreground shadow-[0_0_16px_-4px_rgba(20,184,166,0.18)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-400/35"
-                      />
-                      {returnWindow ? (
-                        <span className="mt-1 block text-[11px] text-foreground/55">
-                          Item must be returned by{" "}
-                          {formatHm12(returnWindow.timeEnd)} WAT on the selected day.
-                        </span>
-                      ) : null}
-                    </label>
-                  </div>
-                )}
+                    ) : null}
+                  </label>
+                </div>
                 {!hireEnd.trim() && returnWindow ? (
                   <p className="mt-3 text-xs text-foreground/55">
                     Choose when you will return the item (must match the return schedule above).
@@ -695,7 +635,9 @@ export default function HireCheckoutPage() {
                     <div>
                       <p className="text-sm font-medium text-sky-200/90">Total (NGN)</p>
                       <p className="mt-1 bg-gradient-to-r from-white via-cyan-100 to-sky-200 bg-clip-text text-2xl font-bold tracking-tight text-transparent sm:text-3xl">
-                        {preview ? formatNaira(preview.lineTotalNgn) : "—"}
+                        {preview
+                          ? formatMoney(preview.lineTotal, getListingCurrency(service))
+                          : "—"}
                       </p>
                     </div>
                   </div>

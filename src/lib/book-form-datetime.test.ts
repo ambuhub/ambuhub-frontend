@@ -46,7 +46,6 @@ describe("daily slot click", () => {
     ];
 
     const form = freeRangeToFormValues(
-      "daily",
       freeRanges[0].start,
       freeRanges[0].end,
     );
@@ -57,7 +56,6 @@ describe("daily slot click", () => {
 
     expect(
       isBookRangeWithinFreeSlots(
-        "daily",
         form!.bookStart,
         form!.bookEnd,
         freeRanges,
@@ -66,44 +64,20 @@ describe("daily slot click", () => {
     ).toBe(true);
 
     expect(
-      formValuesMatchPickedSlot("daily", form!.bookStart, form!.bookEnd, {
+      formValuesMatchPickedSlot(form!.bookStart, form!.bookEnd, {
         isoStart: freeRanges[0].start,
         isoEnd: freeRanges[0].end,
       }),
     ).toBe(true);
   });
-});
 
-describe("hourly slot click", () => {
-  it("validates one-hour slice inside free range", () => {
-    const slotStart = lagosWallClockToDate(2026, 5, 26, "09:00");
-    const slotEnd = lagosWallClockToDate(2026, 5, 26, "16:00");
-    const freeRanges = [
-      { start: slotStart.toISOString(), end: slotEnd.toISOString() },
-    ];
-
-    const form = freeRangeToFormValues(
-      "hourly",
-      freeRanges[0].start,
-      freeRanges[0].end,
-    );
-    expect(form).not.toBeNull();
-
+  it("parses daily form fields through booking window", () => {
     const range = parseBookFormToRange(
-      "hourly",
-      form!.bookStart,
-      form!.bookEnd,
+      "2026-05-26",
+      "2026-05-28",
+      BOOKING_WINDOW,
     );
     expect(range).not.toBeNull();
-    expect(range!.end.getTime() - range!.start.getTime()).toBe(3600000);
-
-    expect(
-      isBookRangeWithinFreeSlots(
-        "hourly",
-        form!.bookStart,
-        form!.bookEnd,
-        freeRanges,
-      ),
-    ).toBe(true);
+    expect(range!.end.getTime()).toBeGreaterThan(range!.start.getTime());
   });
 });

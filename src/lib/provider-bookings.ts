@@ -12,6 +12,7 @@ export type ProviderHireBookingRow = {
   orderId: string;
   receiptNumber: string;
   paidAt: string;
+  currency: string;
   serviceId: string;
   listingTitle: string;
   hireStart: string;
@@ -19,7 +20,7 @@ export type ProviderHireBookingRow = {
   pricingPeriod: string;
   hireBillableUnits: number;
   quantity: number;
-  lineTotalNgn: number;
+  lineTotal: number;
   customer: ProviderHireBookingCustomer;
   primaryPhotoUrl?: string;
 };
@@ -45,6 +46,7 @@ export type ProviderPersonnelBookingRow = {
   orderId: string;
   receiptNumber: string;
   paidAt: string;
+  currency: string;
   serviceId: string;
   listingTitle: string;
   bookStart: string;
@@ -52,7 +54,7 @@ export type ProviderPersonnelBookingRow = {
   pricingPeriod: string;
   bookBillableUnits: number;
   quantity: number;
-  lineTotalNgn: number;
+  lineTotal: number;
   customer: ProviderHireBookingCustomer;
   primaryPhotoUrl?: string;
 };
@@ -83,11 +85,12 @@ export type ProviderSaleRow = {
   orderId: string;
   receiptNumber: string;
   paidAt: string;
+  currency: string;
   serviceId: string;
   listingTitle: string;
   quantity: number;
-  unitPriceNgn: number;
-  lineTotalNgn: number;
+  unitPrice: number;
+  lineTotal: number;
   customer: ProviderHireBookingCustomer;
   primaryPhotoUrl?: string;
 };

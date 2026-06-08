@@ -15,6 +15,8 @@ type Props = {
   onChange: (next: HireReturnWindow) => void;
   labelClass?: string;
   inputClass?: string;
+  /** Hire listings use return-window copy; booking uses availability copy. */
+  variant?: "hire" | "booking";
 };
 
 export function HireReturnWindowFields({
@@ -22,6 +24,7 @@ export function HireReturnWindowFields({
   onChange,
   labelClass = "block text-sm font-semibold text-blue-950",
   inputClass = "mt-1.5 w-full rounded-xl border border-blue-200/90 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-blue-700 focus:ring-2 focus:ring-blue-600/30",
+  variant = "hire",
 }: Props) {
   const selected = new Set(value.daysOfWeek);
 
@@ -45,10 +48,16 @@ export function HireReturnWindowFields({
   return (
     <div className="space-y-4">
       <div>
-        <span className={labelClass}>Return days (WAT)</span>
-        <p className="mt-1 text-xs text-slate-600">
-          When customers may return hired items to your office.
-        </p>
+        {variant === "hire" ? (
+          <>
+            <span className={labelClass}>Return days (WAT)</span>
+            <p className="mt-1 text-xs text-slate-600">
+              When customers may return hired items to your office.
+            </p>
+          </>
+        ) : (
+          <span className={labelClass}>Available days (WAT)</span>
+        )}
         <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
@@ -84,7 +93,7 @@ export function HireReturnWindowFields({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="return-time-start" className={labelClass}>
-            Return from
+            {variant === "hire" ? "Return from" : "Available from"}
           </label>
           <input
             id="return-time-start"
@@ -99,7 +108,7 @@ export function HireReturnWindowFields({
         </div>
         <div>
           <label htmlFor="return-time-end" className={labelClass}>
-            Return until
+            {variant === "hire" ? "Return until" : "Available until"}
           </label>
           <input
             id="return-time-end"

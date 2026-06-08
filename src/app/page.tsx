@@ -6,6 +6,7 @@ import { HowToUseSection } from "@/components/landing/HowToUseSection";
 import { ImageStorySections } from "@/components/landing/ImageStorySections";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
+import { DownloadAppSection } from "@/components/landing/DownloadAppSection";
 import { CTASection } from "@/components/landing/CTASection";
 
 export default function Home() {
@@ -19,6 +20,7 @@ export default function Home() {
         <ImageStorySections />
         <FeaturesSection />
         <HowItWorksSection />
+        <DownloadAppSection />
         <CTASection />
       </main>
       <Footer />

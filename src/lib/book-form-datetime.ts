@@ -1,14 +1,13 @@
 import type { BookingWindow } from "@/lib/booking-window";
+import { countBillableBookDaysInRange } from "@/lib/book-availability-calendar";
+import type { HourlyBookingDayDto } from "@/lib/hourly-booking-schedule";
 import {
   formatInstantAsDateInputLagos,
-  formatInstantAsDatetimeLocalLagos,
   lagosWallClockToDate,
-  parseDatetimeLocalLagos,
 } from "@/lib/hire-return-window";
 import { computeHireBillableUnitsClient } from "@/lib/hire-pricing-client";
-import type { PricingPeriod } from "@/lib/pricing-period";
+import { LISTING_PRICING_PERIOD } from "@/lib/pricing-period";
 
-const HOUR_MS = 3600000;
 const DATE_ONLY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 export type BookFormRange = { start: Date; end: Date };
@@ -46,32 +45,23 @@ export function parseCalendarBookFormToRange(
   return { start, end };
 }
 
-/** Parse book checkout form fields (WAT hourly + calendar periods with booking window). */
+/** Parse daily book checkout form fields using the provider booking window. */
 export function parseBookFormToRange(
-  pricingPeriod: PricingPeriod,
   startRaw: string,
   endRaw: string,
   bookingWindow?: BookingWindow | null,
 ): BookFormRange | null {
+  if (!bookingWindow) {
+    return null;
+  }
   const a = startRaw.trim();
   const b = endRaw.trim();
   if (!a || !b) {
     return null;
   }
-
-  if (pricingPeriod === "hourly") {
-    const start = parseDatetimeLocalLagos(a);
-    const end = parseDatetimeLocalLagos(b);
-    if (!start || !end || end.getTime() <= start.getTime()) {
-      return null;
-    }
-    return { start, end };
-  }
-
-  if (bookingWindow && DATE_ONLY_RE.test(a) && DATE_ONLY_RE.test(b)) {
+  if (DATE_ONLY_RE.test(a) && DATE_ONLY_RE.test(b)) {
     return parseCalendarBookFormToRange(a, b, bookingWindow);
   }
-
   return null;
 }
 
@@ -89,7 +79,6 @@ export function isBookingRangeWithinFreeSlots(
 }
 
 export function isBookRangeWithinFreeSlots(
-  pricingPeriod: PricingPeriod,
   startRaw: string,
   endRaw: string,
   freeRanges: { start: string; end: string }[],
@@ -98,50 +87,43 @@ export function isBookRangeWithinFreeSlots(
   if (!freeRanges.length || !startRaw.trim() || !endRaw.trim()) {
     return null;
   }
-  const range = parseBookFormToRange(
-    pricingPeriod,
-    startRaw,
-    endRaw,
-    bookingWindow,
-  );
+  const range = parseBookFormToRange(startRaw, endRaw, bookingWindow);
   if (!range) {
     return false;
   }
   return isBookingRangeWithinFreeSlots(range, freeRanges);
 }
 
-export function previewBookLineTotalNgn(
-  pricingPeriod: PricingPeriod,
+export function previewBookLineTotal(
   startRaw: string,
   endRaw: string,
   unitPrice: number,
   bookingWindow?: BookingWindow | null,
-): { billableUnits: number; lineTotalNgn: number } | null {
-  const range = parseBookFormToRange(
-    pricingPeriod,
-    startRaw,
-    endRaw,
-    bookingWindow,
-  );
+  days?: HourlyBookingDayDto[] | null,
+): { billableUnits: number; lineTotal: number } | null {
+  if (days?.length) {
+    const billableUnits = countBillableBookDaysInRange(startRaw, endRaw, days);
+    if (billableUnits < 1) {
+      return null;
+    }
+    const lineTotal = Math.round(unitPrice * billableUnits);
+    return { billableUnits, lineTotal };
+  }
+  const range = parseBookFormToRange(startRaw, endRaw, bookingWindow);
   if (!range) {
     return null;
   }
   try {
-    const billableUnits = computeHireBillableUnitsClient(
-      pricingPeriod,
-      range.start,
-      range.end,
-    );
-    const lineTotalNgn = Math.round(unitPrice * billableUnits);
-    return { billableUnits, lineTotalNgn };
+    const billableUnits = computeHireBillableUnitsClient(range.start, range.end);
+    const lineTotal = Math.round(unitPrice * billableUnits);
+    return { billableUnits, lineTotal };
   } catch {
     return null;
   }
 }
 
-/** Canonical booking instants for a clicked free-range slot. */
+/** Canonical booking instants for a clicked free-range slot (daily billing). */
 export function freeRangeToBookingRange(
-  pricingPeriod: PricingPeriod,
   isoStart: string,
   isoEnd: string,
 ): BookFormRange | null {
@@ -153,37 +135,18 @@ export function freeRangeToBookingRange(
   if (slotEnd.getTime() <= slotStart.getTime()) {
     return null;
   }
-
-  if (pricingPeriod === "hourly") {
-    const oneHourEnd = new Date(slotStart.getTime() + HOUR_MS);
-    const end = oneHourEnd.getTime() > slotEnd.getTime() ? slotEnd : oneHourEnd;
-    if (end.getTime() <= slotStart.getTime()) {
-      return null;
-    }
-    return { start: slotStart, end };
-  }
-
   return { start: slotStart, end: slotEnd };
 }
 
 /** Map a free-range instant pair to form field values after the user clicks a slot. */
 export function freeRangeToFormValues(
-  pricingPeriod: PricingPeriod,
   isoStart: string,
   isoEnd: string,
 ): { bookStart: string; bookEnd: string } | null {
-  const range = freeRangeToBookingRange(pricingPeriod, isoStart, isoEnd);
+  const range = freeRangeToBookingRange(isoStart, isoEnd);
   if (!range) {
     return null;
   }
-
-  if (pricingPeriod === "hourly") {
-    return {
-      bookStart: formatInstantAsDatetimeLocalLagos(range.start),
-      bookEnd: formatInstantAsDatetimeLocalLagos(range.end),
-    };
-  }
-
   return {
     bookStart: formatInstantAsDateInputLagos(range.start),
     bookEnd: formatInstantAsDateInputLagos(range.end),
@@ -191,16 +154,11 @@ export function freeRangeToFormValues(
 }
 
 export function formValuesMatchPickedSlot(
-  pricingPeriod: PricingPeriod,
   startRaw: string,
   endRaw: string,
   picked: PickedFreeSlot,
 ): boolean {
-  const expected = freeRangeToFormValues(
-    pricingPeriod,
-    picked.isoStart,
-    picked.isoEnd,
-  );
+  const expected = freeRangeToFormValues(picked.isoStart, picked.isoEnd);
   if (!expected) {
     return false;
   }
@@ -209,27 +167,15 @@ export function formValuesMatchPickedSlot(
   );
 }
 
-/** Payload strings for POST book-checkout (ISO for hourly, YYYY-MM-DD for calendar periods). */
+/** Payload strings for POST book-checkout (YYYY-MM-DD daily range). */
 export function bookFormToCheckoutPayload(
-  pricingPeriod: PricingPeriod,
   startRaw: string,
   endRaw: string,
   bookingWindow?: BookingWindow | null,
 ): { bookStart: string; bookEnd: string } | null {
-  const range = parseBookFormToRange(
-    pricingPeriod,
-    startRaw,
-    endRaw,
-    bookingWindow,
-  );
+  const range = parseBookFormToRange(startRaw, endRaw, bookingWindow);
   if (!range) {
     return null;
-  }
-  if (pricingPeriod === "hourly") {
-    return {
-      bookStart: range.start.toISOString(),
-      bookEnd: range.end.toISOString(),
-    };
   }
   return {
     bookStart: startRaw.trim(),
@@ -250,3 +196,6 @@ export function formatBookRangeLabel(iso: string): string {
     return iso;
   }
 }
+
+/** @deprecated Daily-only billing; kept for transitional call sites. */
+export const BOOK_PRICING_PERIOD = LISTING_PRICING_PERIOD;

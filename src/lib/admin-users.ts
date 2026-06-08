@@ -50,7 +50,7 @@ export type AdminUserProviderProfile = {
 export type AdminUserTransaction = {
   id: string;
   receiptNumber: string;
-  subtotalNgn: number;
+  subtotal: number;
   currency: string;
   paidAt: string;
   createdAt: string;

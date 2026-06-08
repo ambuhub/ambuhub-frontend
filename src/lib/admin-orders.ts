@@ -15,7 +15,7 @@ export type AdminOrderBuyerSummary = {
 export type AdminOrderListItem = {
   id: string;
   receiptNumber: string;
-  subtotalNgn: number;
+  subtotal: number;
   currency: string;
   paidAt: string;
   createdAt: string;
@@ -54,9 +54,9 @@ export type AdminOrderLineDetail = {
   sellerName: string | null;
   lineKind: AdminOrderLineKind | null;
   title: string;
-  unitPriceNgn: number;
+  unitPrice: number;
   quantity: number;
-  lineTotalNgn: number;
+  lineTotal: number;
   categoryName: string;
   categorySlug: string;
   departmentName: string;
@@ -66,7 +66,7 @@ export type AdminOrderDetail = {
   id: string;
   receiptNumber: string;
   currency: string;
-  subtotalNgn: number;
+  subtotal: number;
   paymentProvider: string;
   paystackReference: string;
   paystackSimulated: boolean;

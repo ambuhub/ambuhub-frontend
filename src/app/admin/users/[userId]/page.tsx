@@ -15,7 +15,7 @@ import {
   UserMinus,
   UserPlus,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/AdminPlaceholderPanel";
 import {
   applyAdminUserAction,
@@ -23,15 +23,12 @@ import {
   type AdminUserAction,
   type AdminUserDetail,
 } from "@/lib/admin-users";
-
-function formatNgn(amount: number): string {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
+import {
+  formatMoney,
+  parseSupportedCurrency,
+  SUPPORTED_CURRENCIES,
+  type SupportedCurrency,
+} from "@/lib/currency";
 
 function formatDateTime(iso: string): string {
   try {
@@ -189,9 +186,26 @@ export default function AdminUserDetailPage() {
     }
   }
 
-  const purchaseTotal = user?.transactions
-    .filter((t) => t.direction === "purchase")
-    .reduce((s, t) => s + t.subtotalNgn, 0);
+  const purchaseTotalsByCurrency = useMemo(() => {
+    const totals = new Map<SupportedCurrency, number>();
+    for (const t of user?.transactions ?? []) {
+      if (t.direction !== "purchase") {
+        continue;
+      }
+      const currency = parseSupportedCurrency(t.currency);
+      totals.set(currency, (totals.get(currency) ?? 0) + t.subtotal);
+    }
+    return totals;
+  }, [user?.transactions]);
+
+  const purchaseTotalSummary = useMemo(() => {
+    const parts = SUPPORTED_CURRENCIES.filter(
+      (currency) => (purchaseTotalsByCurrency.get(currency) ?? 0) > 0,
+    ).map((currency) =>
+      formatMoney(purchaseTotalsByCurrency.get(currency) ?? 0, currency),
+    );
+    return parts.length > 0 ? parts.join(" · ") : null;
+  }, [purchaseTotalsByCurrency]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -382,8 +396,8 @@ export default function AdminUserDetailPage() {
                 <p className="mt-0.5 text-sm text-slate-500">
                   {user.transactions.length} order
                   {user.transactions.length === 1 ? "" : "s"}
-                  {purchaseTotal != null && purchaseTotal > 0
-                    ? ` · ${formatNgn(purchaseTotal)} total purchases`
+                  {purchaseTotalSummary
+                    ? ` · ${purchaseTotalSummary} total purchases`
                     : ""}
                 </p>
               </div>
@@ -439,7 +453,10 @@ export default function AdminUserDetailPage() {
                           </span>
                         </td>
                         <td className="px-5 py-3 text-sm font-semibold text-slate-900">
-                          {formatNgn(tx.subtotalNgn)}
+                          {formatMoney(
+                            tx.subtotal,
+                            parseSupportedCurrency(tx.currency),
+                          )}
                         </td>
                         <td className="px-5 py-3 text-sm text-slate-700">
                           {formatDateTime(tx.paidAt)}

@@ -2,14 +2,18 @@
 
 import Link from "next/link";
 import { Check, Crown, Loader2, Sparkles } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
+import { currencyForCountry } from "@/lib/currency";
 import {
   DEFAULT_PROVIDER_PLAN,
   formatPlanPrice,
   getPlanById,
+  getPlanPrice,
   isProviderPlanId,
   PLAN_STORAGE_KEY,
   PROVIDER_PLANS,
+  type ProviderPlan,
   type ProviderPlanId,
 } from "@/lib/provider-subscription-plans";
 
@@ -19,7 +23,22 @@ function planRank(id: ProviderPlanId): number {
   return 2;
 }
 
+function planPriceSuffix(plan: ProviderPlan, currency: ReturnType<typeof currencyForCountry>): string {
+  const price = getPlanPrice(plan, currency);
+  if (price !== null && price > 0) {
+    return " / month";
+  }
+  return "";
+}
+
 export function ProviderSubscriptionPlans() {
+  const { user, loading: sessionLoading } = useSessionAndCart();
+  const currency = useMemo(
+    () => currencyForCountry(user?.countryCode),
+    [user?.countryCode],
+  );
+  const showPrices = !sessionLoading;
+
   const [currentPlanId, setCurrentPlanId] =
     useState<ProviderPlanId>(DEFAULT_PROVIDER_PLAN);
   const [hydrated, setHydrated] = useState(false);
@@ -84,6 +103,7 @@ export function ProviderSubscriptionPlans() {
   }
 
   const currentPlan = getPlanById(currentPlanId);
+  const currentPlanPrice = getPlanPrice(currentPlan, currency);
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -110,12 +130,9 @@ export function ProviderSubscriptionPlans() {
               {hydrated ? currentPlan.name : "…"}
             </p>
             <p className="text-xs text-slate-600">
-              {hydrated ? formatPlanPrice(currentPlan.priceNgn) : "—"}
-              {currentPlan.priceNgn !== null && currentPlan.priceNgn > 0
-                ? " / month"
-                : currentPlan.priceNgn === null
-                  ? ""
-                  : ""}
+              {showPrices && hydrated
+                ? `${formatPlanPrice(currentPlanPrice, currency)}${planPriceSuffix(currentPlan, currency)}`
+                : "—"}
             </p>
           </div>
         </div>
@@ -174,7 +191,9 @@ export function ProviderSubscriptionPlans() {
 
                 <div className="mt-5">
                   <p className="text-3xl font-bold tracking-tight text-slate-900">
-                    {formatPlanPrice(plan.priceNgn)}
+                    {showPrices
+                      ? formatPlanPrice(getPlanPrice(plan, currency), currency)
+                      : "—"}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">{plan.priceNote}</p>
                 </div>

@@ -13,13 +13,29 @@ import {
 
 type PageProps = {
   params: Promise<{ slug: string; serviceId: string }>;
+  searchParams: Promise<{ countryCode?: string }>;
 };
+
+function parseBrowseCountryCode(
+  value: string | undefined,
+): "NG" | "GH" | undefined {
+  const code = value?.trim().toUpperCase();
+  if (code === "NG" || code === "GH") {
+    return code;
+  }
+  return undefined;
+}
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: PageProps): Promise<Metadata> {
   const { serviceId } = await params;
-  const service = await fetchMarketplaceServiceByIdForPage(serviceId);
+  const { countryCode: rawCountry } = await searchParams;
+  const service = await fetchMarketplaceServiceByIdForPage(
+    serviceId,
+    parseBrowseCountryCode(rawCountry),
+  );
   if (!service) {
     return { title: "Listing | Ambuhub" };
   }
@@ -32,9 +48,14 @@ export async function generateMetadata({
 
 export default async function MarketplaceListingDetailPage({
   params,
+  searchParams,
 }: PageProps) {
   const { slug, serviceId } = await params;
-  const service = await fetchMarketplaceServiceByIdForPage(serviceId);
+  const { countryCode: rawCountry } = await searchParams;
+  const service = await fetchMarketplaceServiceByIdForPage(
+    serviceId,
+    parseBrowseCountryCode(rawCountry),
+  );
   if (!service) {
     notFound();
   }
@@ -45,7 +66,9 @@ export default async function MarketplaceListingDetailPage({
   }
 
   const authReturnPath = `/services/${encodeURIComponent(slug)}/${encodeURIComponent(serviceId)}`;
-  const marketplace = await fetchMarketplaceServices();
+  const recCountry =
+    service.countryCode?.trim().toUpperCase() === "GH" ? "GH" : "NG";
+  const marketplace = await fetchMarketplaceServices(recCountry);
   const recommendations = pickListingRecommendations(service, marketplace);
 
   return (

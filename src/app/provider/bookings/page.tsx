@@ -6,10 +6,13 @@ import {
   ProviderBookingDetailPanel,
   bookingRowKey,
   formatDateTime,
-  formatNgn,
   isBookingActive,
   type ProviderBookingDisplayRow,
 } from "@/components/provider/ProviderBookingDetailPanel";
+import {
+  formatMoney,
+  parseSupportedCurrency,
+} from "@/lib/currency";
 import {
   fetchProviderHireBookings,
   fetchProviderPersonnelBookings,
@@ -28,6 +31,7 @@ function toHireDisplayRows(rows: ProviderHireBookingRow[]): ProviderBookingDispl
     orderId: r.orderId,
     receiptNumber: r.receiptNumber,
     paidAt: r.paidAt,
+    currency: parseSupportedCurrency(r.currency),
     serviceId: r.serviceId,
     listingTitle: r.listingTitle,
     start: r.hireStart,
@@ -35,7 +39,7 @@ function toHireDisplayRows(rows: ProviderHireBookingRow[]): ProviderBookingDispl
     pricingPeriod: r.pricingPeriod,
     billableUnits: r.hireBillableUnits,
     quantity: r.quantity,
-    lineTotalNgn: r.lineTotalNgn,
+    lineTotal: r.lineTotal,
     customer: r.customer,
     primaryPhotoUrl: r.primaryPhotoUrl,
   }));
@@ -50,6 +54,7 @@ function toPersonnelDisplayRows(
     orderId: r.orderId,
     receiptNumber: r.receiptNumber,
     paidAt: r.paidAt,
+    currency: parseSupportedCurrency(r.currency),
     serviceId: r.serviceId,
     listingTitle: r.listingTitle,
     start: r.bookStart,
@@ -57,7 +62,7 @@ function toPersonnelDisplayRows(
     pricingPeriod: r.pricingPeriod,
     billableUnits: r.bookBillableUnits,
     quantity: r.quantity,
-    lineTotalNgn: r.lineTotalNgn,
+    lineTotal: r.lineTotal,
     customer: r.customer,
     primaryPhotoUrl: r.primaryPhotoUrl,
   }));
@@ -70,13 +75,14 @@ function toSaleDisplayRows(rows: ProviderSaleRow[]): ProviderBookingDisplayRow[]
     orderId: r.orderId,
     receiptNumber: r.receiptNumber,
     paidAt: r.paidAt,
+    currency: parseSupportedCurrency(r.currency),
     serviceId: r.serviceId,
     listingTitle: r.listingTitle,
     start: r.paidAt,
     end: r.paidAt,
     quantity: r.quantity,
-    unitPriceNgn: r.unitPriceNgn,
-    lineTotalNgn: r.lineTotalNgn,
+    unitPrice: r.unitPrice,
+    lineTotal: r.lineTotal,
     customer: r.customer,
     primaryPhotoUrl: r.primaryPhotoUrl,
   }));
@@ -287,7 +293,7 @@ export default function ProviderBookingsPage() {
                         </div>
                         <p className="mt-1 text-xs text-slate-500">
                           {row.customer.firstName} {row.customer.lastName} ·{" "}
-                          {formatNgn(row.lineTotalNgn)}
+                          {formatMoney(row.lineTotal, row.currency)}
                         </p>
                         <p className="mt-1 text-xs text-slate-400">
                           {tab === "sales"
@@ -389,7 +395,7 @@ export default function ProviderBookingsPage() {
                               </>
                             )}
                             <td className="whitespace-nowrap px-4 py-3.5 font-semibold text-slate-900">
-                              {formatNgn(row.lineTotalNgn)}
+                              {formatMoney(row.lineTotal, row.currency)}
                             </td>
                           </tr>
                         );

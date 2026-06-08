@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import type { PublicAuthUser } from "@/lib/auth-redirect";
+import { parseSupportedCurrency, type SupportedCurrency } from "@/lib/currency";
 import { fetchAuthMe, fetchCart, type CartClient } from "@/lib/marketplace-cart";
 
 type SessionCartContextValue = {
@@ -18,14 +19,15 @@ type SessionCartContextValue = {
   loading: boolean;
   refresh: () => Promise<void>;
   itemCount: number;
-  subtotalNgn: number;
+  subtotal: number;
+  currency: SupportedCurrency | null;
 };
 
 const SessionCartContext = createContext<SessionCartContextValue | null>(null);
 
 export function SessionCartProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<PublicAuthUser | null>(null);
-  const [cart, setCart] = useState<CartClient>({ items: [] });
+  const [cart, setCart] = useState<CartClient>({ items: [], currency: null });
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -35,7 +37,7 @@ export function SessionCartProvider({ children }: { children: ReactNode }) {
       if (nextUser) {
         setCart(await fetchCart());
       } else {
-        setCart({ items: [] });
+        setCart({ items: [], currency: null });
       }
     } catch {
       setUser(null);
@@ -50,9 +52,19 @@ export function SessionCartProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const itemCount = cart.items.reduce((sum, row) => sum + row.quantity, 0);
-  const subtotalNgn = cart.items.reduce(
-    (sum, row) => sum + (row.lineTotalNgn ?? 0),
+  const subtotal = cart.items.reduce(
+    (sum, row) => sum + (row.lineTotal ?? 0),
     0,
+  );
+
+  const currency = useMemo(
+    () =>
+      cart.currency
+        ? parseSupportedCurrency(cart.currency)
+        : cart.items[0]?.currency
+          ? parseSupportedCurrency(cart.items[0].currency)
+          : null,
+    [cart.currency, cart.items],
   );
 
   const value = useMemo(
@@ -62,9 +74,10 @@ export function SessionCartProvider({ children }: { children: ReactNode }) {
       loading,
       refresh,
       itemCount,
-      subtotalNgn,
+      subtotal,
+      currency,
     }),
-    [user, cart, loading, refresh, itemCount, subtotalNgn],
+    [user, cart, loading, refresh, itemCount, subtotal, currency],
   );
 
   return (

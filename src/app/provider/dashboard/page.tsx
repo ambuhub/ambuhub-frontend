@@ -1,6 +1,7 @@
 import { Search, Upload } from "lucide-react";
 import Link from "next/link";
 
+import { ProviderDashboardCurrencyProvider } from "./ProviderDashboardCurrency";
 import { ProviderMonthlySalesChart } from "./ProviderMonthlySalesChart";
 import {
   ProviderDashboardBellLink,
@@ -30,7 +31,8 @@ const notificationsCardClass =
 
 export default function ProviderDashboardPage() {
   return (
-    <div className="mx-auto max-w-6xl">
+    <ProviderDashboardCurrencyProvider>
+      <div className="mx-auto max-w-6xl">
       <div className="rounded-[26px] border border-blue-100/80 bg-white/95 p-5 shadow-xl shadow-slate-200/70 backdrop-blur-sm sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -110,6 +112,7 @@ export default function ProviderDashboardPage() {
           </section>
         </div>
       </div>
-    </div>
+      </div>
+    </ProviderDashboardCurrencyProvider>
   );
 }

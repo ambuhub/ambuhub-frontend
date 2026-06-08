@@ -24,6 +24,7 @@ export type AdminListingListItem = {
   isLive: boolean;
   stock: number | null;
   price: number | null;
+  currency: string;
   updatedAt: string;
   createdAt: string;
 };

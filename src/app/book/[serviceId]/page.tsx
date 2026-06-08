@@ -7,11 +7,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { CheckoutSuccessPanel } from "@/components/checkout/CheckoutSuccessPanel";
+import { BookAvailabilityCalendar } from "@/components/book/BookAvailabilityCalendar";
 import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
 import { bookUnavailableReason, isBookBookable } from "@/lib/book-bookable";
 import { formatBookingWindowSummary } from "@/lib/booking-window";
 import { AMBUHUB_MARKETPLACE_INVALIDATE_EVENT } from "@/lib/cache-tags";
-import { HourlyBookCheckout } from "@/components/book/HourlyBookCheckout";
 import type { PickedFreeSlot } from "@/lib/book-form-datetime";
 import {
   bookFormToCheckoutPayload,
@@ -19,10 +19,16 @@ import {
   formValuesMatchPickedSlot,
   freeRangeToFormValues,
   isBookRangeWithinFreeSlots,
-  previewBookLineTotalNgn,
+  previewBookLineTotal,
 } from "@/lib/book-form-datetime";
-import { parseHourlyBookPayload } from "@/lib/hourly-book-slots";
-import { formatHourlyScheduleSummary, resolveHourlyBookingSchedule } from "@/lib/hourly-booking-schedule";
+import {
+  countBillableBookDaysInRange,
+  enumerateBookDateRange,
+  hasBillableDaysInBookRange,
+  isOrderedBookDateRange,
+  normalizeBookDays,
+} from "@/lib/book-availability-calendar";
+import type { HourlyBookingDayDto } from "@/lib/hourly-booking-schedule";
 import { fetchMarketplaceServiceById } from "@/lib/marketplace-hire";
 import {
   fetchBookingAvailability,
@@ -34,15 +40,11 @@ import { marketplaceCategoryHref } from "@/lib/marketplace-navigation";
 import {
   formatHirePricePeriodSuffix,
   formatPricingPeriodLabel,
-  isPricingPeriod,
+  LISTING_PRICING_PERIOD,
 } from "@/lib/pricing-period";
+import { formatMoney } from "@/lib/currency";
+import { getListingCurrency } from "@/lib/marketplace-listing";
 import type { MarketplaceServiceRow } from "@/lib/service-category-page-data";
-
-const naira = new Intl.NumberFormat("en-NG", { maximumFractionDigits: 2 });
-
-function formatNaira(value: number): string {
-  return `₦${naira.format(value)}`;
-}
 
 export default function BookCheckoutPage() {
   const params = useParams();
@@ -109,80 +111,88 @@ export default function BookCheckoutPage() {
     };
   }, [serviceId]);
 
-  const period =
-    service?.pricingPeriod && isPricingPeriod(service.pricingPeriod)
-      ? service.pricingPeriod
-      : null;
+  const period = LISTING_PRICING_PERIOD;
 
   const bookingWindow =
     service?.bookingWindow ?? availability?.bookingWindow ?? null;
 
+  const calendarDays = useMemo(
+    () => normalizeBookDays(availability?.days),
+    [availability?.days],
+  );
+
+  const rangeOrderInvalid = useMemo(() => {
+    if (!bookStart.trim() || !bookEnd.trim()) {
+      return false;
+    }
+    return !isOrderedBookDateRange(bookStart, bookEnd);
+  }, [bookStart, bookEnd]);
+
   const preview = useMemo(() => {
-    if (!service || !period || !isBookBookable(service)) {
+    if (!service || !isBookBookable(service) || rangeOrderInvalid) {
       return null;
     }
     const unit = service.price ?? 0;
-    return previewBookLineTotalNgn(
-      period,
+    return previewBookLineTotal(
       bookStart,
       bookEnd,
       unit,
       bookingWindow,
+      calendarDays.length > 0 ? calendarDays : null,
     );
-  }, [service, period, bookStart, bookEnd, bookingWindow]);
+  }, [service, bookStart, bookEnd, bookingWindow, calendarDays, rangeOrderInvalid]);
 
-  const isHourly = period === "hourly";
+  const calendarSpanDays = useMemo(() => {
+    if (!bookStart.trim() || !bookEnd.trim()) {
+      return 0;
+    }
+    return enumerateBookDateRange(bookStart, bookEnd).length;
+  }, [bookStart, bookEnd]);
+
+  const billableDaysInRange = useMemo(() => {
+    if (!bookStart.trim() || !bookEnd.trim() || calendarDays.length === 0) {
+      return 0;
+    }
+    return countBillableBookDaysInRange(bookStart, bookEnd, calendarDays);
+  }, [bookStart, bookEnd, calendarDays]);
 
   const rangeInFree = useMemo(() => {
-    if (!period || !availability) {
+    if (!availability) {
       return null;
     }
-    if (isHourly) {
-      const payload = parseHourlyBookPayload(bookStart, bookEnd);
-      if (!payload) {
-        return false;
-      }
-      return availability.freeRanges.some((r) => {
-        const fs = new Date(r.start).getTime();
-        const fe = new Date(r.end).getTime();
-        return (
-          new Date(payload.bookStart).getTime() >= fs &&
-          new Date(payload.bookEnd).getTime() <= fe
-        );
-      });
+    if (!bookStart.trim() || !bookEnd.trim()) {
+      return null;
     }
+    if (rangeOrderInvalid) {
+      return false;
+    }
+    if (pickedSlot && formValuesMatchPickedSlot(bookStart, bookEnd, pickedSlot)) {
+      return true;
+    }
+
+    if (calendarDays.length > 0) {
+      return hasBillableDaysInBookRange(bookStart, bookEnd, calendarDays);
+    }
+
     if (!availability.freeRanges.length) {
       return null;
     }
-    if (
-      pickedSlot &&
-      formValuesMatchPickedSlot(period, bookStart, bookEnd, pickedSlot)
-    ) {
-      return true;
-    }
     return isBookRangeWithinFreeSlots(
-      period,
       bookStart,
       bookEnd,
       availability.freeRanges,
       bookingWindow,
     );
-  }, [
-    availability,
-    bookStart,
-    bookEnd,
-    period,
-    bookingWindow,
-    pickedSlot,
-    isHourly,
-  ]);
+  }, [availability, bookStart, bookEnd, bookingWindow, pickedSlot, calendarDays, rangeOrderInvalid]);
+
+  const hasBookableDays = useMemo(
+    () => calendarDays.some((d) => d.freeSlots.length > 0),
+    [calendarDays],
+  );
 
   const pickFromFree = useCallback(
     (isoStart: string, isoEnd: string) => {
-      if (!period) {
-        return;
-      }
-      const values = freeRangeToFormValues(period, isoStart, isoEnd);
+      const values = freeRangeToFormValues(isoStart, isoEnd);
       if (!values) {
         setError("Could not apply this time slot.");
         return;
@@ -192,29 +202,61 @@ export default function BookCheckoutPage() {
       setBookEnd(values.bookEnd);
       setError(null);
     },
-    [period],
+    [],
+  );
+
+  const handleDaySelect = useCallback(
+    (day: HourlyBookingDayDto) => {
+      setError(null);
+      const date = day.date;
+
+      if (!bookStart || date < bookStart) {
+        if (day.freeSlots.length > 0) {
+          const first = day.freeSlots[0];
+          const last = day.freeSlots[day.freeSlots.length - 1];
+          pickFromFree(first.start, last.end);
+        } else {
+          setPickedSlot(null);
+          setBookStart(date);
+          setBookEnd(date);
+        }
+        return;
+      }
+
+      if (date > bookStart) {
+        setPickedSlot(null);
+        setBookEnd(date);
+        return;
+      }
+
+      if (day.freeSlots.length > 0) {
+        const first = day.freeSlots[0];
+        const last = day.freeSlots[day.freeSlots.length - 1];
+        pickFromFree(first.start, last.end);
+      }
+    },
+    [bookStart, pickFromFree],
   );
 
   async function handleCheckout() {
     setError(null);
-    if (!service || !isBookBookable(service) || !period) {
+    if (!service || !isBookBookable(service)) {
       setError("This listing cannot be booked.");
       return;
     }
+    if (rangeOrderInvalid) {
+      setError("Start date must be on or before end date.");
+      return;
+    }
     if (!preview) {
-      setError("Choose valid booking start and end times.");
+      setError("Choose valid booking start and end dates.");
       return;
     }
     if (rangeInFree === false) {
-      setError("Selected time must fall within an available slot.");
+      setError("Selected dates must fall within an available slot.");
       return;
     }
-    let payload: { bookStart: string; bookEnd: string } | null;
-    if (period === "hourly") {
-      payload = parseHourlyBookPayload(bookStart, bookEnd);
-    } else {
-      payload = bookFormToCheckoutPayload(period, bookStart, bookEnd, bookingWindow);
-    }
+    const payload = bookFormToCheckoutPayload(bookStart, bookEnd, bookingWindow);
     if (!payload) {
       setError("Choose valid booking start and end times.");
       return;
@@ -243,18 +285,12 @@ export default function BookCheckoutPage() {
   const loginNext = serviceId ? `/book/${encodeURIComponent(serviceId)}` : "/book";
   const loginHref = `/auth?next=${encodeURIComponent(loginNext)}`;
   const bookable = service ? isBookBookable(service) : false;
-  const hourlySchedule = resolveHourlyBookingSchedule(
-    service?.hourlyBookingSchedule ?? availability?.hourlyBookingSchedule,
-    service?.bookingWindow ?? availability?.bookingWindow,
-  );
   const windowSummary =
-    period === "hourly" && hourlySchedule
-      ? formatHourlyScheduleSummary(hourlySchedule)
-      : service?.bookingWindow != null
-        ? formatBookingWindowSummary(service.bookingWindow)
-        : availability?.bookingWindow
-          ? formatBookingWindowSummary(availability.bookingWindow)
-          : null;
+    service?.bookingWindow != null
+      ? formatBookingWindowSummary(service.bookingWindow)
+      : availability?.bookingWindow
+        ? formatBookingWindowSummary(availability.bookingWindow)
+        : null;
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-slate-50/80">
@@ -287,9 +323,9 @@ export default function BookCheckoutPage() {
               </h1>
               <p className="mt-1 text-sm text-foreground/70">
                 {service.departmentName} ·{" "}
-                {period ? formatPricingPeriodLabel(period) : "—"}
+                {formatPricingPeriodLabel(period)}
                 {typeof service.price === "number"
-                  ? ` · ${formatNaira(service.price)} ${formatHirePricePeriodSuffix(period)}`
+                  ? ` · ${formatMoney(service.price, getListingCurrency(service))} ${formatHirePricePeriodSuffix(period)}`
                   : null}
               </p>
 
@@ -303,9 +339,7 @@ export default function BookCheckoutPage() {
                     <p className="flex items-start gap-2 text-sm text-foreground/80">
                       <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700" />
                       <span>
-                        <strong className="font-semibold">
-                          {isHourly ? "Default weekly hours:" : "Weekly hours:"}
-                        </strong>{" "}
+                        <strong className="font-semibold">Weekly hours:</strong>{" "}
                         {windowSummary}
                         {availability && (availability.bookingGapHours ?? 0) > 0
                           ? ` · ${availability.bookingGapHours}h buffer after each booking`
@@ -314,41 +348,17 @@ export default function BookCheckoutPage() {
                     </p>
                   ) : null}
 
-                  {isHourly && availability ? (
-                    <HourlyBookCheckout
-                      service={service}
-                      availability={availability}
-                      bookStart={bookStart}
-                      bookEnd={bookEnd}
-                      onBookStartChange={setBookStart}
-                      onBookEndChange={setBookEnd}
-                      onClearError={() => setError(null)}
-                    />
-                  ) : (
-                    <>
-                      {availability && availability.freeRanges.length > 0 ? (
-                        <div className="rounded-2xl border border-cyan-200/60 bg-white p-4 shadow-sm">
-                          <h2 className="text-sm font-semibold text-foreground">
-                            Available times (next 30 days)
-                          </h2>
-                          <ul className="mt-3 max-h-48 space-y-2 overflow-y-auto text-sm">
-                            {availability.freeRanges.slice(0, 24).map((r) => (
-                              <li key={`${r.start}-${r.end}`}>
-                                <button
-                                  type="button"
-                                  onClick={() => pickFromFree(r.start, r.end)}
-                                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-left hover:border-cyan-400 hover:bg-cyan-50/50"
-                                >
-                                  {formatBookRangeLabel(r.start)} –{" "}
-                                  {formatBookRangeLabel(r.end)}
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
+                  <>
+                      {availability && hasBookableDays ? (
+                        <BookAvailabilityCalendar
+                          days={calendarDays}
+                          bookStart={bookStart}
+                          bookEnd={bookEnd}
+                          onDaySelect={handleDaySelect}
+                        />
                       ) : (
                         <p className="text-sm text-foreground/60">
-                          No open slots in the next 30 days. Try another listing or check
+                          No open days in the next 30 days. Try another listing or check
                           back later.
                         </p>
                       )}
@@ -358,8 +368,8 @@ export default function BookCheckoutPage() {
                           Your booking
                         </h2>
                         <p className="mt-1 text-xs text-foreground/60">
-                          Dates use the provider’s booking calendar days (WAT). Click a
-                          slot or pick start and end dates on available days.
+                          Dates use the provider’s booking calendar (WAT). Select days on
+                          the calendar above, or enter start and end dates below.
                         </p>
                         {pickedSlot ? (
                           <p className="mt-2 text-xs font-medium text-cyan-900/80">
@@ -400,18 +410,37 @@ export default function BookCheckoutPage() {
                             />
                           </div>
                         </div>
-                        {rangeInFree === false && bookStart && bookEnd ? (
+                        {rangeOrderInvalid ? (
                           <p className="mt-2 text-xs text-amber-800">
-                            Selected range is outside available hours or overlaps another
-                            booking.
+                            Start date must be on or before end date.
+                          </p>
+                        ) : null}
+                        {rangeInFree === false && bookStart && bookEnd && !rangeOrderInvalid ? (
+                          <p className="mt-2 text-xs text-amber-800">
+                            No billable days in this range. Choose dates that include at
+                            least one available day.
                           </p>
                         ) : null}
                         {preview ? (
                           <p className="mt-4 text-lg font-semibold text-foreground">
-                            Total: {formatNaira(preview.lineTotalNgn)}
+                            Total:{" "}
+                            {formatMoney(
+                              preview.lineTotal,
+                              getListingCurrency(service),
+                            )}
                             <span className="ml-2 text-sm font-normal text-foreground/60">
-                              ({preview.billableUnits} × {formatPricingPeriodLabel(period!)})
+                              ({preview.billableUnits} × {formatPricingPeriodLabel(period)})
                             </span>
+                          </p>
+                        ) : null}
+                        {preview &&
+                        calendarSpanDays > 0 &&
+                        billableDaysInRange > 0 &&
+                        billableDaysInRange < calendarSpanDays ? (
+                          <p className="mt-2 text-xs text-foreground/60">
+                            {billableDaysInRange} billable{" "}
+                            {billableDaysInRange === 1 ? "day" : "days"} in your selected
+                            range (unavailable dates excluded).
                           </p>
                         ) : null}
                       </div>
@@ -421,21 +450,14 @@ export default function BookCheckoutPage() {
                           {error}
                         </p>
                       ) : null}
-                    </>
-                  )}
-
-                  {isHourly && error ? (
-                    <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
-                      {error}
-                    </p>
-                  ) : null}
+                  </>
 
                   {sessionLoading ? (
                     <p className="text-sm text-foreground/60">Checking session…</p>
                   ) : user ? (
                     <button
                       type="button"
-                      disabled={busy || !preview || rangeInFree === false}
+                      disabled={busy || !preview || rangeInFree === false || rangeOrderInvalid}
                       onClick={() => void handleCheckout()}
                       className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#004a7c] to-cyan-600 px-6 py-3 text-sm font-semibold text-white shadow-lg disabled:opacity-50 sm:w-auto"
                     >

@@ -3,6 +3,7 @@ const ALLOWED_ROOTS = new Set([
   "cart",
   "concierge",
   "country-codes",
+  "marketplace",
   "orders",
   "receipts",
   "reviews",

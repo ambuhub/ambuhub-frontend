@@ -1,12 +1,15 @@
 "use client";
 
 import { API_PROXY_PREFIX } from "@/lib/api";
+import {
+  currencyForCountry,
+  getCurrencySymbol,
+} from "@/lib/currency";
+import { MARKETPLACE_COUNTRIES } from "@/lib/countries";
 import { dispatchMarketplaceInvalidate } from "@/lib/cache-tags";
 import {
-  PRICING_PERIODS,
   formatPricingPeriodLabel,
-  type PricingPeriod,
-  isPricingPeriod,
+  LISTING_PRICING_PERIOD,
 } from "@/lib/pricing-period";
 import { HireReturnWindowFields } from "@/components/provider/HireReturnWindowFields";
 import { CountrySelect } from "@/components/ui/CountrySelect";
@@ -49,7 +52,6 @@ export default function ProviderAddServicePage() {
   const [listingType, setListingType] = useState<ListingType | "">("");
   const [stock, setStock] = useState("");
   const [price, setPrice] = useState("");
-  const [pricingPeriod, setPricingPeriod] = useState<PricingPeriod | "">("");
   const [hireReturnWindow, setHireReturnWindow] = useState<HireReturnWindow>(
     () => ({ ...EMPTY_HIRE_RETURN_WINDOW, daysOfWeek: [1, 2, 3, 4, 5] }),
   );
@@ -114,26 +116,29 @@ export default function ProviderAddServicePage() {
 
   const saleOrHireCommerce =
     effectiveListingType === "sale" || effectiveListingType === "hire";
+  const showPriceField =
+    effectiveListingType === "sale" ||
+    effectiveListingType === "hire" ||
+    effectiveListingType === "book";
+  const showDailyBillingPeriod =
+    effectiveListingType === "hire" || effectiveListingType === "book";
 
   useEffect(() => {
     setDepartmentSlug("");
     setListingType("");
     setStock("");
     setPrice("");
-    setPricingPeriod("");
   }, [categorySlug]);
 
   useEffect(() => {
     setStateProvince("");
   }, [countryCode]);
 
+  const listingCurrency = currencyForCountry(countryCode);
+
   useEffect(() => {
     if (listingType === "book") {
       setStock("");
-      setPrice("");
-      setPricingPeriod("");
-    } else if (listingType === "sale") {
-      setPricingPeriod("");
     }
   }, [listingType]);
 
@@ -187,11 +192,14 @@ export default function ProviderAddServicePage() {
         return;
       }
     }
-    if (effectiveListingType === "hire") {
-      if (!pricingPeriod || !isPricingPeriod(pricingPeriod)) {
-        setSubmitError("Select a pricing period for hire listings.");
+    if (effectiveListingType === "book") {
+      const parsedPrice = Number(price);
+      if (!price.trim() || !Number.isFinite(parsedPrice) || parsedPrice < 0) {
+        setSubmitError("Daily price is required and must be a non-negative number.");
         return;
       }
+    }
+    if (effectiveListingType === "hire") {
       const returnErr = validateHireReturnWindowClient(hireReturnWindow);
       if (returnErr) {
         setSubmitError(returnErr);
@@ -259,7 +267,7 @@ export default function ProviderAddServicePage() {
                   : null
                 : null,
           price:
-            effectiveListingType === "sale"
+            effectiveListingType === "sale" || effectiveListingType === "book"
               ? Number(price)
               : effectiveListingType === "hire"
                 ? price.trim()
@@ -267,8 +275,8 @@ export default function ProviderAddServicePage() {
                   : null
                 : null,
           pricingPeriod:
-            effectiveListingType === "hire" && isPricingPeriod(pricingPeriod)
-              ? pricingPeriod
+            effectiveListingType === "hire" || effectiveListingType === "book"
+              ? LISTING_PRICING_PERIOD
               : null,
           hireReturnWindow:
             effectiveListingType === "hire" ? hireReturnWindow : undefined,
@@ -384,6 +392,7 @@ export default function ProviderAddServicePage() {
               onChange={setCountryCode}
               required
               className={`${inputClass} ${inputDisabledClass}`}
+              countries={MARKETPLACE_COUNTRIES}
             />
           </div>
           <div>
@@ -483,7 +492,10 @@ export default function ProviderAddServicePage() {
 
         <div>
           <label htmlFor="price" className={labelClass}>
-            Price (NGN)
+            Price ({getCurrencySymbol(listingCurrency)})
+            {effectiveListingType === "book" ? (
+              <span className="font-normal text-slate-600"> — per day</span>
+            ) : null}
           </label>
           <input
             id="price"
@@ -491,48 +503,27 @@ export default function ProviderAddServicePage() {
             type="number"
             min={0}
             step={0.01}
-            value={saleOrHireCommerce ? price : ""}
+            value={showPriceField ? price : ""}
             onChange={(e) => setPrice(e.target.value)}
-            disabled={!saleOrHireCommerce}
+            disabled={!showPriceField}
             className={`${inputClass} ${inputDisabledClass}`}
             placeholder={
               effectiveListingType === "sale"
-                ? "Enter price in naira"
+                ? `Enter price in ${listingCurrency}`
                 : effectiveListingType === "hire"
-                  ? "Optional — hire rate in naira"
-                  : "Available for sale and hire listings"
+                  ? `Optional — hire rate in ${listingCurrency}`
+                  : effectiveListingType === "book"
+                    ? `Enter daily rate in ${listingCurrency}`
+                    : "Available for sale, hire, and book listings"
             }
           />
         </div>
 
-        {effectiveListingType === "hire" ? (
+        {showDailyBillingPeriod ? (
           <div>
-            <label htmlFor="pricing-period" className={labelClass}>
-              Pricing period
-            </label>
-            <select
-              id="pricing-period"
-              name="pricingPeriod"
-              className={`${inputClass} ${inputDisabledClass}`}
-              value={pricingPeriod}
-              onChange={(e) =>
-                setPricingPeriod(
-                  e.target.value === ""
-                    ? ""
-                    : (e.target.value as PricingPeriod),
-                )
-              }
-              required
-            >
-              <option value="">Select period</option>
-              {PRICING_PERIODS.map((p) => (
-                <option key={p} value={p}>
-                  {formatPricingPeriodLabel(p)}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-slate-600">
-              How the hire price applies (e.g. per hour, per day).
+            <p className={labelClass}>Billing period</p>
+            <p className="mt-1.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              {formatPricingPeriodLabel(LISTING_PRICING_PERIOD)} — price is per day
             </p>
           </div>
         ) : null}
@@ -631,8 +622,10 @@ export default function ProviderAddServicePage() {
             (effectiveListingType === "hire" &&
               !!price.trim() &&
               (!Number.isFinite(Number(price)) || Number(price) < 0)) ||
-            (effectiveListingType === "hire" &&
-              (!pricingPeriod || !isPricingPeriod(pricingPeriod)))
+            (effectiveListingType === "book" &&
+              (!price.trim() ||
+                !Number.isFinite(Number(price)) ||
+                Number(price) < 0))
           }
           className="w-full rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-cyan-700 py-3.5 text-base font-semibold text-white shadow-lg shadow-blue-900/40 transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-55"
         >

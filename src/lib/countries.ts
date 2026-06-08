@@ -20,6 +20,21 @@ export const COUNTRIES: Country[] = worldCountries
   })
   .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 
+export const MARKETPLACE_COUNTRIES: Country[] = [
+  {
+    code: "ng",
+    name: "Nigeria",
+    flagUrl: "https://flagcdn.com/w40/ng.png",
+    flagUrl2x: "https://flagcdn.com/w80/ng.png",
+  },
+  {
+    code: "gh",
+    name: "Ghana",
+    flagUrl: "https://flagcdn.com/w40/gh.png",
+    flagUrl2x: "https://flagcdn.com/w80/gh.png",
+  },
+];
+
 /** ISO alpha-2 (any case) -> English common name, or null if unknown */
 export function getCountryNameByCode(isoAlpha2: string): string | null {
   const key = isoAlpha2?.trim().toLowerCase();

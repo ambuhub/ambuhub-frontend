@@ -4,7 +4,7 @@ import { API_PROXY_PREFIX } from "@/lib/api";
 export type ClientOrderSummary = {
   id: string;
   receiptNumber: string;
-  subtotalNgn: number;
+  subtotal: number;
   currency: string;
   paidAt: string;
   createdAt: string;

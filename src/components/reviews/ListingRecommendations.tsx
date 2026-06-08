@@ -10,13 +10,9 @@ import {
   formatPricingPeriodLabel,
   isPricingPeriod,
 } from "@/lib/pricing-period";
+import { formatMoney } from "@/lib/currency";
+import { getListingCurrency } from "@/lib/marketplace-listing";
 import { fetchServiceReviews } from "@/lib/reviews";
-
-const nairaFmt = new Intl.NumberFormat("en-NG", { maximumFractionDigits: 2 });
-
-function formatNaira(value: number): string {
-  return `₦${nairaFmt.format(value)}`;
-}
 
 function formatListingTypeLabel(
   listingType: "sale" | "hire" | "book" | null,
@@ -32,7 +28,8 @@ function formatPriceLine(rec: ListingRecommendation): string {
   if (typeof service.price !== "number") {
     return "Price on request";
   }
-  const base = formatNaira(service.price);
+  const currency = getListingCurrency(service);
+  const base = formatMoney(service.price, currency);
   if (
     service.listingType === "hire" &&
     service.pricingPeriod &&

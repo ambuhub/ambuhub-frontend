@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
+import { useEffect } from "react";
 
 type Props = {
   receiptNumber: string;
@@ -12,6 +15,10 @@ export function CheckoutSuccessPanel({
   marketplaceHref,
   message = "Your payment was completed successfully.",
 }: Props) {
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, []);
+
   return (
     <div className="mt-10 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/80 to-white p-8 text-center shadow-sm sm:p-10">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">

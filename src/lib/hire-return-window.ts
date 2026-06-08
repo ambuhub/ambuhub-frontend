@@ -1,4 +1,4 @@
-import type { PricingPeriod } from "@/lib/pricing-period";
+import { LISTING_PRICING_PERIOD } from "@/lib/pricing-period";
 
 const LAGOS_TZ = "Africa/Lagos";
 const HH_MM = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -108,16 +108,9 @@ export function validateHireReturnWindowClient(window: HireReturnWindow): string
   return null;
 }
 
-export function parseHireEndForValidation(
-  hireEndRaw: string,
-  pricingPeriod: PricingPeriod,
-): Date | null {
+export function parseHireEndForValidation(hireEndRaw: string): Date | null {
   const b = hireEndRaw.trim();
   if (!b) return null;
-  if (pricingPeriod === "hourly") {
-    const d = new Date(b);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }
   const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/;
   const m = b.match(dateOnly);
   if (m) {
@@ -130,20 +123,12 @@ export function parseHireEndForValidation(
 export function assertHireEndAllowedClient(
   hireEnd: Date,
   window: HireReturnWindow,
-  pricingPeriod: PricingPeriod,
 ): string | null {
   try {
     const parts = getLagosDateParts(hireEnd);
     if (!window.daysOfWeek.includes(parts.dayOfWeek)) {
       const allowed = formatDaysSummary(window.daysOfWeek);
       return `Return must be on an allowed day (${allowed}, WAT).`;
-    }
-    if (pricingPeriod === "hourly") {
-      const startM = parseHmToMinutes(window.timeStart);
-      const endM = parseHmToMinutes(window.timeEnd);
-      if (parts.minutesSinceMidnight < startM || parts.minutesSinceMidnight > endM) {
-        return `Return time must be between ${formatHm12(window.timeStart)} and ${formatHm12(window.timeEnd)} (WAT).`;
-      }
     }
     return null;
   } catch {
@@ -154,11 +139,7 @@ export function assertHireEndAllowedClient(
 export function resolveCanonicalHireEndClient(
   hireEnd: Date,
   window: HireReturnWindow,
-  pricingPeriod: PricingPeriod,
 ): Date {
-  if (pricingPeriod === "hourly") {
-    return hireEnd;
-  }
   const parts = getLagosDateParts(hireEnd);
   const [eh, em] = window.timeEnd.split(":").map((x) => parseInt(x, 10));
   const utcGuess = Date.UTC(parts.year, parts.month - 1, parts.day, eh, em, 0, 0);
@@ -179,9 +160,8 @@ export function resolveCanonicalHireEndClient(
 export function formatReturnDeadlineClient(
   hireEnd: Date,
   window: HireReturnWindow,
-  pricingPeriod: PricingPeriod,
 ): string {
-  const canonical = resolveCanonicalHireEndClient(hireEnd, window, pricingPeriod);
+  const canonical = resolveCanonicalHireEndClient(hireEnd, window);
   return new Intl.DateTimeFormat(undefined, {
     timeZone: LAGOS_TZ,
     weekday: "long",
@@ -279,14 +259,11 @@ export function parseDatetimeLocalLagos(raw: string): Date | null {
 /** Next hire start/end that satisfy the return window (WAT). */
 export function suggestNextValidHirePeriod(
   window: HireReturnWindow,
-  pricingPeriod: PricingPeriod,
 ): { hireStart: string; hireEnd: string } | null {
   if (window.daysOfWeek.length === 0) {
     return null;
   }
   const now = new Date();
-  const startM = parseHmToMinutes(window.timeStart);
-  const endM = parseHmToMinutes(window.timeEnd);
 
   for (let offset = 0; offset < 14; offset++) {
     const probe = new Date(now.getTime() + offset * 86400000);
@@ -294,34 +271,6 @@ export function suggestNextValidHirePeriod(
     if (!window.daysOfWeek.includes(parts.dayOfWeek)) {
       continue;
     }
-
-    if (pricingPeriod === "hourly") {
-      if (offset === 0 && parts.minutesSinceMidnight > endM) {
-        continue;
-      }
-      let endMin = startM + 60;
-      if (offset === 0 && parts.minutesSinceMidnight >= startM) {
-        endMin = Math.min(parts.minutesSinceMidnight + 60, endM);
-      }
-      const endDate = lagosWallClockToDate(
-        parts.year,
-        parts.month,
-        parts.day,
-        minutesToHm(endMin),
-      );
-      const startDate =
-        offset === 0 && parts.minutesSinceMidnight < endM
-          ? now
-          : lagosWallClockToDate(parts.year, parts.month, parts.day, window.timeStart);
-      if (endDate.getTime() <= startDate.getTime()) {
-        continue;
-      }
-      return {
-        hireStart: toDatetimeLocalValue(startDate),
-        hireEnd: toDatetimeLocalValue(endDate),
-      };
-    }
-
     const dateStr = `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}`;
     return { hireStart: dateStr, hireEnd: dateStr };
   }

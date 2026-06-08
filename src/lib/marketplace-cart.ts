@@ -12,10 +12,11 @@ export type CartLineClient = {
   departmentName: string;
   category: { slug: string; name: string };
   photoUrls: string[];
-  lineTotalNgn: number | null;
+  lineTotal: number | null;
+  currency?: string;
 };
 
-export type CartClient = { items: CartLineClient[] };
+export type CartClient = { items: CartLineClient[]; currency?: string | null };
 
 export async function fetchAuthMe(): Promise<{
   user: PublicAuthUser | null;
@@ -52,10 +53,10 @@ function proxyUrl(path: string): string {
 export async function fetchCart(): Promise<CartClient> {
   const res = await fetch(proxyUrl("cart"), { credentials: "include" });
   if (!res.ok) {
-    return { items: [] };
+    return { items: [], currency: null };
   }
   const data = (await res.json()) as { cart?: CartClient };
-  return data.cart ?? { items: [] };
+  return data.cart ?? { items: [], currency: null };
 }
 
 export async function postCartItem(
@@ -128,9 +129,9 @@ export type OrderLineClient = {
   serviceId: string;
   lineKind?: "sale" | "hire" | "book";
   title: string;
-  unitPriceNgn: number;
+  unitPrice: number;
   quantity: number;
-  lineTotalNgn: number;
+  lineTotal: number;
   categoryName: string;
   categorySlug: string;
   departmentName: string;
@@ -145,7 +146,7 @@ export type OrderDetailClient = {
   id: string;
   receiptNumber: string;
   currency: string;
-  subtotalNgn: number;
+  subtotal: number;
   lines: OrderLineClient[];
   paymentProvider: string;
   paystackReference: string;
@@ -181,9 +182,9 @@ export type ReceiptLineClient = {
   serviceId: string;
   lineKind?: "sale" | "hire" | "book";
   title: string;
-  unitPriceNgn: number;
+  unitPrice: number;
   quantity: number;
-  lineTotalNgn: number;
+  lineTotal: number;
   categoryName: string;
   departmentName: string;
   hireStart?: string;
@@ -198,7 +199,7 @@ export type ReceiptDetailClient = {
   orderId: string;
   receiptNumber: string;
   currency: string;
-  subtotalNgn: number;
+  subtotal: number;
   lines: ReceiptLineClient[];
   paymentProvider: string;
   paystackReference: string;

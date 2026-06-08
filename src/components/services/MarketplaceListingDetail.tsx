@@ -14,9 +14,14 @@ import {
   isPricingPeriod,
 } from "@/lib/pricing-period";
 import { ListingProviderSection } from "@/components/services/ListingProviderSection";
+import {
+  formatListingMoney,
+  ListingPriceLines,
+} from "@/components/services/ListingPriceDisplay";
 import type { MarketplaceServiceRow } from "@/lib/service-category-page-data";
 
-const nairaFmt = new Intl.NumberFormat("en-NG", { maximumFractionDigits: 2 });
+const HERO_SIZES = "(max-width: 768px) 100vw, 896px";
+const GRID_SIZES = "(max-width: 640px) 50vw, 280px";
 
 const neonCard =
   "relative overflow-hidden rounded-2xl border border-cyan-400/45 bg-gradient-to-br from-white via-sky-50/50 to-cyan-100/35 shadow-[0_0_32px_-8px_rgba(34,211,238,0.35),0_0_1px_rgba(0,105,180,0.12)] ring-1 ring-cyan-200/40";
@@ -26,10 +31,6 @@ const neonCardMuted =
 
 const neonTopBar =
   "pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#004a7c] via-cyan-400 to-sky-400 shadow-[0_0_14px_rgba(34,211,238,0.55)]";
-
-function formatNaira(value: number): string {
-  return `₦${nairaFmt.format(value)}`;
-}
 
 function formatListingTypeLabel(
   listingType: "sale" | "hire" | "book" | null,
@@ -53,9 +54,6 @@ function formatStockLabel(
   }
   return "Stock not specified";
 }
-
-const HERO_SIZES = "(max-width: 768px) 100vw, 896px";
-const GRID_SIZES = "(max-width: 640px) 50vw, 280px";
 
 function GalleryImage({
   src,
@@ -316,39 +314,38 @@ export function MarketplaceListingDetail({
               ) : null}
 
               {!isPublic &&
-              service.listingType === "sale" &&
-              typeof service.price === "number" ? (
-                <p className="mt-2 text-xl font-bold text-foreground sm:text-2xl">
-                  {formatNaira(service.price)}
-                </p>
-              ) : null}
-              {!isPublic &&
-              service.listingType === "hire" &&
-              typeof service.price === "number" ? (
-                <p className="mt-2 text-xl font-bold text-foreground sm:text-2xl">
-                  {formatNaira(service.price)}
-                  {service.pricingPeriod && isPricingPeriod(service.pricingPeriod) ? (
-                    <span className="text-base font-semibold text-foreground/75">
-                      {" "}
-                      ({formatHirePricePeriodSuffix(service.pricingPeriod)})
-                    </span>
-                  ) : null}
-                </p>
+              (service.listingType === "sale" || service.listingType === "hire") ? (
+                <ListingPriceLines
+                  service={service}
+                  className="mt-2 text-xl font-bold text-foreground sm:text-2xl"
+                  suffix={
+                    service.listingType === "hire" &&
+                    service.pricingPeriod &&
+                    isPricingPeriod(service.pricingPeriod) ? (
+                      <span className="text-base font-semibold text-foreground/75">
+                        {" "}
+                        ({formatHirePricePeriodSuffix(service.pricingPeriod)})
+                      </span>
+                    ) : null
+                  }
+                />
               ) : null}
 
               {isPublic ? (
                 <div className="mt-5 flex flex-wrap gap-2">
                   {(service.listingType === "sale" || service.listingType === "hire") &&
-                  typeof service.price === "number" ? (
-                    <span className="inline-flex rounded-xl border border-cyan-200/70 bg-white/90 px-3 py-1.5 text-sm font-bold text-[#004a7c] shadow-sm ring-1 ring-cyan-100/50">
-                      {formatNaira(service.price)}
-                      {service.listingType === "hire" &&
-                      service.pricingPeriod &&
-                      isPricingPeriod(service.pricingPeriod) ? (
-                        <span className="ml-1 font-semibold text-slate-600">
-                          ({formatHirePricePeriodSuffix(service.pricingPeriod)})
-                        </span>
-                      ) : null}
+                  service.price != null ? (
+                    <span className="inline-flex flex-col rounded-xl border border-cyan-200/70 bg-white/90 px-3 py-1.5 text-sm font-bold text-[#004a7c] shadow-sm ring-1 ring-cyan-100/50">
+                      <span>
+                        {formatListingMoney(service)}
+                        {service.listingType === "hire" &&
+                        service.pricingPeriod &&
+                        isPricingPeriod(service.pricingPeriod) ? (
+                          <span className="ml-1 font-semibold text-slate-600">
+                            ({formatHirePricePeriodSuffix(service.pricingPeriod)})
+                          </span>
+                        ) : null}
+                      </span>
                     </span>
                   ) : null}
                   <span className="inline-flex rounded-xl border border-sky-200/60 bg-sky-50/80 px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-sky-100/40">

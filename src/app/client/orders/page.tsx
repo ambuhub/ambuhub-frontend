@@ -7,15 +7,7 @@ import {
   fetchMyOrders,
   type ClientOrderSummary,
 } from "@/lib/client-orders";
-
-function formatNgn(amount: number): string {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
+import { formatMoney, parseSupportedCurrency } from "@/lib/currency";
 
 function formatDateTime(iso: string): string {
   try {
@@ -29,6 +21,7 @@ function formatDateTime(iso: string): string {
 }
 
 function OrderNeonCard({ order }: { order: ClientOrderSummary }) {
+  const currency = parseSupportedCurrency(order.currency);
   return (
     <article className="relative overflow-hidden rounded-2xl border border-cyan-400/45 bg-gradient-to-br from-white via-sky-50/50 to-cyan-100/35 p-5 shadow-[0_0_32px_-6px_rgba(34,211,238,0.35),0_0_1px_rgba(0,105,180,0.12)] ring-1 ring-cyan-200/40">
       <div
@@ -55,10 +48,10 @@ function OrderNeonCard({ order }: { order: ClientOrderSummary }) {
         </div>
         <p className="shrink-0 text-right">
           <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-500">
-            Total
+            Total ({currency})
           </span>
           <span className="bg-gradient-to-r from-[#004a7c] to-cyan-600 bg-clip-text text-lg font-bold text-transparent sm:text-xl">
-            {formatNgn(order.subtotalNgn)}
+            {formatMoney(order.subtotal, currency)}
           </span>
         </p>
       </div>

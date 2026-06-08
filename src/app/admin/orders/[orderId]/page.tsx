@@ -16,14 +16,10 @@ import {
   type AdminOrderDetail,
   type AdminOrderLineKind,
 } from "@/lib/admin-orders";
+import { formatMoney, parseSupportedCurrency } from "@/lib/currency";
 
-function formatNgn(amount: number): string {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+function formatOrderAmount(amount: number, currency: string): string {
+  return formatMoney(amount, parseSupportedCurrency(currency));
 }
 
 function formatDateTime(iso: string): string {
@@ -107,7 +103,7 @@ export default function AdminOrderDetailPage() {
           <AdminPageHeader
             theme="blue"
             title={order.receiptNumber}
-            description={`${kindLabel(order.primaryLineKind)} order · Paid ${formatDateTime(order.paidAt)} · ${formatNgn(order.subtotalNgn)}`}
+            description={`${kindLabel(order.primaryLineKind)} order · Paid ${formatDateTime(order.paidAt)} · ${formatOrderAmount(order.subtotal, order.currency)}`}
           />
 
           <div className="grid gap-4 lg:grid-cols-3">
@@ -125,7 +121,7 @@ export default function AdminOrderDetailPage() {
                 <div>
                   <dt className="text-xs font-medium text-slate-500">Total</dt>
                   <dd className="mt-1 text-sm font-semibold text-slate-900">
-                    {formatNgn(order.subtotalNgn)}
+                    {formatOrderAmount(order.subtotal, order.currency)}
                   </dd>
                 </div>
                 <div>
@@ -248,7 +244,7 @@ export default function AdminOrderDetailPage() {
                         {line.quantity}
                       </td>
                       <td className="px-5 py-3 text-sm font-semibold text-slate-900">
-                        {formatNgn(line.lineTotalNgn)}
+                        {formatOrderAmount(line.lineTotal, order.currency)}
                       </td>
                     </tr>
                   ))}

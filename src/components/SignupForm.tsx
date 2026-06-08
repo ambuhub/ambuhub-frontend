@@ -6,6 +6,7 @@ import { postAuthPath, type AuthUserRole } from "@/lib/auth-redirect";
 import { API_AUTH_BFF_PREFIX } from "@/lib/api";
 import type { SignupRole } from "./SignupRoleCards";
 import { CountrySelect } from "@/components/ui/CountrySelect";
+import { COUNTRIES, MARKETPLACE_COUNTRIES } from "@/lib/countries";
 
 type Props = {
   role: SignupRole;
@@ -245,6 +246,7 @@ export function SignupForm({ role, onBack, splitLayout }: Props) {
             required
             placeholder="Select country"
             className={inputFieldClass}
+            countries={role === "service_provider" ? MARKETPLACE_COUNTRIES : COUNTRIES}
           />
         </div>
         {role === "service_provider" && (

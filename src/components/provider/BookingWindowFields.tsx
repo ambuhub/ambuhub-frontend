@@ -18,6 +18,7 @@ export function BookingWindowFields({ value, onChange }: Props) {
         value={value}
         onChange={onChange}
         labelClass="block text-sm font-semibold text-blue-950"
+        variant="booking"
       />
     </div>
   );

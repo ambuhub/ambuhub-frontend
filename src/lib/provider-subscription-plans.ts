@@ -1,10 +1,15 @@
+import {
+  formatMoney,
+  type SupportedCurrency,
+} from "@/lib/currency";
+
 export type ProviderPlanId = "free" | "premium" | "enterprise";
 
 export type ProviderPlan = {
   id: ProviderPlanId;
   name: string;
   tagline: string;
-  priceNgn: number | null;
+  prices: Record<SupportedCurrency, number | null>;
   priceNote: string;
   features: string[];
   highlighted?: boolean;
@@ -15,7 +20,7 @@ export const PROVIDER_PLANS: ProviderPlan[] = [
     id: "free",
     name: "Free",
     tagline: "Get started on the marketplace",
-    priceNgn: 0,
+    prices: { NGN: 0, GHS: 0 },
     priceNote: "Forever free",
     features: [
       "Up to 3 active listings",
@@ -29,7 +34,7 @@ export const PROVIDER_PLANS: ProviderPlan[] = [
     id: "premium",
     name: "Premium",
     tagline: "Grow visibility and capacity",
-    priceNgn: 25000,
+    prices: { NGN: 25000, GHS: 250 },
     priceNote: "Per month, billed monthly",
     highlighted: true,
     features: [
@@ -44,7 +49,7 @@ export const PROVIDER_PLANS: ProviderPlan[] = [
     id: "enterprise",
     name: "Enterprise",
     tagline: "For large operators & fleets",
-    priceNgn: null,
+    prices: { NGN: null, GHS: null },
     priceNote: "Custom pricing",
     features: [
       "Unlimited active listings",
@@ -72,17 +77,19 @@ export function getPlanById(id: ProviderPlanId): ProviderPlan {
   return plan;
 }
 
-export function formatPlanPrice(priceNgn: number | null): string {
-  if (priceNgn === null) {
+export function getPlanPrice(
+  plan: ProviderPlan,
+  currency: SupportedCurrency,
+): number | null {
+  return plan.prices[currency];
+}
+
+export function formatPlanPrice(
+  amount: number | null,
+  currency: SupportedCurrency,
+): string {
+  if (amount === null) {
     return "Custom";
   }
-  if (priceNgn === 0) {
-    return "₦0";
-  }
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(priceNgn);
+  return formatMoney(amount, currency);
 }

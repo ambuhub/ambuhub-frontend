@@ -2,19 +2,26 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { API_PROXY_PREFIX } from "@/lib/api";
+import {
+  formatMoney,
+  type SupportedCurrency,
+} from "@/lib/currency";
+import {
+  useProviderDashboardCurrency,
+} from "./ProviderDashboardCurrency";
 
 type MonthBucket = {
   yearMonth: string;
   label: string;
-  totalNgn: number;
+  total: number;
 };
 
-function formatNgnCompact(amount: number): string {
-  return new Intl.NumberFormat("en-NG", {
+function formatCompact(amount: number, currency: SupportedCurrency): string {
+  return new Intl.NumberFormat(currency === "NGN" ? "en-NG" : "en-GH", {
     style: "currency",
-    currency: "NGN",
+    currency,
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    maximumFractionDigits: currency === "NGN" ? 0 : 2,
   }).format(amount);
 }
 
@@ -23,22 +30,27 @@ function defaultChartYear(): number {
 }
 
 export function ProviderMonthlySalesChart() {
+  const { currency } = useProviderDashboardCurrency();
   const [year, setYear] = useState(defaultChartYear);
   const [months, setMonths] = useState<MonthBucket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (y: number) => {
+  const load = useCallback(async (y: number, chartCurrency: SupportedCurrency) => {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ year: String(y) });
+      const params = new URLSearchParams({
+        year: String(y),
+        currency: chartCurrency,
+      });
       const res = await fetch(
         `${API_PROXY_PREFIX}/orders/provider/sales-by-month?${params.toString()}`,
         { credentials: "include" },
       );
       const data = (await res.json()) as {
         year?: number;
+        currency?: SupportedCurrency;
         months?: MonthBucket[];
         message?: string;
       };
@@ -58,13 +70,13 @@ export function ProviderMonthlySalesChart() {
   }, []);
 
   useEffect(() => {
-    void load(year);
-  }, [year, load]);
+    void load(year, currency);
+  }, [year, currency, load]);
 
   const rangeLabel = String(year);
 
-  const maxNgn = Math.max(...months.map((m) => m.totalNgn), 0);
-  const yearTotalNgn = months.reduce((s, m) => s + m.totalNgn, 0);
+  const maxTotal = Math.max(...months.map((m) => m.total), 0);
+  const yearTotal = months.reduce((s, m) => s + m.total, 0);
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -73,7 +85,9 @@ export function ProviderMonthlySalesChart() {
           Monthly performance
         </h2>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-500">Sales by order total (NGN)</span>
+          <span className="text-xs text-slate-500">
+            Sales from your listings ({currency})
+          </span>
           <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-0.5">
             <button
               type="button"
@@ -122,8 +136,8 @@ export function ProviderMonthlySalesChart() {
             <div className="flex h-full min-h-[7rem] items-end gap-1 sm:gap-1.5">
               {months.map((m) => {
                 let heightPct =
-                  maxNgn > 0 ? Math.round((m.totalNgn / maxNgn) * 100) : 0;
-                if (maxNgn === 0) {
+                  maxTotal > 0 ? Math.round((m.total / maxTotal) * 100) : 0;
+                if (maxTotal === 0) {
                   heightPct = 8;
                 } else if (heightPct > 0 && heightPct < 12) {
                   heightPct = 12;
@@ -138,9 +152,9 @@ export function ProviderMonthlySalesChart() {
                       style={{
                         height: `${heightPct}%`,
                         minHeight:
-                          m.totalNgn > 0 ? "0.5rem" : maxNgn === 0 ? "0.35rem" : 0,
+                          m.total > 0 ? "0.5rem" : maxTotal === 0 ? "0.35rem" : 0,
                       }}
-                      title={`${m.label} ${rangeLabel}: ${formatNgnCompact(m.totalNgn)}`}
+                      title={`${m.label} ${rangeLabel}: ${formatCompact(m.total, currency)}`}
                     />
                     <span className="w-full truncate text-center text-[10px] font-medium text-slate-500 sm:text-xs">
                       {m.label}
@@ -150,15 +164,14 @@ export function ProviderMonthlySalesChart() {
               })}
             </div>
             <p className="mt-3 text-center text-xs text-slate-600">
-              {year} total:{" "}
+              {year} total ({currency}):{" "}
               <span className="font-semibold text-slate-800">
-                {formatNgnCompact(yearTotalNgn)}
+                {formatMoney(yearTotal, currency)}
               </span>
-              {yearTotalNgn === 0 ? (
+              {yearTotal === 0 ? (
                 <span className="mt-1 block font-normal text-slate-500">
-                  No qualifying orders in this year. Use Prev/Next if your sales
-                  are dated in another year (UTC). Orders must include your
-                  listing (seller id or active service row).
+                  No qualifying {currency} orders in this year. Use Prev/Next if your
+                  sales are dated in another year (UTC).
                 </span>
               ) : null}
             </p>

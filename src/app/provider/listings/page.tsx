@@ -23,13 +23,7 @@ type MyService = {
   listingType: "sale" | "hire" | "book" | null;
   stock: number | null;
   price: number | null;
-  pricingPeriod:
-    | "hourly"
-    | "daily"
-    | "weekly"
-    | "monthly"
-    | "yearly"
-    | null;
+  pricingPeriod: "daily" | null;
   isAvailable?: boolean;
   departmentSlug: string;
   departmentName: string;

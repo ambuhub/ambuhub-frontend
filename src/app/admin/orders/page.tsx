@@ -16,6 +16,7 @@ import {
   type AdminOrderKindFilter,
   type AdminOrderListItem,
 } from "@/lib/admin-orders";
+import { formatMoney, parseSupportedCurrency } from "@/lib/currency";
 
 const PAGE_SIZE = 20;
 const numberFmt = new Intl.NumberFormat("en-NG");
@@ -27,13 +28,8 @@ const kindFilters: { id: AdminOrderKindFilter; label: string }[] = [
   { id: "book", label: "Bookings" },
 ];
 
-function formatNgn(amount: number): string {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+function formatOrderAmount(amount: number, currency: string): string {
+  return formatMoney(amount, parseSupportedCurrency(currency));
 }
 
 function formatDateTime(iso: string): string {
@@ -112,7 +108,7 @@ function OrderRow({ order }: { order: AdminOrderListItem }) {
         {order.sellerSummary}
       </td>
       <td className="px-4 py-3.5 text-sm font-semibold text-slate-900">
-        {formatNgn(order.subtotalNgn)}
+        {formatOrderAmount(order.subtotal, order.currency)}
       </td>
       <td className="hidden px-4 py-3.5 text-sm text-slate-700 sm:table-cell">
         {formatDateTime(order.paidAt)}

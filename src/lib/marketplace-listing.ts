@@ -1,4 +1,5 @@
 import type { MarketplaceServiceRow } from "@/lib/service-category-page-data";
+import { parseSupportedCurrency, type SupportedCurrency } from "@/lib/currency";
 
 export function normalizeListingStock(value: unknown): number | null {
   if (typeof value === "number") {
@@ -38,6 +39,16 @@ export function getListingStock(svc: Pick<MarketplaceServiceRow, "stock">): numb
 
 export function getListingPrice(svc: Pick<MarketplaceServiceRow, "price">): number | null {
   return normalizeListingPrice(svc.price);
+}
+
+export function getListingCurrency(
+  svc: Pick<MarketplaceServiceRow, "currency" | "countryCode">,
+): SupportedCurrency {
+  if (svc.currency) {
+    return parseSupportedCurrency(svc.currency);
+  }
+  const country = svc.countryCode?.trim().toUpperCase() ?? "";
+  return country === "GH" ? "GHS" : "NGN";
 }
 
 export function isSalePurchasable(svc: MarketplaceServiceRow): boolean {

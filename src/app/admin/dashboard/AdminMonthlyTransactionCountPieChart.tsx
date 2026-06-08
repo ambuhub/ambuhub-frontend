@@ -1,6 +1,7 @@
 "use client";
 
 import type { AdminTransactionsMonthBucket } from "@/lib/admin-stats";
+import type { SupportedCurrency } from "@/lib/currency";
 
 const MONTH_SLICE_COLORS = [
   "#3379ff",
@@ -28,6 +29,7 @@ const VALUE_RADIUS = RADIUS * 0.58;
 
 type Props = {
   year: number;
+  currency: SupportedCurrency;
   months: AdminTransactionsMonthBucket[];
   loading: boolean;
 };
@@ -130,6 +132,7 @@ function labelAnchor(midAngle: number): "start" | "end" | "middle" {
 
 export function AdminMonthlyTransactionCountPieChart({
   year,
+  currency,
   months,
   loading,
 }: Props) {
@@ -175,7 +178,7 @@ export function AdminMonthlyTransactionCountPieChart({
           Transactions by month
         </h3>
         <span className="text-xs uppercase tracking-wide text-slate-400">
-          Order count (UTC)
+          Order count ({currency}, UTC)
         </span>
       </div>
       <div className="mt-4 flex h-52 items-center justify-center rounded-xl bg-gradient-to-b from-violet-50/60 via-white to-white px-2">
@@ -323,13 +326,13 @@ export function AdminMonthlyTransactionCountPieChart({
       </div>
       {!loading && yearTotalCount === 0 && months.length > 0 ? (
         <p className="mt-3 text-center text-xs text-slate-500">
-          No transactions in this year (UTC). Use Prev/Next to browse other
+          No {currency} transactions in this year (UTC). Use Prev/Next to browse other
           years.
         </p>
       ) : null}
       {!loading && yearTotalCount > 0 ? (
         <p className="mt-3 text-center text-xs text-slate-600">
-          {year} total:{" "}
+          {year} total ({currency}):{" "}
           <span className="font-semibold text-slate-800">
             {numberFmt.format(yearTotalCount)} orders
           </span>

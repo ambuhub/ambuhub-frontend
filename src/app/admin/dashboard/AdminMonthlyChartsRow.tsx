@@ -5,6 +5,8 @@ import {
   fetchAdminTransactionsByMonth,
   type AdminTransactionsMonthBucket,
 } from "@/lib/admin-stats";
+import type { SupportedCurrency } from "@/lib/currency";
+import { AdminCurrencyToggle } from "./AdminDashboardCurrency";
 import { AdminMonthlyRevenueBarChart } from "./AdminMonthlyRevenueBarChart";
 import { AdminMonthlyTransactionCountPieChart } from "./AdminMonthlyTransactionCountPieChart";
 
@@ -14,15 +16,16 @@ function defaultChartYear(): number {
 
 export function AdminMonthlyChartsRow() {
   const [year, setYear] = useState(defaultChartYear);
+  const [currency, setCurrency] = useState<SupportedCurrency>("NGN");
   const [months, setMonths] = useState<AdminTransactionsMonthBucket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (y: number) => {
+  const load = useCallback(async (y: number, chartCurrency: SupportedCurrency) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchAdminTransactionsByMonth(y);
+      const data = await fetchAdminTransactionsByMonth(y, chartCurrency);
       setMonths(data.months);
     } catch (e) {
       setError(
@@ -35,8 +38,8 @@ export function AdminMonthlyChartsRow() {
   }, []);
 
   useEffect(() => {
-    void load(year);
-  }, [year, load]);
+    void load(year, currency);
+  }, [year, currency, load]);
 
   return (
     <section className="space-y-4">
@@ -46,29 +49,32 @@ export function AdminMonthlyChartsRow() {
             Monthly platform activity
           </h2>
           <p className="mt-0.5 text-xs text-slate-500">
-            Revenue and order counts by calendar month (UTC)
+            Revenue and order counts by calendar month ({currency}, UTC)
           </p>
         </div>
-        <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
-          <button
-            type="button"
-            className="rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-            onClick={() => setYear((y) => y - 1)}
-            aria-label="Previous year"
-          >
-            Prev
-          </button>
-          <span className="min-w-[3rem] text-center text-xs font-semibold tabular-nums text-slate-800">
-            {year}
-          </span>
-          <button
-            type="button"
-            className="rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-            onClick={() => setYear((y) => y + 1)}
-            aria-label="Next year"
-          >
-            Next
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <AdminCurrencyToggle currency={currency} onChange={setCurrency} />
+          <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
+            <button
+              type="button"
+              className="rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+              onClick={() => setYear((y) => y - 1)}
+              aria-label="Previous year"
+            >
+              Prev
+            </button>
+            <span className="min-w-[3rem] text-center text-xs font-semibold tabular-nums text-slate-800">
+              {year}
+            </span>
+            <button
+              type="button"
+              className="rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+              onClick={() => setYear((y) => y + 1)}
+              aria-label="Next year"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
 
@@ -81,11 +87,13 @@ export function AdminMonthlyChartsRow() {
       <div className="grid gap-4 lg:grid-cols-2">
         <AdminMonthlyRevenueBarChart
           year={year}
+          currency={currency}
           months={months}
           loading={loading}
         />
         <AdminMonthlyTransactionCountPieChart
           year={year}
+          currency={currency}
           months={months}
           loading={loading}
         />

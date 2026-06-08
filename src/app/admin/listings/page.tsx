@@ -18,14 +18,14 @@ import {
   type AdminListingStatusFilter,
   type AdminListingTypeFilter,
 } from "@/lib/admin-listings";
+import { formatMoney, parseSupportedCurrency } from "@/lib/currency";
 
 const PAGE_SIZE = 20;
 const numberFmt = new Intl.NumberFormat("en-NG");
-const currencyFmt = new Intl.NumberFormat("en-NG", {
-  style: "currency",
-  currency: "NGN",
-  maximumFractionDigits: 0,
-});
+
+function formatListingPrice(price: number, currency: string): string {
+  return formatMoney(price, parseSupportedCurrency(currency));
+}
 
 const statusFilters: { id: AdminListingStatusFilter; label: string }[] = [
   { id: "all", label: "All listings" },
@@ -149,11 +149,11 @@ function ListingRow({
       </td>
       <td className="hidden px-4 py-3.5 text-sm text-slate-700 xl:table-cell">
         {listing.listingType === "sale" && listing.price != null
-          ? currencyFmt.format(listing.price)
+          ? formatListingPrice(listing.price, listing.currency)
           : listing.listingType === "sale"
             ? "—"
             : listing.price != null
-              ? currencyFmt.format(listing.price)
+              ? formatListingPrice(listing.price, listing.currency)
               : "—"}
       </td>
       <td className="px-4 py-3.5">

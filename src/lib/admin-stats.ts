@@ -1,4 +1,5 @@
 import { API_PROXY_PREFIX } from "@/lib/api";
+import type { SupportedCurrency } from "@/lib/currency";
 
 export type AdminDashboardStats = {
   totalUsers: number;
@@ -33,20 +34,25 @@ export async function fetchAdminDashboardStats(): Promise<AdminDashboardStats> {
 export type AdminTransactionsMonthBucket = {
   yearMonth: string;
   label: string;
-  totalNgn: number;
+  total: number;
   orderCount: number;
 };
 
 export async function fetchAdminTransactionsByMonth(
   year: number,
-): Promise<{ year: number; months: AdminTransactionsMonthBucket[] }> {
-  const params = new URLSearchParams({ year: String(year) });
+  currency: SupportedCurrency,
+): Promise<{ year: number; currency: SupportedCurrency; months: AdminTransactionsMonthBucket[] }> {
+  const params = new URLSearchParams({
+    year: String(year),
+    currency,
+  });
   const res = await fetch(
     `${API_PROXY_PREFIX}/admin/transactions-by-month?${params.toString()}`,
     { credentials: "include" },
   );
   const data = (await res.json()) as {
     year?: number;
+    currency?: SupportedCurrency;
     months?: AdminTransactionsMonthBucket[];
     message?: string;
   };
@@ -61,6 +67,7 @@ export async function fetchAdminTransactionsByMonth(
   }
   return {
     year: typeof data.year === "number" ? data.year : year,
+    currency: data.currency ?? currency,
     months: data.months,
   };
 }

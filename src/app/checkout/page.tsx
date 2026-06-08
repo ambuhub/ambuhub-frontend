@@ -15,12 +15,7 @@ import {
   postSimulateCheckout,
   type OrderDetailClient,
 } from "@/lib/marketplace-cart";
-
-const naira = new Intl.NumberFormat("en-NG", { maximumFractionDigits: 2 });
-
-function formatNaira(value: number): string {
-  return `₦${naira.format(value)}`;
-}
+import { formatMoney, parseSupportedCurrency } from "@/lib/currency";
 
 export default function CheckoutPage() {
   return (
@@ -52,7 +47,8 @@ export default function CheckoutPage() {
 
 function CheckoutPageContent() {
   const searchParams = useSearchParams();
-  const { user, cart, loading, refresh, itemCount, subtotalNgn } = useSessionAndCart();
+  const { user, cart, loading, refresh, itemCount, subtotal, currency } = useSessionAndCart();
+  const checkoutCurrency = parseSupportedCurrency(currency ?? cart.currency ?? "NGN");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checkoutComplete, setCheckoutComplete] = useState(false);
@@ -186,7 +182,7 @@ function CheckoutPageContent() {
                         {row.category.name} · {row.departmentName}
                       </p>
                       <p className="mt-2 text-sm font-medium text-foreground">
-                        {row.price != null ? formatNaira(row.price) : "—"} each
+                        {row.price != null ? formatMoney(row.price, checkoutCurrency) : "—"} each
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -235,7 +231,7 @@ function CheckoutPageContent() {
                 <div>
                   <p className="text-sm text-foreground/70">Total (NGN)</p>
                   <p className="text-xl font-bold text-foreground">
-                    {formatNaira(subtotalNgn)}
+                    {formatMoney(subtotal, checkoutCurrency)}
                   </p>
                 </div>
                 <button

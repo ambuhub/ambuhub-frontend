@@ -31,12 +31,11 @@ import {
   formatPricingPeriodLabel,
   isPricingPeriod,
 } from "@/lib/pricing-period";
+import { formatMoney, parseSupportedCurrency } from "@/lib/currency";
 
-const currencyFmt = new Intl.NumberFormat("en-NG", {
-  style: "currency",
-  currency: "NGN",
-  maximumFractionDigits: 0,
-});
+function formatListingPrice(price: number, currency: string): string {
+  return formatMoney(price, parseSupportedCurrency(currency));
+}
 
 function formatDateTime(iso: string): string {
   try {
@@ -287,8 +286,8 @@ export default function AdminListingDetailPage() {
                         ? listing.listingType === "hire" &&
                           listing.pricingPeriod &&
                           isPricingPeriod(listing.pricingPeriod)
-                          ? `${currencyFmt.format(listing.price)} (${formatHirePricePeriodSuffix(listing.pricingPeriod)})`
-                          : currencyFmt.format(listing.price)
+                          ? `${formatListingPrice(listing.price, listing.currency)} (${formatHirePricePeriodSuffix(listing.pricingPeriod)})`
+                          : formatListingPrice(listing.price, listing.currency)
                         : "—"}
                     </dd>
                   </div>

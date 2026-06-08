@@ -7,6 +7,7 @@ import type { BookingWindow } from "@/lib/booking-window";
 import type { HourlyBookingSchedule } from "@/lib/hourly-booking-schedule";
 import type { HireReturnWindow } from "@/lib/hire-return-window";
 import type { PricingPeriod } from "@/lib/pricing-period";
+import type { SupportedCurrency } from "@/lib/currency";
 import { MARKETPLACE_SERVICES_CACHE_TAG } from "@/lib/cache-tags";
 import { getServerBackendOrigin } from "@/lib/server-backend-origin";
 
@@ -73,6 +74,7 @@ export type MarketplaceServiceRow = {
   listingType: "sale" | "hire" | "book" | null;
   stock: number | null;
   price: number | null;
+  currency?: SupportedCurrency;
   pricingPeriod: PricingPeriod | null;
   isAvailable?: boolean;
   departmentSlug: string;
@@ -133,15 +135,20 @@ export async function fetchServiceCategoryBySlug(
   );
 }
 
-export async function fetchMarketplaceServices(): Promise<MarketplaceServiceRow[]> {
+export async function fetchMarketplaceServices(
+  countryCode: "NG" | "GH" = "NG",
+): Promise<MarketplaceServiceRow[]> {
   const base = getServerBackendOrigin();
   try {
-    const res = await fetch(`${base}/api/services/marketplace`, {
-      next: {
-        revalidate: REVALIDATE,
-        tags: [MARKETPLACE_SERVICES_CACHE_TAG],
+    const res = await fetch(
+      `${base}/api/services/marketplace?countryCode=${encodeURIComponent(countryCode)}`,
+      {
+        next: {
+          revalidate: REVALIDATE,
+          tags: [MARKETPLACE_SERVICES_CACHE_TAG],
+        },
       },
-    });
+    );
     if (!res.ok) {
       return [];
     }
@@ -161,15 +168,20 @@ function isLikelyMongoObjectId(value: string): boolean {
  */
 export async function fetchMarketplaceServiceByIdForPage(
   serviceId: string,
+  countryCode?: "NG" | "GH",
 ): Promise<MarketplaceServiceRow | null> {
   const trimmed = serviceId?.trim() ?? "";
   if (!trimmed || !isLikelyMongoObjectId(trimmed)) {
     return null;
   }
   const base = getServerBackendOrigin();
+  const countryQs =
+    countryCode != null
+      ? `?countryCode=${encodeURIComponent(countryCode)}`
+      : "";
   try {
     const res = await fetch(
-      `${base}/api/services/marketplace/${encodeURIComponent(trimmed)}`,
+      `${base}/api/services/marketplace/${encodeURIComponent(trimmed)}${countryQs}`,
       {
         next: {
           revalidate: REVALIDATE,

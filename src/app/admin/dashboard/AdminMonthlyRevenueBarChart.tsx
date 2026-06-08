@@ -1,26 +1,24 @@
 "use client";
 
 import type { AdminTransactionsMonthBucket } from "@/lib/admin-stats";
-
-function formatNgnCompact(amount: number): string {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
+import { formatMoney, type SupportedCurrency } from "@/lib/currency";
 
 type Props = {
   year: number;
+  currency: SupportedCurrency;
   months: AdminTransactionsMonthBucket[];
   loading: boolean;
 };
 
-export function AdminMonthlyRevenueBarChart({ year, months, loading }: Props) {
+export function AdminMonthlyRevenueBarChart({
+  year,
+  currency,
+  months,
+  loading,
+}: Props) {
   const rangeLabel = String(year);
-  const maxNgn = Math.max(...months.map((m) => m.totalNgn), 0);
-  const yearTotalNgn = months.reduce((s, m) => s + m.totalNgn, 0);
+  const maxTotal = Math.max(...months.map((m) => m.total), 0);
+  const yearTotal = months.reduce((s, m) => s + m.total, 0);
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -29,7 +27,7 @@ export function AdminMonthlyRevenueBarChart({ year, months, loading }: Props) {
           Platform revenue
         </h3>
         <span className="text-xs text-slate-500">
-          Sales by order total (NGN)
+          Sales by order total ({currency})
         </span>
       </div>
       <div className="mt-4 h-52 rounded-xl bg-gradient-to-b from-indigo-50 via-white to-white p-4">
@@ -49,8 +47,8 @@ export function AdminMonthlyRevenueBarChart({ year, months, loading }: Props) {
           <div className="flex h-full items-end gap-1 sm:gap-1.5">
             {months.map((m) => {
               let heightPct =
-                maxNgn > 0 ? Math.round((m.totalNgn / maxNgn) * 100) : 0;
-              if (maxNgn === 0) {
+                maxTotal > 0 ? Math.round((m.total / maxTotal) * 100) : 0;
+              if (maxTotal === 0) {
                 heightPct = 8;
               } else if (heightPct > 0 && heightPct < 12) {
                 heightPct = 12;
@@ -65,13 +63,9 @@ export function AdminMonthlyRevenueBarChart({ year, months, loading }: Props) {
                     style={{
                       height: `${heightPct}%`,
                       minHeight:
-                        m.totalNgn > 0
-                          ? "0.5rem"
-                          : maxNgn === 0
-                            ? "0.35rem"
-                            : 0,
+                        m.total > 0 ? "0.5rem" : maxTotal === 0 ? "0.35rem" : 0,
                     }}
-                    title={`${m.label} ${rangeLabel}: ${formatNgnCompact(m.totalNgn)}`}
+                    title={`${m.label} ${rangeLabel}: ${formatMoney(m.total, currency)}`}
                   />
                   <span className="w-full truncate text-center text-[10px] font-medium text-slate-500 sm:text-xs">
                     {m.label}
@@ -84,13 +78,13 @@ export function AdminMonthlyRevenueBarChart({ year, months, loading }: Props) {
       </div>
       {!loading && months.length > 0 ? (
         <p className="mt-3 text-center text-xs text-slate-600">
-          {year} total:{" "}
+          {year} total ({currency}):{" "}
           <span className="font-semibold text-slate-800">
-            {formatNgnCompact(yearTotalNgn)}
+            {formatMoney(yearTotal, currency)}
           </span>
-          {yearTotalNgn === 0 ? (
+          {yearTotal === 0 ? (
             <span className="mt-1 block font-normal text-slate-500">
-              No orders in this year (UTC).
+              No {currency} orders in this year (UTC).
             </span>
           ) : null}
         </p>

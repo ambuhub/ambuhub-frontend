@@ -30,6 +30,8 @@ type MyService = {
   listingType: "sale" | "hire" | "book" | null;
   isAvailable?: boolean;
   price?: number | null;
+  currency?: string | null;
+  countryCode?: string | null;
   pricingPeriod?: PricingPeriod | null;
   bookingWindow?: BookingWindow | null;
   hourlyBookingSchedule?: import("@/lib/hourly-booking-schedule").HourlyBookingSchedule | null;

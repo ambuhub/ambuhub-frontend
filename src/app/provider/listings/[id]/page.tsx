@@ -1,6 +1,12 @@
 "use client";
 
 import { API_PROXY_PREFIX } from "@/lib/api";
+import {
+  currencyForCountry,
+  formatMoney,
+  parseSupportedCurrency,
+  type SupportedCurrency,
+} from "@/lib/currency";
 import { dispatchMarketplaceInvalidate } from "@/lib/cache-tags";
 import { getCountryNameByCode } from "@/lib/countries";
 import { formatHireReturnWindowSummary, type HireReturnWindow } from "@/lib/hire-return-window";
@@ -56,13 +62,8 @@ type MyService = {
   listingType: "sale" | "hire" | "book" | null;
   stock: number | null;
   price: number | null;
-  pricingPeriod:
-    | "hourly"
-    | "daily"
-    | "weekly"
-    | "monthly"
-    | "yearly"
-    | null;
+  currency?: string;
+  pricingPeriod: "daily" | null;
   isAvailable?: boolean;
   departmentSlug: string;
   departmentName: string;
@@ -77,9 +78,15 @@ type MyService = {
   updatedAt: string;
 };
 
-function formatPrice(n: number | null): string {
+function formatPrice(
+  service: Pick<MyService, "price" | "currency" | "countryCode">,
+  n: number | null,
+): string {
   if (n == null) return "—";
-  return `₦${Number(n).toLocaleString("en-NG", { maximumFractionDigits: 0 })}`;
+  const currency: SupportedCurrency = service.currency
+    ? parseSupportedCurrency(service.currency)
+    : currencyForCountry(service.countryCode);
+  return formatMoney(n, currency);
 }
 
 export default function ProviderListingDetailPage() {
@@ -349,7 +356,7 @@ export default function ProviderListingDetailPage() {
                 Price
               </div>
               <p className="mt-2 text-lg font-bold text-[#004a7c]">
-                {formatPrice(service.price)}
+                {formatPrice(service, service.price)}
                 {service.listingType === "hire" && service.pricingPeriod ? (
                   <span className="mt-1 block text-sm font-semibold text-cyan-800/85">
                     {formatHirePricePeriodSuffix(service.pricingPeriod)}

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { ServiceCardImage } from "@/components/services/CategoryServiceListing";
+import { formatListingMoney } from "@/components/services/ListingPriceDisplay";
 import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
 import { hasValidHireReturnWindow } from "@/lib/hire-return-window";
 import { postCartItem } from "@/lib/marketplace-cart";
@@ -29,14 +30,6 @@ import {
   isSalePurchasable,
   saleUnavailableReason,
 } from "@/lib/marketplace-listing";
-
-const nairaNumberFormatter = new Intl.NumberFormat("en-NG", {
-  maximumFractionDigits: 2,
-});
-
-function formatNaira(value: number): string {
-  return `₦${nairaNumberFormatter.format(value)}`;
-}
 
 function formatListingTypeLabel(
   listingType: "sale" | "hire" | "book" | null,
@@ -129,12 +122,12 @@ function FavoriteNeonCard({
       <div className="relative mt-3 min-h-0 flex-1">
         {svc.listingType === "sale" && getListingPrice(svc) != null ? (
           <p className="text-sm font-bold text-[#004a7c]">
-            {formatNaira(getListingPrice(svc)!)}
+            {formatListingMoney(svc, getListingPrice(svc))}
           </p>
         ) : null}
         {svc.listingType === "hire" && typeof svc.price === "number" ? (
           <p className="text-sm font-bold text-[#004a7c]">
-            {formatNaira(svc.price)}
+            {formatListingMoney(svc, svc.price)}
             {svc.pricingPeriod ? (
               <span className="font-medium text-slate-600">
                 {" "}

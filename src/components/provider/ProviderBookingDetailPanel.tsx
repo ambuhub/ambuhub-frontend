@@ -16,6 +16,11 @@ import {
 } from "lucide-react";
 import { formatPricingPeriodLabel, isPricingPeriod } from "@/lib/pricing-period";
 import type { ProviderHireBookingCustomer } from "@/lib/provider-bookings";
+import {
+  formatMoney,
+  parseSupportedCurrency,
+  type SupportedCurrency,
+} from "@/lib/currency";
 
 export type ProviderBookingDisplayRow = {
   key: string;
@@ -23,6 +28,7 @@ export type ProviderBookingDisplayRow = {
   orderId: string;
   receiptNumber: string;
   paidAt: string;
+  currency: SupportedCurrency;
   serviceId: string;
   listingTitle: string;
   start: string;
@@ -30,20 +36,11 @@ export type ProviderBookingDisplayRow = {
   pricingPeriod?: string;
   billableUnits?: number;
   quantity: number;
-  unitPriceNgn?: number;
-  lineTotalNgn: number;
+  unitPrice?: number;
+  lineTotal: number;
   customer: ProviderHireBookingCustomer;
   primaryPhotoUrl?: string;
 };
-
-function formatNgn(amount: number): string {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
 
 function formatDateTime(iso: string): string {
   try {
@@ -267,11 +264,17 @@ export function ProviderBookingDetailPanel({
             Payment
           </h3>
           <dl className="mt-3 space-y-3 rounded-xl border border-blue-100 bg-blue-50/40 p-4">
-            {row.kind === "sale" && row.unitPriceNgn != null ? (
-              <DetailRow label="Unit price" value={formatNgn(row.unitPriceNgn)} />
+            {row.kind === "sale" && row.unitPrice != null ? (
+              <DetailRow
+                label="Unit price"
+                value={formatMoney(row.unitPrice, row.currency)}
+              />
             ) : null}
             <DetailRow label="Quantity" value={row.quantity} />
-            <DetailRow label="Line total" value={formatNgn(row.lineTotalNgn)} />
+            <DetailRow
+              label="Line total"
+              value={formatMoney(row.lineTotal, row.currency)}
+            />
             <DetailRow label="Paid at" value={formatDateTime(row.paidAt)} />
             <DetailRow label="Order ID" value={row.orderId} mono />
           </dl>
@@ -299,4 +302,4 @@ export function bookingRowKey(row: {
   return `${row.orderId}-${row.serviceId}-${row.start}`;
 }
 
-export { formatNgn, formatDateTime, isBookingActive };
+export { formatDateTime, isBookingActive };

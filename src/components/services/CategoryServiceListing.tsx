@@ -33,10 +33,17 @@ import {
 } from "@/lib/service-category-page-data";
 import {
   formatStockLabel,
+  getListingCurrency,
   getListingPrice,
   isSalePurchasable,
   saleUnavailableReason,
 } from "@/lib/marketplace-listing";
+import {
+  formatMoney,
+  getCurrencySymbol,
+  parseSupportedCurrency,
+  type SupportedCurrency,
+} from "@/lib/currency";
 
 const BANNER_SIZES = "100vw";
 const CARD_SIZES =
@@ -47,14 +54,17 @@ const filterControlClass =
   "w-full rounded-lg border border-ambuhub-200 bg-white px-3 py-2 text-sm text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25 disabled:cursor-not-allowed disabled:opacity-60";
 const filterControlDisabledClass = `${filterControlClass} disabled:cursor-not-allowed disabled:opacity-60`;
 
-const bannerImgBase = "h-full w-full object-cover";
-const nairaNumberFormatter = new Intl.NumberFormat("en-NG", {
-  maximumFractionDigits: 2,
-});
+type MarketplaceBrowseCountry = "NG" | "GH";
 
-function formatNaira(value: number): string {
-  return `₦${nairaNumberFormatter.format(value)}`;
-}
+const MARKETPLACE_COUNTRY_OPTIONS: {
+  code: MarketplaceBrowseCountry;
+  label: string;
+}[] = [
+  { code: "NG", label: "Nigeria" },
+  { code: "GH", label: "Ghana" },
+];
+
+const bannerImgBase = "h-full w-full object-cover";
 
 type ListingTypeFilter = "all" | "sale" | "hire" | "book" | "none";
 
@@ -75,7 +85,9 @@ function parsePriceFilterInput(value: string): number | null {
   return n;
 }
 
-function serviceListingPriceNgn(service: MarketplaceServiceRow): number | null {
+function serviceListingDisplayPrice(
+  service: MarketplaceServiceRow,
+): number | null {
   return getListingPrice(service);
 }
 
@@ -290,8 +302,12 @@ export function CategoryServiceListing({ category, sections }: Props) {
     loading: sessionLoading,
     refresh,
     itemCount,
-    subtotalNgn,
+    subtotal,
+    currency: cartCurrencyFromSession,
   } = useSessionAndCart();
+  const [detectedCountry, setDetectedCountry] = useState<MarketplaceBrowseCountry>("NG");
+  const [browseCountry, setBrowseCountry] = useState<MarketplaceBrowseCountry>("NG");
+  const [countryReady, setCountryReady] = useState(false);
   const [liveSections, setLiveSections] = useState(sections);
   const [addingServiceId, setAddingServiceId] = useState<string | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
@@ -311,13 +327,43 @@ export function CategoryServiceListing({ category, sections }: Props) {
     setLiveSections(sections);
   }, [sections]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API_PROXY_PREFIX}/marketplace/country`, {
+          cache: "no-store",
+          credentials: "omit",
+        });
+        if (!res.ok) {
+          return;
+        }
+        const data = (await res.json()) as { countryCode?: string };
+        const code = data.countryCode?.trim().toUpperCase();
+        if (!cancelled && (code === "NG" || code === "GH")) {
+          setDetectedCountry(code);
+          setBrowseCountry(code);
+        }
+      } catch {
+        /* keep default NG */
+      } finally {
+        if (!cancelled) {
+          setCountryReady(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const refetchMarketplaceSections = useCallback(async () => {
     try {
       const res = await fetch(
-        `${API_PROXY_PREFIX}/services/marketplace?categorySlug=${encodeURIComponent(category.slug)}`,
+        `${API_PROXY_PREFIX}/services/marketplace?categorySlug=${encodeURIComponent(category.slug)}&countryCode=${encodeURIComponent(browseCountry)}`,
         {
-        cache: "no-store",
-        credentials: "omit",
+          cache: "no-store",
+          credentials: "omit",
         },
       );
       if (!res.ok) {
@@ -329,11 +375,14 @@ export function CategoryServiceListing({ category, sections }: Props) {
     } catch {
       /* keep current liveSections */
     }
-  }, [category]);
+  }, [category, browseCountry]);
 
   useEffect(() => {
+    if (!countryReady) {
+      return;
+    }
     void refetchMarketplaceSections();
-  }, [category.slug, refetchMarketplaceSections]);
+  }, [category.slug, countryReady, browseCountry, refetchMarketplaceSections]);
 
   useEffect(() => {
     if (sessionLoading) {
@@ -396,8 +445,14 @@ export function CategoryServiceListing({ category, sections }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [priceMinInput, setPriceMinInput] = useState("");
   const [priceMaxInput, setPriceMaxInput] = useState("");
-  const [countryFilter, setCountryFilter] = useState("all");
   const [stateFilter, setStateFilter] = useState("all");
+
+  const listingCurrency = parseSupportedCurrency(
+    browseCountry === "GH" ? "GHS" : "NGN",
+  );
+  const cartCurrency = parseSupportedCurrency(
+    cartCurrencyFromSession ?? (browseCountry === "GH" ? "GHS" : "NGN"),
+  );
 
   const departmentOptions = useMemo(() => {
     const options = new Map<string, string>();
@@ -423,7 +478,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
     let max = -Infinity;
     for (const section of liveSections) {
       for (const service of section.services) {
-        const price = serviceListingPriceNgn(service);
+        const price = serviceListingDisplayPrice(service);
         if (price === null) {
           continue;
         }
@@ -450,7 +505,6 @@ export function CategoryServiceListing({ category, sections }: Props) {
     parsedPriceMin !== null || parsedPriceMax !== null;
 
   const locationOptions = useMemo(() => {
-    const countries = new Map<string, string>();
     const statesByKey = new Map<
       string,
       { code: string; label: string; countryCode: string }
@@ -459,12 +513,6 @@ export function CategoryServiceListing({ category, sections }: Props) {
     for (const section of liveSections) {
       for (const service of section.services) {
         const countryCode = service.countryCode?.trim().toLowerCase() ?? "";
-        if (countryCode) {
-          countries.set(
-            countryCode,
-            getCountryNameByCode(countryCode) ?? countryCode.toUpperCase(),
-          );
-        }
 
         const stateCode = service.stateProvince?.trim() ?? "";
         if (!stateCode) {
@@ -483,33 +531,25 @@ export function CategoryServiceListing({ category, sections }: Props) {
       }
     }
 
-    const countryList = Array.from(countries.entries())
-      .map(([code, label]) => ({ code, label }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-
     const stateList = Array.from(statesByKey.values()).sort((a, b) =>
       a.label.localeCompare(b.label),
     );
 
     return {
-      countries: countryList,
       states: stateList,
-      hasCountries: countryList.length > 0,
       hasStates: stateList.length > 0,
     };
   }, [liveSections]);
 
-  const stateFilterOptions = useMemo(() => {
-    if (countryFilter === "all") {
-      return locationOptions.states;
-    }
-    return locationOptions.states.filter(
-      (s) => s.countryCode === countryFilter,
-    );
-  }, [countryFilter, locationOptions.states]);
+  const browseCountryLower = browseCountry.toLowerCase();
 
-  const locationFilterActive =
-    countryFilter !== "all" || stateFilter !== "all";
+  const stateFilterOptions = useMemo(() => {
+    return locationOptions.states.filter(
+      (s) => !s.countryCode || s.countryCode === browseCountryLower,
+    );
+  }, [browseCountryLower, locationOptions.states]);
+
+  const locationFilterActive = stateFilter !== "all";
 
   const filteredSections = useMemo(() => {
     const normalizedQuery = normalizeSearchText(searchQuery);
@@ -573,19 +613,11 @@ export function CategoryServiceListing({ category, sections }: Props) {
         return true;
       }
 
-      const svcCountry = service.countryCode?.trim().toLowerCase() ?? "";
       const svcState = service.stateProvince?.trim() ?? "";
 
-      if (countryFilter !== "all" && svcCountry !== countryFilter) {
-        return false;
-      }
       if (stateFilter !== "all") {
-        const { countryCode: filterCountry, stateCode: filterState } =
-          parseStateFilterValue(stateFilter);
+        const { stateCode: filterState } = parseStateFilterValue(stateFilter);
         if (filterState && svcState !== filterState) {
-          return false;
-        }
-        if (filterCountry && svcCountry !== filterCountry) {
           return false;
         }
       }
@@ -596,7 +628,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
       if (!priceFilterActive) {
         return true;
       }
-      const price = serviceListingPriceNgn(service);
+      const price = serviceListingDisplayPrice(service);
       if (price === null) {
         return false;
       }
@@ -641,7 +673,6 @@ export function CategoryServiceListing({ category, sections }: Props) {
     parsedPriceMin,
     parsedPriceMax,
     locationFilterActive,
-    countryFilter,
     stateFilter,
   ]);
 
@@ -807,7 +838,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
                     setListingTypeFilter("all");
                     setPriceMinInput("");
                     setPriceMaxInput("");
-                    setCountryFilter("all");
+                    setBrowseCountry(detectedCountry);
                     setStateFilter("all");
                   }}
                 >
@@ -882,24 +913,27 @@ export function CategoryServiceListing({ category, sections }: Props) {
                   </label>
                   <select
                     id="country-filter"
-                    value={countryFilter}
+                    value={browseCountry}
                     onChange={(e) => {
-                      setCountryFilter(e.target.value);
-                      setStateFilter("all");
+                      const next = e.target.value.trim().toUpperCase();
+                      if (next === "NG" || next === "GH") {
+                        setBrowseCountry(next);
+                        setStateFilter("all");
+                      }
                     }}
-                    disabled={!locationOptions.hasCountries}
-                    className={`mt-1 ${filterControlDisabledClass}`}
+                    className={`mt-1 ${filterControlClass}`}
                   >
-                    <option value="all">All countries</option>
-                    {locationOptions.countries.map((option) => (
+                    {MARKETPLACE_COUNTRY_OPTIONS.map((option) => (
                       <option key={option.code} value={option.code}>
                         {option.label}
                       </option>
                     ))}
                   </select>
-                  {!locationOptions.hasCountries ? (
+                  {browseCountry !== detectedCountry ? (
                     <p className="mt-1 text-xs text-white/75">
-                      No country set on listings in this category.
+                      Showing {getCountryNameByCode(browseCountry) ?? browseCountry}{" "}
+                      listings (your location:{" "}
+                      {getCountryNameByCode(detectedCountry) ?? detectedCountry}).
                     </p>
                   ) : null}
                 </div>
@@ -924,9 +958,6 @@ export function CategoryServiceListing({ category, sections }: Props) {
                         value={stateFilterOptionValue(option)}
                       >
                         {option.label}
-                        {countryFilter === "all" && option.countryCode
-                          ? ` (${getCountryNameByCode(option.countryCode) ?? option.countryCode.toUpperCase()})`
-                          : ""}
                       </option>
                     ))}
                   </select>
@@ -934,8 +965,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
                     <p className="mt-1 text-xs text-white/75">
                       No state or province set on listings in this category.
                     </p>
-                  ) : countryFilter !== "all" &&
-                    stateFilterOptions.length === 0 ? (
+                  ) : stateFilterOptions.length === 0 ? (
                     <p className="mt-1 text-xs text-white/75">
                       No states listed for this country in this category.
                     </p>
@@ -943,10 +973,13 @@ export function CategoryServiceListing({ category, sections }: Props) {
                 </div>
 
                 <fieldset className="min-w-0">
-                  <legend className={filterLabelClass}>Price range (₦)</legend>
+                  <legend className={filterLabelClass}>
+                    Price range ({getCurrencySymbol(listingCurrency)})
+                  </legend>
                   {priceBounds.hasPrices ? (
                     <p className="mt-0.5 text-[11px] leading-snug text-white/75">
-                      {formatNaira(priceBounds.min)} – {formatNaira(priceBounds.max)}
+                      {formatMoney(priceBounds.min, listingCurrency)} –{" "}
+                      {formatMoney(priceBounds.max, listingCurrency)}
                     </p>
                   ) : (
                     <p className="mt-0.5 text-[11px] leading-snug text-white/75">
@@ -1013,7 +1046,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
               <p className="text-sm font-semibold text-foreground">Your cart</p>
               <p className="mt-0.5 text-sm text-foreground/70">
                 {itemCount} {itemCount === 1 ? "item" : "items"} ·{" "}
-                {formatNaira(subtotalNgn)}
+                {formatMoney(subtotal, cartCurrency)}
               </p>
             </div>
             <Link
@@ -1051,7 +1084,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
                 </h2>
                 <ul className="mt-5 grid grid-cols-1 gap-5 min-w-0 sm:grid-cols-2 sm:gap-5 lg:mt-6 lg:grid-cols-4 lg:gap-6">
                   {section.services.map((svc) => {
-                    const listingDetailHref = `/services/${encodeURIComponent(category.slug)}/${encodeURIComponent(svc.id)}`;
+                    const listingDetailHref = `/services/${encodeURIComponent(category.slug)}/${encodeURIComponent(svc.id)}?countryCode=${encodeURIComponent(browseCountry)}`;
                     return (
                     <li key={svc.id} className="min-w-0">
                       <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-ambuhub-100 bg-white shadow-sm">
@@ -1128,13 +1161,19 @@ export function CategoryServiceListing({ category, sections }: Props) {
                             {svc.listingType === "sale" &&
                             getListingPrice(svc) != null ? (
                               <p className="mt-2 text-sm font-semibold text-foreground">
-                                {formatNaira(getListingPrice(svc)!)}
+                                {formatMoney(
+                                  getListingPrice(svc)!,
+                                  getListingCurrency(svc),
+                                )}
                               </p>
                             ) : null}
                             {svc.listingType === "hire" &&
                             getListingPrice(svc) != null ? (
                               <p className="mt-2 text-sm font-semibold text-foreground">
-                                {formatNaira(getListingPrice(svc)!)}
+                                {formatMoney(
+                                  getListingPrice(svc)!,
+                                  getListingCurrency(svc),
+                                )}
                                 {svc.pricingPeriod ? (
                                   <span className="font-medium text-foreground/80">
                                     {" "}
@@ -1284,7 +1323,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
               <p className="text-xs font-medium text-foreground/70">Cart</p>
               <p className="truncate text-sm font-semibold text-foreground">
                 {itemCount} {itemCount === 1 ? "item" : "items"} ·{" "}
-                {formatNaira(subtotalNgn)}
+                {formatMoney(subtotal, cartCurrency)}
               </p>
             </div>
             <Link

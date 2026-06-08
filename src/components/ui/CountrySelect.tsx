@@ -11,6 +11,8 @@ type Props = {
   required?: boolean;
   placeholder?: string;
   className?: string;
+  /** Restrict choices (defaults to full world list). */
+  countries?: Country[];
 };
 
 export function CountrySelect({
@@ -20,6 +22,7 @@ export function CountrySelect({
   required = false,
   placeholder = "Select country",
   className = "",
+  countries = COUNTRIES,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -30,16 +33,16 @@ export function CountrySelect({
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return COUNTRIES;
-    return COUNTRIES.filter((c) => c.name.toLowerCase().includes(q));
-  }, [search]);
+    if (!q) return countries;
+    return countries.filter((c) => c.name.toLowerCase().includes(q));
+  }, [search, countries]);
 
   const selected = useMemo(
     () =>
-      COUNTRIES.find(
+      countries.find(
         (c) => c.code.toUpperCase() === value.trim().toUpperCase(),
       ) ?? null,
-    [value],
+    [value, countries],
   );
 
   useEffect(() => {
