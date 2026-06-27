@@ -58,14 +58,14 @@ export function HeroSection() {
               className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"
             >
               <Link
-                href="#contact"
+                href="/contact"
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-ambuhub-brand px-6 py-3.5 text-base font-semibold text-white shadow-md transition-colors hover:bg-ambuhub-brand-dark"
               >
-                Request a demo
+                Contact us
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
               <Link
-                href="#how-it-works"
+                href="/how-it-works"
                 className="inline-flex items-center justify-center rounded-xl border border-white/30 bg-transparent px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-white/10"
               >
                 See how it works
