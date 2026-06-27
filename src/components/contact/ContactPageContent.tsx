@@ -13,36 +13,45 @@ import {
   Phone,
   Send,
 } from "lucide-react";
+import {
+  CONTACT_EMAIL,
+  CONTACT_EMAIL_HREF,
+  CONTACT_LOCATION,
+  CONTACT_LOCATION_MAP,
+  CONTACT_OFFICE_HOURS,
+  CONTACT_PHONE_DISPLAY,
+  CONTACT_PHONE_HREF,
+} from "@/lib/contact-info";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
 const contactDetails = [
   {
     label: "Email us",
-    value: "hello@ambuhub.example",
-    href: "mailto:hello@ambuhub.example",
+    value: CONTACT_EMAIL,
+    href: CONTACT_EMAIL_HREF,
     icon: Mail,
     accent:
       "bg-gradient-to-br from-sky-500 to-blue-600 shadow-sky-600/30",
   },
   {
     label: "Call us",
-    value: "+234 800 000 0000",
-    href: "tel:+2348000000000",
+    value: CONTACT_PHONE_DISPLAY,
+    href: CONTACT_PHONE_HREF,
     icon: Phone,
     accent:
       "bg-gradient-to-br from-indigo-600 to-blue-800 shadow-indigo-700/30",
   },
   {
     label: "Visit us",
-    value: "Lagos, Nigeria",
-    href: "https://maps.google.com/?q=Lagos,Nigeria",
+    value: CONTACT_LOCATION,
+    href: CONTACT_LOCATION_MAP,
     icon: MapPin,
     accent: "bg-gradient-to-br from-cyan-500 to-teal-600 shadow-teal-600/30",
   },
   {
     label: "Office hours",
-    value: "Mon–Fri, 9:00 – 18:00 WAT",
+    value: CONTACT_OFFICE_HOURS,
     href: null,
     icon: Clock,
     accent: "bg-gradient-to-br from-blue-600 to-sky-700 shadow-blue-700/30",

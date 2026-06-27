@@ -54,10 +54,10 @@ export function DownloadAppSection() {
   return (
     <section
       id="download-app"
-      className="flex min-h-[min(50vh,420px)] items-center justify-center border-t border-slate-200/80 bg-white py-8 sm:py-10 lg:max-h-[50vh] lg:py-0"
+      className="flex items-center justify-center border-t border-slate-200/80 bg-white py-12 sm:py-16 lg:max-h-[50vh] lg:py-0"
     >
       <div className="mx-auto flex w-full max-w-6xl justify-center px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col items-center gap-4 sm:gap-5 lg:flex-row lg:items-center lg:gap-6 xl:gap-8">
+        <div className="flex flex-col items-center gap-6 sm:gap-8 lg:flex-row lg:items-center lg:gap-6 xl:gap-8">
           <motion.div
             {...slideUp(0.1)}
             className="order-2 max-w-md text-center lg:order-1 lg:text-left"
@@ -75,15 +75,15 @@ export function DownloadAppSection() {
             <h3 className="mt-4 text-sm font-bold text-blue-950 sm:text-base">
               Download the Ambuhub app below
             </h3>
-            <div className="mt-2.5 flex flex-wrap items-center justify-center gap-2.5 lg:justify-start">
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
               <AppStoreBadge />
               <GooglePlayBadge />
             </div>
-            <p className="mt-1.5 text-xs text-slate-500">Mobile apps coming soon.</p>
+            <p className="mt-2 text-xs text-slate-500">Mobile apps coming soon.</p>
           </motion.div>
 
           <motion.div {...slideUp(0)} className="order-1 shrink-0 lg:order-2">
-            <div className="relative aspect-[3/4] w-[120px] sm:w-[140px] lg:w-[min(16vw,180px)]">
+            <div className="relative aspect-[3/4] w-[150px] sm:w-[170px] lg:w-[min(16vw,180px)]">
               <Image
                 src="/landing-page/landing-6.png"
                 alt="Ambuhub mobile app on a smartphone"
