@@ -9,6 +9,7 @@ import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
 import { marketplaceCategoryHref } from "@/lib/marketplace-navigation";
+import { postPaystackVerify } from "@/lib/paystack-checkout";
 import {
   deleteCartItem,
   patchCartItemQuantity,
@@ -53,11 +54,52 @@ function CheckoutPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [checkoutComplete, setCheckoutComplete] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<OrderDetailClient | null>(null);
-  const [marketplaceHref, setMarketplaceHref] = useState("/#services");
+  const [marketplaceHref, setMarketplaceHref] = useState("/services");
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    const reference =
+      searchParams.get("reference")?.trim() ||
+      searchParams.get("trxref")?.trim() ||
+      "";
+    if (!reference || checkoutComplete || !user) {
+      return;
+    }
+    let cancelled = false;
+    setBusy(true);
+    setError(null);
+    void (async () => {
+      try {
+        const { order } = await postPaystackVerify(reference);
+        if (cancelled) {
+          return;
+        }
+        const categorySlug =
+          searchParams.get("category")?.trim() ||
+          cart.items[0]?.category.slug ||
+          order.lines[0]?.categorySlug ||
+          null;
+        setCompletedOrder(order);
+        setMarketplaceHref(marketplaceCategoryHref(categorySlug));
+        setCheckoutComplete(true);
+        await refresh();
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Payment verification failed");
+        }
+      } finally {
+        if (!cancelled) {
+          setBusy(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, checkoutComplete, user, cart.items, refresh]);
 
   const adjustQty = useCallback(
     async (serviceId: string, next: number) => {
@@ -126,8 +168,7 @@ function CheckoutPageContent() {
             Checkout
           </h1>
           <p className="mt-2 text-sm text-foreground/70 sm:text-base">
-            Paystack is not connected yet. Completing payment runs a temporary simulation
-            only.
+            Complete your purchase securely with Paystack.
           </p>
 
           {loading ? (
@@ -153,7 +194,7 @@ function CheckoutPageContent() {
             <div className="mt-10 rounded-2xl border border-dashed border-ambuhub-200 bg-ambuhub-surface/40 p-8 text-center">
               <p className="text-foreground/80">Your cart is empty.</p>
               <Link
-                href="/#services"
+                href="/services"
                 className="mt-4 inline-flex text-sm font-semibold text-ambuhub-brand hover:underline"
               >
                 Browse services
@@ -243,7 +284,7 @@ function CheckoutPageContent() {
                   {busy ? (
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                   ) : null}
-                  Pay with Paystack (simulated)
+                  Pay with Paystack
                 </button>
               </div>
             </div>

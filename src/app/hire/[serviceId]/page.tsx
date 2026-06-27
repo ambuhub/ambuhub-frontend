@@ -103,7 +103,7 @@ export default function HireCheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [checkoutComplete, setCheckoutComplete] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<OrderDetailClient | null>(null);
-  const [marketplaceHref, setMarketplaceHref] = useState("/#services");
+  const [marketplaceHref, setMarketplaceHref] = useState("/services");
 
   useEffect(() => {
     setDatesInitialized(false);
@@ -278,8 +278,7 @@ export default function HireCheckoutPage() {
             </span>
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-foreground/70 sm:text-base">
-            Paystack is not connected yet. Completing payment runs a temporary simulation
-            only.
+            Complete your hire booking securely with Paystack.
           </p>
 
           {loadingService || sessionLoading ? (
@@ -299,7 +298,7 @@ export default function HireCheckoutPage() {
               />
               <p className="relative text-foreground/80">{loadError ?? "Listing not found."}</p>
               <Link
-                href="/#services"
+                href="/services"
                 className="relative mt-4 inline-flex text-sm font-semibold text-[#0069b4] underline-offset-4 hover:text-cyan-700 hover:underline"
               >
                 Browse services
@@ -650,7 +649,7 @@ export default function HireCheckoutPage() {
                     {busy ? (
                       <Loader2 className="h-4 w-4 animate-spin text-[#004a7c]" aria-hidden />
                     ) : null}
-                    Pay with Paystack (simulated)
+                    Pay with Paystack
                   </button>
                 </div>
               </div>

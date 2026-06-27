@@ -3,16 +3,25 @@ import {
   type SupportedCurrency,
 } from "@/lib/currency";
 
-export type ProviderPlanId = "free" | "premium" | "enterprise";
+export type ProviderPlanId = "free" | "premium";
+
+export type SubscriptionBillingInterval = "monthly" | "yearly";
 
 export type ProviderPlan = {
   id: ProviderPlanId;
   name: string;
   tagline: string;
-  prices: Record<SupportedCurrency, number | null>;
-  priceNote: string;
+  prices: Record<
+    SubscriptionBillingInterval,
+    Record<SupportedCurrency, number>
+  >;
   features: string[];
   highlighted?: boolean;
+};
+
+export const PREMIUM_SUBSCRIPTION_PRICES: ProviderPlan["prices"] = {
+  monthly: { NGN: 10_000, GHS: 100 },
+  yearly: { NGN: 100_000, GHS: 1_000 },
 };
 
 export const PROVIDER_PLANS: ProviderPlan[] = [
@@ -20,8 +29,10 @@ export const PROVIDER_PLANS: ProviderPlan[] = [
     id: "free",
     name: "Free",
     tagline: "Get started on the marketplace",
-    prices: { NGN: 0, GHS: 0 },
-    priceNote: "Forever free",
+    prices: {
+      monthly: { NGN: 0, GHS: 0 },
+      yearly: { NGN: 0, GHS: 0 },
+    },
     features: [
       "Up to 3 active listings",
       "Sale, hire & booking checkout",
@@ -34,8 +45,7 @@ export const PROVIDER_PLANS: ProviderPlan[] = [
     id: "premium",
     name: "Premium",
     tagline: "Grow visibility and capacity",
-    prices: { NGN: 25000, GHS: 250 },
-    priceNote: "Per month, billed monthly",
+    prices: PREMIUM_SUBSCRIPTION_PRICES,
     highlighted: true,
     features: [
       "Up to 15 active listings",
@@ -45,28 +55,18 @@ export const PROVIDER_PLANS: ProviderPlan[] = [
       "Priority email support",
     ],
   },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    tagline: "For large operators & fleets",
-    prices: { NGN: null, GHS: null },
-    priceNote: "Custom pricing",
-    features: [
-      "Unlimited active listings",
-      "Featured placement & campaigns",
-      "Dedicated account manager",
-      "Custom billing & invoicing",
-      "SLA-backed support",
-    ],
-  },
 ];
 
 export const DEFAULT_PROVIDER_PLAN: ProviderPlanId = "free";
 
-export const PLAN_STORAGE_KEY = "ambuhub_provider_subscription_plan";
-
 export function isProviderPlanId(value: unknown): value is ProviderPlanId {
-  return value === "free" || value === "premium" || value === "enterprise";
+  return value === "free" || value === "premium";
+}
+
+export function isSubscriptionBillingInterval(
+  value: unknown,
+): value is SubscriptionBillingInterval {
+  return value === "monthly" || value === "yearly";
 }
 
 export function getPlanById(id: ProviderPlanId): ProviderPlan {
@@ -80,16 +80,27 @@ export function getPlanById(id: ProviderPlanId): ProviderPlan {
 export function getPlanPrice(
   plan: ProviderPlan,
   currency: SupportedCurrency,
-): number | null {
-  return plan.prices[currency];
+  interval: SubscriptionBillingInterval,
+): number {
+  return plan.prices[interval][currency];
 }
 
 export function formatPlanPrice(
-  amount: number | null,
+  amount: number,
   currency: SupportedCurrency,
 ): string {
-  if (amount === null) {
-    return "Custom";
-  }
   return formatMoney(amount, currency);
+}
+
+export function yearlySavingsPercent(currency: SupportedCurrency): number {
+  const monthlyTotal = PREMIUM_SUBSCRIPTION_PRICES.monthly[currency] * 12;
+  const yearlyTotal = PREMIUM_SUBSCRIPTION_PRICES.yearly[currency];
+  if (monthlyTotal <= 0) {
+    return 0;
+  }
+  return Math.round(((monthlyTotal - yearlyTotal) / monthlyTotal) * 100);
+}
+
+export function billingIntervalLabel(interval: SubscriptionBillingInterval): string {
+  return interval === "monthly" ? "month" : "year";
 }

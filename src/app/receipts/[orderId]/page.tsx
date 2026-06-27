@@ -154,7 +154,9 @@ function ReceiptDetails({ receipt }: { receipt: ReceiptDetailClient }) {
           <span className="font-semibold text-[#0c4a6e]">Provider: </span>
           {receipt.paymentProvider === "paystack_simulated"
             ? "Paystack (simulated)"
-            : receipt.paymentProvider}
+            : receipt.paymentProvider === "paystack"
+              ? "Paystack"
+              : receipt.paymentProvider}
         </p>
       </section>
 
@@ -167,7 +169,7 @@ function ReceiptDetails({ receipt }: { receipt: ReceiptDetailClient }) {
           Print / Save as PDF
         </button>
         <Link
-          href="/#services"
+          href="/services"
           className="inline-flex items-center justify-center rounded-xl border border-cyan-400/50 bg-gradient-to-r from-[#0069b4] to-cyan-600 px-4 py-2.5 text-sm font-bold text-white shadow-[0_0_24px_-4px_rgba(34,211,238,0.45)] transition hover:from-[#0078c9] hover:to-cyan-500 print:hidden"
         >
           Continue shopping

@@ -134,7 +134,9 @@ function AdminReceiptDetails({
             <span className="font-semibold text-slate-800">Provider: </span>
             {receipt.paymentProvider === "paystack_simulated"
               ? "Paystack (simulated)"
-              : receipt.paymentProvider}
+              : receipt.paymentProvider === "paystack"
+                ? "Paystack"
+                : receipt.paymentProvider}
           </p>
         </section>
 

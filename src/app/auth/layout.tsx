@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { privatePageMetadata } from "@/lib/seo-metadata";
 
-export const metadata: Metadata = {
-  title: "Sign in | Ambuhub",
-  description: "Log in or create an Ambuhub account.",
-};
+export const metadata: Metadata = privatePageMetadata(
+  "Sign in",
+  "Log in or create an Ambuhub account.",
+);
 
 export default function AuthLayout({
   children,

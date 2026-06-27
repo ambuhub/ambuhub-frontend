@@ -4,6 +4,7 @@ import { ListingDetailExtras } from "@/components/reviews/ListingDetailExtras";
 import { ListingDetailMarketplaceActions } from "@/components/services/ListingDetailMarketplaceActions";
 import { MarketplaceListingDetail } from "@/components/services/MarketplaceListingDetail";
 import { fetchMarketplaceServiceByIdForPage } from "@/lib/service-category-page-data";
+import { privatePageMetadata } from "@/lib/seo-metadata";
 
 type PageProps = {
   params: Promise<{ serviceId: string }>;
@@ -15,13 +16,13 @@ export async function generateMetadata({
   const { serviceId } = await params;
   const service = await fetchMarketplaceServiceByIdForPage(serviceId);
   if (!service) {
-    return { title: "Listing | Client" };
+    return privatePageMetadata("Favorite listing", "Saved Ambuhub listing.");
   }
   const desc = service.description.trim();
-  return {
-    title: `${service.title} | Favorites`,
-    description: desc.length > 160 ? `${desc.slice(0, 157)}…` : desc || undefined,
-  };
+  return privatePageMetadata(
+    service.title,
+    desc.length > 160 ? `${desc.slice(0, 157)}…` : desc || "Saved Ambuhub listing.",
+  );
 }
 
 export default async function ClientFavoriteListingDetailPage({

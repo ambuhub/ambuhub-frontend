@@ -1309,7 +1309,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
         </div>
 
         <Link
-          href="/#services"
+          href="/services"
           className="mt-10 inline-flex text-sm font-semibold text-ambuhub-brand hover:underline sm:mt-12"
         >
           &larr; Back to services

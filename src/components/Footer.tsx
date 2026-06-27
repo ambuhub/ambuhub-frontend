@@ -11,10 +11,11 @@ import {
 
 const quickLinks = [
   { label: "Home", href: "/#top" },
-  { label: "Services", href: "/#services" },
-  { label: "How to use", href: "/#how-to-use" },
-  { label: "How it works", href: "/#how-it-works" },
-  { label: "Contact", href: "/#contact" },
+  { label: "Services", href: "/services" },
+  { label: "How to use", href: "/how-to-use" },
+  { label: "How it works", href: "/how-it-works" },
+  { label: "FAQ", href: "/faq" },
+  { label: "Contact", href: "/contact" },
 ] as const;
 
 const legalLinks = [

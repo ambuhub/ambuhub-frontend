@@ -5,6 +5,7 @@ const ALLOWED_ROOTS = new Set([
   "country-codes",
   "marketplace",
   "orders",
+  "provider",
   "receipts",
   "reviews",
   "notifications",

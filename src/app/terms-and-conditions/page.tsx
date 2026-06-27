@@ -1,4 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+import { publicPageMetadata } from "@/lib/seo-metadata";
+
+export const metadata: Metadata = publicPageMetadata(
+  "Terms & Conditions",
+  "Terms of use for the Ambuhub ambulance services marketplace platform.",
+);
 
 export default function TermsPage() {
   return (

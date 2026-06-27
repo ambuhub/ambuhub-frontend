@@ -144,7 +144,7 @@ export default function ClientOrdersPage() {
           />
           <p className="relative text-slate-600">No orders yet.</p>
           <Link
-            href="/#services"
+            href="/services"
             className="relative mt-4 inline-flex text-sm font-semibold text-[#0069b4] underline-offset-4 hover:text-cyan-700 hover:underline"
           >
             Browse services

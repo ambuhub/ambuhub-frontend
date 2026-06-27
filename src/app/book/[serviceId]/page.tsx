@@ -64,7 +64,7 @@ export default function BookCheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [checkoutComplete, setCheckoutComplete] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<OrderDetailClient | null>(null);
-  const [marketplaceHref, setMarketplaceHref] = useState("/#services");
+  const [marketplaceHref, setMarketplaceHref] = useState("/services");
 
   useEffect(() => {
     if (!serviceId) {
@@ -466,7 +466,7 @@ export default function BookCheckoutPage() {
                       ) : (
                         <CreditCard className="h-4 w-4" />
                       )}
-                      Simulate payment
+                      Pay with Paystack
                     </button>
                   ) : (
                     <Link

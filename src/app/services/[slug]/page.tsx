@@ -10,6 +10,7 @@ import {
   getCategoryPageTitleDescription,
   groupMarketplaceByDepartments,
 } from "@/lib/service-category-page-data";
+import { publicPageMetadata } from "@/lib/seo-metadata";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -29,10 +30,7 @@ export async function generateMetadata({
     return { title: "Services" };
   }
   const { title, description } = getCategoryPageTitleDescription(category);
-  return {
-    title: `${title} | Ambuhub`,
-    description,
-  };
+  return publicPageMetadata(title, description);
 }
 
 export default async function ServiceDetailPage({ params }: PageProps) {

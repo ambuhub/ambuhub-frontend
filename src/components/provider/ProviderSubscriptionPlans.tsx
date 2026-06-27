@@ -1,34 +1,36 @@
 "use client";
 
-import Link from "next/link";
-import { Check, Crown, Loader2, Sparkles } from "lucide-react";
+import { Check, Crown, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
 import { currencyForCountry } from "@/lib/currency";
+import { runSubscriptionPaystackCheckout } from "@/lib/paystack-checkout";
 import {
-  DEFAULT_PROVIDER_PLAN,
+  billingIntervalLabel,
   formatPlanPrice,
   getPlanById,
   getPlanPrice,
-  isProviderPlanId,
-  PLAN_STORAGE_KEY,
   PROVIDER_PLANS,
-  type ProviderPlan,
   type ProviderPlanId,
+  type SubscriptionBillingInterval,
+  yearlySavingsPercent,
 } from "@/lib/provider-subscription-plans";
+import {
+  fetchProviderSubscription,
+  postPremiumSubscriptionInitialize,
+  postPremiumSubscriptionVerify,
+  type ProviderSubscriptionStatus,
+} from "@/lib/provider-subscription";
+import { PROVIDER_SUBSCRIPTION_UPDATED_EVENT } from "@/components/provider/ProviderPremiumBadge";
 
 function planRank(id: ProviderPlanId): number {
-  if (id === "free") return 0;
-  if (id === "premium") return 1;
-  return 2;
+  return id === "premium" ? 1 : 0;
 }
 
-function planPriceSuffix(plan: ProviderPlan, currency: ReturnType<typeof currencyForCountry>): string {
-  const price = getPlanPrice(plan, currency);
-  if (price !== null && price > 0) {
-    return " / month";
-  }
-  return "";
+function formatExpiryDate(iso: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+  }).format(new Date(iso));
 }
 
 export function ProviderSubscriptionPlans() {
@@ -39,71 +41,64 @@ export function ProviderSubscriptionPlans() {
   );
   const showPrices = !sessionLoading;
 
-  const [currentPlanId, setCurrentPlanId] =
-    useState<ProviderPlanId>(DEFAULT_PROVIDER_PLAN);
-  const [hydrated, setHydrated] = useState(false);
+  const [billingInterval, setBillingInterval] =
+    useState<SubscriptionBillingInterval>("monthly");
+  const [subscription, setSubscription] = useState<ProviderSubscriptionStatus | null>(
+    null,
+  );
+  const [loadingSubscription, setLoadingSubscription] = useState(true);
   const [busyPlan, setBusyPlan] = useState<ProviderPlanId | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const loadSubscription = useCallback(async () => {
+    setLoadingSubscription(true);
+    try {
+      const data = await fetchProviderSubscription();
+      setSubscription(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load subscription.");
+    } finally {
+      setLoadingSubscription(false);
+    }
+  }, []);
+
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(PLAN_STORAGE_KEY);
-      if (stored && isProviderPlanId(stored)) {
-        setCurrentPlanId(stored);
-      }
-    } catch {
-      /* ignore */
-    }
-    setHydrated(true);
-  }, []);
+    void loadSubscription();
+  }, [loadSubscription]);
 
-  const persistPlan = useCallback((planId: ProviderPlanId) => {
-    setCurrentPlanId(planId);
-    try {
-      localStorage.setItem(PLAN_STORAGE_KEY, planId);
-    } catch {
-      /* ignore */
-    }
-  }, []);
+  const currentPlanId: ProviderPlanId =
+    subscription?.isActive && subscription.plan === "premium" ? "premium" : "free";
+  const currentPlan = getPlanById(currentPlanId);
+  const yearlySavings = yearlySavingsPercent(currency);
 
-  async function handleSelectPlan(targetId: ProviderPlanId) {
+  async function handleSubscribePremium() {
     setError(null);
     setNotice(null);
+    setBusyPlan("premium");
 
-    if (targetId === currentPlanId) {
-      return;
-    }
-
-    if (targetId === "enterprise") {
-      return;
-    }
-
-    setBusyPlan(targetId);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      if (targetId === "premium") {
-        persistPlan("premium");
-        setNotice(
-          "Premium activated (simulated). Paystack billing will connect here in a future release.",
-        );
-        return;
-      }
-
-      if (targetId === "free") {
-        persistPlan("free");
-        setNotice("You are now on the Free plan.");
-      }
+      const result = await runSubscriptionPaystackCheckout(
+        () => postPremiumSubscriptionInitialize(billingInterval),
+        postPremiumSubscriptionVerify,
+      );
+      setSubscription(result.subscription);
+      setNotice(result.message);
+      window.dispatchEvent(new Event(PROVIDER_SUBSCRIPTION_UPDATED_EVENT));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not update plan.");
+      const message = err instanceof Error ? err.message : "Could not complete checkout.";
+      if (message !== "Payment window closed") {
+        setError(message);
+      }
     } finally {
       setBusyPlan(null);
     }
   }
 
-  const currentPlan = getPlanById(currentPlanId);
-  const currentPlanPrice = getPlanPrice(currentPlan, currency);
+  const currentPlanPrice =
+    currentPlanId === "premium" && subscription?.interval
+      ? getPlanPrice(currentPlan, currency, subscription.interval)
+      : getPlanPrice(currentPlan, currency, billingInterval);
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -124,16 +119,27 @@ export function ProviderSubscriptionPlans() {
             <p className="mt-0.5 flex items-center gap-2 text-lg font-bold text-slate-900">
               {currentPlanId === "premium" ? (
                 <Crown className="h-5 w-5 text-amber-500" aria-hidden />
-              ) : currentPlanId === "enterprise" ? (
-                <Sparkles className="h-5 w-5 text-violet-500" aria-hidden />
               ) : null}
-              {hydrated ? currentPlan.name : "…"}
+              {loadingSubscription ? "…" : currentPlan.name}
             </p>
-            <p className="text-xs text-slate-600">
-              {showPrices && hydrated
-                ? `${formatPlanPrice(currentPlanPrice, currency)}${planPriceSuffix(currentPlan, currency)}`
-                : "—"}
-            </p>
+            {subscription?.isActive && subscription.expiresAt ? (
+              <p className="text-xs text-slate-600">
+                Renews through {formatExpiryDate(subscription.expiresAt)}
+                {subscription.interval
+                  ? ` (${subscription.interval === "monthly" ? "monthly" : "yearly"})`
+                  : ""}
+              </p>
+            ) : (
+              <p className="text-xs text-slate-600">
+                {showPrices && !loadingSubscription
+                  ? `${formatPlanPrice(currentPlanPrice, currency)}${
+                      currentPlanId === "premium" && subscription?.interval
+                        ? ` / ${billingIntervalLabel(subscription.interval)}`
+                        : ""
+                    }`
+                  : "—"}
+              </p>
+            )}
           </div>
         </div>
 
@@ -154,17 +160,57 @@ export function ProviderSubscriptionPlans() {
           </p>
         ) : null}
 
-        <p className="mt-6 text-xs text-slate-500">
-          Paystack subscription billing is not connected yet. Plan changes below run
-          as a temporary simulation stored on this device.
-        </p>
+        <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          <div
+            className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1"
+            role="group"
+            aria-label="Billing interval"
+          >
+            <button
+              type="button"
+              onClick={() => setBillingInterval("monthly")}
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                billingInterval === "monthly"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              type="button"
+              onClick={() => setBillingInterval("yearly")}
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                billingInterval === "yearly"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Yearly
+              {yearlySavings > 0 ? (
+                <span className="ml-1.5 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+                  Save {yearlySavings}%
+                </span>
+              ) : null}
+            </button>
+          </div>
+          <p className="text-xs text-slate-500">
+            Premium pricing is shown in your account currency ({currency}).
+          </p>
+        </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-3">
+        <div className="mt-8 grid gap-6 sm:mx-auto sm:max-w-3xl sm:grid-cols-2">
           {PROVIDER_PLANS.map((plan) => {
-            const isCurrent = hydrated && plan.id === currentPlanId;
+            const isCurrent = !loadingSubscription && plan.id === currentPlanId;
             const isUpgrade = planRank(plan.id) > planRank(currentPlanId);
-            const isDowngrade = planRank(plan.id) < planRank(currentPlanId);
             const busy = busyPlan === plan.id;
+            const displayPrice = getPlanPrice(plan, currency, billingInterval);
+            const priceSuffix =
+              plan.id === "free"
+                ? "Forever free"
+                : billingInterval === "monthly"
+                  ? "Per month, billed monthly"
+                  : "Per year, billed annually";
 
             return (
               <article
@@ -192,10 +238,10 @@ export function ProviderSubscriptionPlans() {
                 <div className="mt-5">
                   <p className="text-3xl font-bold tracking-tight text-slate-900">
                     {showPrices
-                      ? formatPlanPrice(getPlanPrice(plan, currency), currency)
+                      ? formatPlanPrice(displayPrice, currency)
                       : "—"}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">{plan.priceNote}</p>
+                  <p className="mt-1 text-xs text-slate-500">{priceSuffix}</p>
                 </div>
 
                 <ul className="mt-6 flex-1 space-y-3">
@@ -214,42 +260,47 @@ export function ProviderSubscriptionPlans() {
                 </ul>
 
                 <div className="mt-8">
-                  {plan.id === "enterprise" ? (
-                    <Link
-                      href="/#contact"
-                      className="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
-                    >
-                      Contact sales
-                    </Link>
+                  {plan.id === "free" ? (
+                    isCurrent ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="inline-flex w-full cursor-default items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800"
+                      >
+                        Current plan
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        className="inline-flex w-full cursor-default items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-500"
+                      >
+                        Included when premium ends
+                      </button>
+                    )
                   ) : isCurrent ? (
                     <button
                       type="button"
-                      disabled
-                      className="inline-flex w-full cursor-default items-center justify-center rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800"
-                    >
-                      Current plan
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={!hydrated || busy || busyPlan !== null}
-                      onClick={() => void handleSelectPlan(plan.id)}
-                      className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition disabled:opacity-60 ${
-                        plan.highlighted
-                          ? "bg-gradient-to-r from-blue-700 to-cyan-600 hover:from-blue-800 hover:to-cyan-700"
-                          : "bg-slate-800 hover:bg-slate-900"
-                      }`}
+                      disabled={loadingSubscription || busy}
+                      onClick={() => void handleSubscribePremium()}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-cyan-600 px-4 py-3 text-sm font-semibold text-white transition hover:from-blue-800 hover:to-cyan-700 disabled:opacity-60"
                     >
                       {busy ? (
                         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                       ) : null}
-                      {isUpgrade
-                        ? plan.id === "premium"
-                          ? "Upgrade (simulated)"
-                          : "Select plan"
-                        : isDowngrade
-                          ? "Switch to Free"
-                          : "Select plan"}
+                      Extend premium
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={loadingSubscription || busy}
+                      onClick={() => void handleSubscribePremium()}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-cyan-600 px-4 py-3 text-sm font-semibold text-white transition hover:from-blue-800 hover:to-cyan-700 disabled:opacity-60"
+                    >
+                      {busy ? (
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                      ) : null}
+                      {isUpgrade ? "Subscribe to Premium" : "Select plan"}
                     </button>
                   )}
                 </div>
@@ -271,24 +322,22 @@ export function ProviderSubscriptionPlans() {
                   <th className="px-5 py-3">Feature</th>
                   <th className="px-5 py-3">Free</th>
                   <th className="px-5 py-3">Premium</th>
-                  <th className="px-5 py-3">Enterprise</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {[
-                  ["Active listings", "Up to 3", "Up to 15", "Unlimited"],
-                  ["Premium listing badge", "—", "Yes", "Yes"],
-                  ["Priority browse placement", "—", "Yes", "Featured"],
-                  ["Analytics", "Basic", "Advanced", "Advanced + exports"],
-                  ["Support", "Email", "Priority email", "Dedicated manager"],
-                ].map(([feature, free, premium, enterprise]) => (
+                  ["Active listings", "Up to 3", "Up to 15"],
+                  ["Premium listing badge", "—", "Yes"],
+                  ["Priority browse placement", "—", "Yes"],
+                  ["Analytics", "Basic", "Advanced"],
+                  ["Support", "Email", "Priority email"],
+                ].map(([feature, free, premium]) => (
                   <tr key={feature}>
                     <td className="px-5 py-3.5 font-medium text-slate-800">
                       {feature}
                     </td>
                     <td className="px-5 py-3.5 text-slate-600">{free}</td>
                     <td className="px-5 py-3.5 text-slate-600">{premium}</td>
-                    <td className="px-5 py-3.5 text-slate-600">{enterprise}</td>
                   </tr>
                 ))}
               </tbody>

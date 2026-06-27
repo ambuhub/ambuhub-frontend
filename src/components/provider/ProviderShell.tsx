@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { API_AUTH_BFF_PREFIX } from "@/lib/api";
 import { ProviderNotificationBadge } from "@/components/provider/ProviderNotificationBadge";
+import { ProviderPremiumBadge } from "@/components/provider/ProviderPremiumBadge";
 
 const navItems = [
   {
@@ -110,10 +111,11 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
         <div className="flex h-14 items-center justify-between border-b border-blue-900/60 px-4 md:h-16">
           <Link
             href="/provider/dashboard"
-            className="text-lg font-semibold tracking-tight text-blue-200"
+            className="flex items-center gap-2 text-lg font-semibold tracking-tight text-blue-200"
             onClick={() => setSidebarOpen(false)}
           >
             Ambuhub
+            <ProviderPremiumBadge />
           </Link>
           <button
             type="button"
@@ -178,7 +180,10 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="text-sm font-semibold text-blue-100">Provider</span>
+          <span className="flex items-center gap-2 text-sm font-semibold text-blue-100">
+            Provider
+            <ProviderPremiumBadge />
+          </span>
         </header>
         <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-slate-100 via-blue-50/30 to-slate-100 p-4 sm:p-6 lg:p-8">
           {children}

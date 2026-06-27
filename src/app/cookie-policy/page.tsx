@@ -1,4 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+import { publicPageMetadata } from "@/lib/seo-metadata";
+
+export const metadata: Metadata = publicPageMetadata(
+  "Cookie Policy",
+  "How Ambuhub uses cookies and similar technologies on the platform.",
+);
 
 export default function CookiePolicyPage() {
   return (

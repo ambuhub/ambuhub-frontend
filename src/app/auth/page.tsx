@@ -14,6 +14,15 @@ import { AuthSignupSplitShell } from "@/components/auth/AuthSignupSplitShell";
 
 type Step = "login" | "pick-role" | "signup";
 
+function wantsSignupFromSearchParams(searchParams: URLSearchParams): boolean {
+  const signup = searchParams.get("signup");
+  return signup === "1" || signup === "true" || signup === "";
+}
+
+function initialAuthStep(searchParams: URLSearchParams): Step {
+  return wantsSignupFromSearchParams(searchParams) ? "pick-role" : "login";
+}
+
 function AuthLoginShell({ onSwitchToSignup }: { onSwitchToSignup: () => void }) {
   const afterLoginRedirect = useSearchParams().get("next");
 
@@ -39,8 +48,9 @@ function AuthLoginShell({ onSwitchToSignup }: { onSwitchToSignup: () => void }) 
   );
 }
 
-export default function AuthPage() {
-  const [step, setStep] = useState<Step>("login");
+function AuthPageContent() {
+  const searchParams = useSearchParams();
+  const [step, setStep] = useState<Step>(() => initialAuthStep(searchParams));
   const [role, setRole] = useState<SignupRole | null>(null);
 
   const disclaimer = (
@@ -90,6 +100,12 @@ export default function AuthPage() {
   }
 
   return (
+    <AuthLoginShell onSwitchToSignup={() => setStep("pick-role")} />
+  );
+}
+
+export default function AuthPage() {
+  return (
     <Suspense
       fallback={
         <div className="flex min-h-[50vh] flex-1 items-center justify-center text-sm text-foreground/60">
@@ -97,7 +113,7 @@ export default function AuthPage() {
         </div>
       }
     >
-      <AuthLoginShell onSwitchToSignup={() => setStep("pick-role")} />
+      <AuthPageContent />
     </Suspense>
   );
 }

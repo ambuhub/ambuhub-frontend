@@ -1,4 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+import { publicPageMetadata } from "@/lib/seo-metadata";
+
+export const metadata: Metadata = publicPageMetadata(
+  "Privacy Policy",
+  "How Ambuhub collects, uses, and protects your personal information.",
+);
 
 export default function PrivacyPolicyPage() {
   return (

@@ -139,7 +139,9 @@ export default function AdminOrderDetailPage() {
                 <div>
                   <dt className="text-xs font-medium text-slate-500">Payment</dt>
                   <dd className="mt-1 text-sm text-slate-900">
-                    {order.paymentProvider}
+                    {order.paymentProvider === "paystack"
+                      ? "Paystack"
+                      : order.paymentProvider}
                     {order.paystackSimulated ? " (simulated)" : ""}
                   </dd>
                 </div>

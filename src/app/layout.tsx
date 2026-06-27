@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClientRootProviders } from "./providers";
+import { siteMetadataBase } from "@/lib/seo-metadata";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,9 +15,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ambuhub | Book ambulance standby, crew & equipment",
+  metadataBase: siteMetadataBase(),
+  title: {
+    default: "Ambuhub | Book ambulance standby, crew & equipment",
+    template: "%s | Ambuhub",
+  },
   description:
     "Book on-site medical standby for events, arrange scheduled transports, hire ambulance personnel, arrange fleet servicing, and buy or sell equipment—in one marketplace.",
+  openGraph: {
+    type: "website",
+    locale: "en",
+    siteName: "Ambuhub",
+  },
 };
 
 export default function RootLayout({

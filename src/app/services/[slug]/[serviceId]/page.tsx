@@ -10,6 +10,7 @@ import {
   fetchMarketplaceServiceByIdForPage,
   fetchMarketplaceServices,
 } from "@/lib/service-category-page-data";
+import { publicPageMetadata } from "@/lib/seo-metadata";
 
 type PageProps = {
   params: Promise<{ slug: string; serviceId: string }>;
@@ -37,13 +38,13 @@ export async function generateMetadata({
     parseBrowseCountryCode(rawCountry),
   );
   if (!service) {
-    return { title: "Listing | Ambuhub" };
+    return publicPageMetadata("Listing", "Ambuhub marketplace listing.");
   }
   const desc = service.description.trim();
-  return {
-    title: `${service.title} | Ambuhub`,
-    description: desc.length > 160 ? `${desc.slice(0, 157)}…` : desc || undefined,
-  };
+  return publicPageMetadata(
+    service.title,
+    desc.length > 160 ? `${desc.slice(0, 157)}…` : desc || "Ambuhub marketplace listing.",
+  );
 }
 
 export default async function MarketplaceListingDetailPage({

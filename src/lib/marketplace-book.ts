@@ -6,6 +6,7 @@ import type {
   HourlyBookingSchedule,
 } from "@/lib/hourly-booking-schedule";
 import type { OrderDetailClient } from "@/lib/marketplace-cart";
+import { runPaystackCheckout } from "@/lib/paystack-checkout";
 import type { PricingPeriod } from "@/lib/pricing-period";
 
 export type { HourlyBookingDayDto };
@@ -83,26 +84,28 @@ export async function postBookSimulateCheckout(payload: {
   bookStart: string;
   bookEnd: string;
 }): Promise<{ order: OrderDetailClient; message: string }> {
-  const res = await fetch(proxyUrl("orders/book-checkout/simulate-paystack"), {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+  return runPaystackCheckout(async () => {
+    const res = await fetch(proxyUrl("orders/book-checkout/paystack/initialize"), {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = (await res.json()) as {
+      payment?: import("@/lib/paystack-checkout").PaystackInitializeClient;
+      message?: string;
+    };
+    if (res.status === 401) {
+      throw new Error(
+        "You need to be logged in to complete booking checkout. Log in and try again.",
+      );
+    }
+    if (!res.ok) {
+      throw new Error(data.message ?? "Checkout failed");
+    }
+    if (!data.payment) {
+      throw new Error("Checkout could not start payment");
+    }
+    return { payment: data.payment };
   });
-  const data = (await res.json()) as {
-    order?: OrderDetailClient;
-    message?: string;
-  };
-  if (res.status === 401) {
-    throw new Error(
-      "You need to be logged in to complete booking checkout. Log in and try again.",
-    );
-  }
-  if (!res.ok) {
-    throw new Error(data.message ?? "Checkout failed");
-  }
-  if (!data.order) {
-    throw new Error("Checkout returned no order");
-  }
-  return { order: data.order, message: data.message ?? "" };
 }

@@ -159,23 +159,26 @@ export async function postSimulateCheckout(): Promise<{
   order: OrderDetailClient;
   message: string;
 }> {
-  const res = await fetch(proxyUrl("orders/checkout/simulate-paystack"), {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({}),
+  const { runPaystackCheckout } = await import("@/lib/paystack-checkout");
+  return runPaystackCheckout(async () => {
+    const res = await fetch(proxyUrl("orders/checkout/paystack/initialize"), {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    const data = (await res.json()) as {
+      payment?: import("@/lib/paystack-checkout").PaystackInitializeClient;
+      message?: string;
+    };
+    if (!res.ok) {
+      throw new Error(data.message ?? "Checkout failed");
+    }
+    if (!data.payment) {
+      throw new Error("Checkout could not start payment");
+    }
+    return { payment: data.payment };
   });
-  const data = (await res.json()) as {
-    order?: OrderDetailClient;
-    message?: string;
-  };
-  if (!res.ok) {
-    throw new Error(data.message ?? "Checkout failed");
-  }
-  if (!data.order) {
-    throw new Error("Checkout returned no order");
-  }
-  return { order: data.order, message: data.message ?? "" };
 }
 
 export type ReceiptLineClient = {

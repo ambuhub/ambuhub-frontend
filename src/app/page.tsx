@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { HeroSection } from "@/components/landing/HeroSection";
@@ -8,6 +9,12 @@ import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
 import { DownloadAppSection } from "@/components/landing/DownloadAppSection";
 import { CTASection } from "@/components/landing/CTASection";
+import { publicPageMetadata } from "@/lib/seo-metadata";
+
+export const metadata: Metadata = publicPageMetadata(
+  "Book ambulance standby, crew & equipment",
+  "Book on-site medical standby for events, arrange scheduled transports, hire ambulance personnel, arrange fleet servicing, and buy or sell equipment—in one marketplace.",
+);
 
 export default function Home() {
   return (

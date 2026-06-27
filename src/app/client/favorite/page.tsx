@@ -299,7 +299,7 @@ export default function ClientFavoritePage() {
           </p>
         </div>
         <Link
-          href="/#services"
+          href="/services"
           className="text-sm font-semibold text-[#0069b4] underline-offset-4 hover:text-fuchsia-700 hover:underline"
         >
           Browse services
@@ -338,7 +338,7 @@ export default function ClientFavoritePage() {
             browsing to add it here.
           </p>
           <Link
-            href="/#services"
+            href="/services"
             className="relative mt-4 inline-flex text-sm font-semibold text-[#0069b4] underline-offset-4 hover:text-fuchsia-700 hover:underline"
           >
             Explore the marketplace
