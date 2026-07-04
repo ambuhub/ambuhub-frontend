@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "firebase": "^12.15.0",
     "framer-motion": "^12.38.0",
     "jose": "^6.2.2",
     "lucide-react": "^0.577.0",

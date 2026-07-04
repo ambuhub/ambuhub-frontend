@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { fetchAdminUnreadNotificationCount } from "@/lib/admin-notifications";
+import { NOTIFICATIONS_UPDATED_EVENT } from "@/lib/notification-events";
 
 export function AdminNotificationBadge() {
   const pathname = usePathname();
@@ -10,7 +11,8 @@ export function AdminNotificationBadge() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+
+    async function load() {
       try {
         const n = await fetchAdminUnreadNotificationCount();
         if (!cancelled) {
@@ -21,9 +23,18 @@ export function AdminNotificationBadge() {
           setCount(0);
         }
       }
-    })();
+    }
+
+    void load();
+
+    function onUpdated() {
+      void load();
+    }
+    window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, onUpdated);
+
     return () => {
       cancelled = true;
+      window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, onUpdated);
     };
   }, [pathname]);
 

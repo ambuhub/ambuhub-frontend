@@ -18,6 +18,8 @@ import {
   X,
 } from "lucide-react";
 import { API_AUTH_BFF_PREFIX } from "@/lib/api";
+import { NotificationBellDropdown } from "@/components/notifications/NotificationBellDropdown";
+import { unregisterFcmToken } from "@/components/notifications/FcmProvider";
 import { ProviderNotificationBadge } from "@/components/provider/ProviderNotificationBadge";
 import { ProviderPremiumBadge } from "@/components/provider/ProviderPremiumBadge";
 
@@ -81,6 +83,7 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   async function handleSignOut() {
+    await unregisterFcmToken();
     try {
       await fetch(`${API_AUTH_BFF_PREFIX}/logout`, {
         method: "POST",
@@ -184,6 +187,9 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
             Provider
             <ProviderPremiumBadge />
           </span>
+          <div className="ml-auto">
+            <NotificationBellDropdown notificationsHref="/provider/notifications" />
+          </div>
         </header>
         <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-slate-100 via-blue-50/30 to-slate-100 p-4 sm:p-6 lg:p-8">
           {children}

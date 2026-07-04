@@ -10,21 +10,54 @@ export type NotificationType =
   | "hire_return_reminder"
   | "provider_sale_purchased"
   | "provider_hire_booked"
-  | "provider_hire_return_reminder";
+  | "provider_hire_return_reminder"
+  | "provider_booking_confirmed"
+  | "ambulance_request"
+  | "request_accepted"
+  | "request_rejected"
+  | "ambulance_en_route"
+  | "ambulance_arrived"
+  | "booking_confirmed"
+  | "booking_cancelled"
+  | "payment_success"
+  | "payment_failed"
+  | "chat_message"
+  | "order_shipped"
+  | "order_delivered"
+  | "general";
 
 export type NotificationDto = {
   id: string;
   type: NotificationType;
+  category?: string;
+  priority?: string;
   reminderKind: "1d" | "1h" | null;
   title: string;
   body: string;
-  orderId: string;
-  serviceId: string;
+  deepLink?: string | null;
+  entityId?: string | null;
+  data?: Record<string, unknown>;
+  orderId: string | null;
+  serviceId: string | null;
   receiptNumber: string | null;
   deadlineAt: string | null;
   readAt: string | null;
   createdAt: string;
 };
+
+export type NotificationListResult = {
+  notifications: NotificationDto[];
+  nextCursor: string | null;
+};
+
+export type DevicePlatform = "web" | "android" | "ios";
+
+export function resolveNotificationHref(item: NotificationDto): string {
+  if (item.deepLink) {
+    return item.deepLink;
+  }
+  return notificationLinkHref(item);
+}
 
 export function notificationLinkHref(item: NotificationDto): string {
   switch (item.type) {
@@ -32,16 +65,28 @@ export function notificationLinkHref(item: NotificationDto): string {
       return "/provider/listings";
     case "provider_hire_booked":
     case "provider_hire_return_reminder":
+    case "provider_booking_confirmed":
       return "/provider/bookings";
+    case "payment_success":
+    case "payment_failed":
+      return item.orderId
+        ? `/receipts/${encodeURIComponent(item.orderId)}`
+        : "/client/orders";
+    case "chat_message":
+      return "/client/concierge";
     default:
-      return `/receipts/${encodeURIComponent(item.orderId)}`;
+      if (item.orderId) {
+        return `/receipts/${encodeURIComponent(item.orderId)}`;
+      }
+      return "/client/notifications";
   }
 }
 
 export async function fetchMyNotifications(options?: {
   unreadOnly?: boolean;
   limit?: number;
-}): Promise<NotificationDto[]> {
+  cursor?: string;
+}): Promise<NotificationListResult> {
   const params = new URLSearchParams();
   if (options?.unreadOnly) {
     params.set("unreadOnly", "true");
@@ -49,13 +94,15 @@ export async function fetchMyNotifications(options?: {
   if (options?.limit != null) {
     params.set("limit", String(options.limit));
   }
+  if (options?.cursor) {
+    params.set("cursor", options.cursor);
+  }
   const qs = params.toString();
   const res = await fetch(
     proxyUrl(`notifications/me${qs ? `?${qs}` : ""}`),
     { credentials: "include", cache: "no-store" },
   );
-  const data = (await res.json()) as {
-    notifications?: NotificationDto[];
+  const data = (await res.json()) as NotificationListResult & {
     message?: string;
   };
   if (res.status === 401) {
@@ -64,7 +111,10 @@ export async function fetchMyNotifications(options?: {
   if (!res.ok) {
     throw new Error(data.message ?? "Could not load notifications.");
   }
-  return Array.isArray(data.notifications) ? data.notifications : [];
+  return {
+    notifications: Array.isArray(data.notifications) ? data.notifications : [],
+    nextCursor: data.nextCursor ?? null,
+  };
 }
 
 export async function fetchUnreadNotificationCount(): Promise<number> {
@@ -115,4 +165,57 @@ export async function markAllNotificationsRead(): Promise<number> {
     throw new Error(data.message ?? "Could not mark notifications as read.");
   }
   return typeof data.modifiedCount === "number" ? data.modifiedCount : 0;
+}
+
+export async function registerDeviceToken(input: {
+  fcmToken: string;
+  platform: DevicePlatform;
+  deviceName?: string;
+  appVersion?: string;
+}): Promise<void> {
+  const res = await fetch(proxyUrl("notifications/me/devices"), {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const data = (await res.json()) as { message?: string };
+    throw new Error(data.message ?? "Could not register device token.");
+  }
+}
+
+export async function refreshDeviceToken(input: {
+  oldToken?: string;
+  newToken: string;
+  platform: DevicePlatform;
+  deviceName?: string;
+  appVersion?: string;
+}): Promise<void> {
+  const res = await fetch(proxyUrl("notifications/me/devices/refresh"), {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const data = (await res.json()) as { message?: string };
+    throw new Error(data.message ?? "Could not refresh device token.");
+  }
+}
+
+export async function deleteDeviceToken(fcmToken: string): Promise<void> {
+  const res = await fetch(proxyUrl("notifications/me/devices"), {
+    method: "DELETE",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fcmToken }),
+  });
+  if (res.status === 204) {
+    return;
+  }
+  if (!res.ok) {
+    const data = (await res.json()) as { message?: string };
+    throw new Error(data.message ?? "Could not remove device token.");
+  }
 }

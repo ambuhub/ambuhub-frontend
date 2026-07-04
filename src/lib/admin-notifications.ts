@@ -3,11 +3,21 @@ import { API_PROXY_PREFIX } from "@/lib/api";
 export type AdminNotificationDto = {
   id: string;
   type: "concierge_request_received";
+  category?: string;
+  priority?: string;
   title: string;
   body: string;
+  deepLink?: string | null;
+  entityId?: string | null;
+  data?: Record<string, unknown>;
   conciergeRequestId: string | null;
   readAt: string | null;
   createdAt: string;
+};
+
+export type AdminNotificationListResult = {
+  notifications: AdminNotificationDto[];
+  nextCursor: string | null;
 };
 
 function adminNotificationsError(
@@ -23,9 +33,19 @@ function adminNotificationsError(
   return new Error(data.message ?? "Could not load notifications.");
 }
 
+export function resolveAdminNotificationHref(item: AdminNotificationDto): string {
+  if (item.deepLink) {
+    return item.deepLink;
+  }
+  return adminNotificationLinkHref(item);
+}
+
 export function adminNotificationLinkHref(item: AdminNotificationDto): string {
   if (item.conciergeRequestId) {
     return `/admin/concierge-requests/${encodeURIComponent(item.conciergeRequestId)}`;
+  }
+  if (item.entityId) {
+    return `/admin/concierge-requests/${encodeURIComponent(item.entityId)}`;
   }
   return "/admin/notifications";
 }
@@ -33,18 +53,19 @@ export function adminNotificationLinkHref(item: AdminNotificationDto): string {
 export async function fetchAdminNotifications(options?: {
   unreadOnly?: boolean;
   limit?: number;
-}): Promise<AdminNotificationDto[]> {
+  cursor?: string;
+}): Promise<AdminNotificationListResult> {
   const search = new URLSearchParams();
   if (options?.unreadOnly) search.set("unreadOnly", "true");
   if (options?.limit != null) search.set("limit", String(options.limit));
+  if (options?.cursor) search.set("cursor", options.cursor);
 
   const qs = search.toString();
   const res = await fetch(
     `${API_PROXY_PREFIX}/admin/notifications${qs ? `?${qs}` : ""}`,
-    { credentials: "include" },
+    { credentials: "include", cache: "no-store" },
   );
-  const data = (await res.json()) as {
-    notifications?: AdminNotificationDto[];
+  const data = (await res.json()) as AdminNotificationListResult & {
     message?: string;
   };
 
@@ -52,12 +73,16 @@ export async function fetchAdminNotifications(options?: {
     throw adminNotificationsError(res, data);
   }
 
-  return Array.isArray(data.notifications) ? data.notifications : [];
+  return {
+    notifications: Array.isArray(data.notifications) ? data.notifications : [],
+    nextCursor: data.nextCursor ?? null,
+  };
 }
 
 export async function fetchAdminUnreadNotificationCount(): Promise<number> {
   const res = await fetch(`${API_PROXY_PREFIX}/admin/notifications/unread-count`, {
     credentials: "include",
+    cache: "no-store",
   });
   const data = (await res.json()) as { count?: number; message?: string };
 

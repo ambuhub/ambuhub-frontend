@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { API_AUTH_BFF_PREFIX } from "@/lib/api";
 import { ClientNotificationBadge } from "@/components/client/ClientNotificationBadge";
+import { NotificationBellDropdown } from "@/components/notifications/NotificationBellDropdown";
+import { unregisterFcmToken } from "@/components/notifications/FcmProvider";
 
 const navItems = [
   { href: "/client/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -42,6 +44,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   async function handleSignOut() {
+    await unregisterFcmToken();
     try {
       await fetch(`${API_AUTH_BFF_PREFIX}/logout`, {
         method: "POST",
@@ -141,6 +144,9 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
             <Menu className="h-5 w-5" />
           </button>
           <span className="text-sm font-semibold text-blue-100">Client</span>
+          <div className="ml-auto">
+            <NotificationBellDropdown notificationsHref="/client/notifications" />
+          </div>
         </header>
         <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-slate-100 via-blue-50/30 to-slate-100 p-4 sm:p-6 lg:p-8">
           {children}
