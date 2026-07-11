@@ -17,10 +17,10 @@ const rInner = 142;
 const rHub = 100;
 const rRing = (rInner + rHub) / 2 + 10;
 
-const VB_X = 168;
-const VB_Y = 228;
-const VB_W = 664;
-const VB_H = 648;
+const VB_X = 166;
+const VB_Y = 206;
+const VB_W = 668;
+const VB_H = 688;
 
 const totalSpan = 4.48;
 const gap = 0.038;
@@ -163,12 +163,37 @@ function computeForeignObjects(): ServiceItem[] {
       if (rectInsideWedge(narrowed.x, narrowed.y, narrowed.w, narrowed.h, a0, a1)) {
         fo = narrowed;
       }
-      const step = 4;
-      for (let k = 0; k < 40; k++) {
-        const nudged = { ...fo, x: fo.x + step };
-        if (!rectInsideWedge(nudged.x, nudged.y, nudged.w, nudged.h, a0, a1)) {
+      for (const dx of [18, 14, 10, 6]) {
+        const nudged = { ...fo, x: fo.x + dx, y: fo.y - 10 };
+        if (rectInsideWedge(nudged.x, nudged.y, nudged.w, nudged.h, a0, a1)) {
+          fo = nudged;
           break;
         }
+      }
+      const widened = { ...fo, w: fo.w + 28 };
+      if (rectInsideWedge(widened.x, widened.y, widened.w, widened.h, a0, a1)) {
+        fo = widened;
+      }
+      const tightened = { ...fo, h: fo.h - 12, y: fo.y - 4 };
+      if (rectInsideWedge(tightened.x, tightened.y, tightened.w, tightened.h, a0, a1)) {
+        fo = tightened;
+      }
+    }
+
+    if (i === 1) {
+      const nudged = { ...fo, x: fo.x + 20, y: fo.y + 10 };
+      if (rectInsideWedge(nudged.x, nudged.y, nudged.w, nudged.h, a0, a1)) {
+        fo = nudged;
+      }
+      const expanded = { ...fo, h: fo.h + 24, y: fo.y - 10 };
+      if (rectInsideWedge(expanded.x, expanded.y, expanded.w, expanded.h, a0, a1)) {
+        fo = expanded;
+      }
+    }
+
+    if (i === 2) {
+      const nudged = { ...fo, x: fo.x - 10, y: fo.y + 14 };
+      if (rectInsideWedge(nudged.x, nudged.y, nudged.w, nudged.h, a0, a1)) {
         fo = nudged;
       }
     }
@@ -188,6 +213,10 @@ function computeForeignObjects(): ServiceItem[] {
           fo = nudged;
           break;
         }
+      }
+      const lowered = { ...fo, y: fo.y + 10 };
+      if (rectInsideWedge(lowered.x, lowered.y, lowered.w, lowered.h, a0, a1)) {
+        fo = lowered;
       }
     }
 
@@ -230,9 +259,9 @@ export function ServiceHubGraphic() {
 
   return (
     <motion.svg
-      className="hidden h-auto w-full min-w-0 max-w-none justify-self-stretch drop-shadow-lg lg:block"
+      className="hidden h-auto max-h-full w-full min-h-0 min-w-0 max-w-none translate-y-5 justify-self-end drop-shadow-lg lg:block lg:max-h-[min(calc(100dvh-6rem),42rem)] xl:max-h-[min(calc(100dvh-5.75rem),44rem)] xl:translate-y-6"
       viewBox={`${VB_X} ${VB_Y} ${VB_W} ${VB_H}`}
-      preserveAspectRatio="xMaxYMid meet"
+      preserveAspectRatio="xMaxYMax meet"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
@@ -342,88 +371,149 @@ export function ServiceHubGraphic() {
 
         {items.map((item, i) => {
           const Icon = item.icon;
-          return (
-            <foreignObject
-              key={`${item.id}-label`}
-              x={item.fo.x}
-              y={item.fo.y}
-              width={item.fo.w}
-              height={item.fo.h}
-              className="pointer-events-none overflow-visible"
-            >
-              <div
-                className={
-                  i === 0
-                    ? "relative box-border flex h-full min-h-0 w-full flex-col items-end justify-center gap-1 py-2 pl-5 pr-2 text-left text-white"
-                    : i === 1
-                      ? "relative box-border flex h-full min-h-0 w-full flex-col items-start justify-center gap-1 py-2 pl-1 pr-3 text-left text-white"
-                      : i === 2
-                        ? "relative box-border flex h-full min-h-0 w-full flex-col items-center justify-center gap-1 py-2 pl-2 pr-3 text-center text-white"
-                        : "relative box-border flex h-full min-h-0 w-full flex-col items-center justify-center gap-1 py-2 pl-2 pr-3 text-center text-white"
-                }
-                style={{ textShadow: "0 1px 2px rgb(0 0 0 / 0.35)" }}
+
+          if (i === 2 || i === 3) {
+            return (
+              <foreignObject
+                key={`${item.id}-label`}
+                x={item.fo.x}
+                y={item.fo.y}
+                width={item.fo.w}
+                height={item.fo.h}
+                className="pointer-events-none overflow-visible"
               >
-                <span
-                  className={`pointer-events-none absolute select-none text-3xl font-bold leading-none text-white/25 ${
-                    i === 0
-                      ? "bottom-4 right-1 top-auto -translate-y-1 sm:bottom-5 sm:-translate-y-20"
-                      : i === 2
-                        ? "left-0.2 top-5 -translate-x-1/2 sm:top-4"
-                        : i === 1
-                          ? "left-30 top-5.5"
-                          : i === 3
-                            ? "left-10 top-5.5"
-                            : "left-30 top-5.5"
-                  }`}
-                  aria-hidden
+                <div
+                  className={
+                    i === 2
+                      ? "relative box-border flex h-full min-h-0 w-full flex-col items-start justify-end gap-0.5 py-1.5 pl-2 pr-3 text-left text-white translate-x-[-10px] translate-y-5 sm:translate-x-[-14px] sm:translate-y-6"
+                      : "relative box-border flex h-full min-h-0 w-full flex-col items-start justify-end gap-0.5 py-1.5 pl-2 pr-3 text-left text-white translate-x-[-8px] translate-y-1 sm:translate-x-[-12px] sm:translate-y-2"
+                  }
+                  style={{ textShadow: "0 1px 2px rgb(0 0 0 / 0.35)" }}
                 >
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span
-                  className={`relative z-[1] flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 ring-2 ring-white/40 sm:h-11 sm:w-11 ${
-                    i === 0
-                      ? "-translate-x-2 sm:-translate-x-9"
-                      : i === 1
-                        ? "translate-x-9 sm:translate-x-13"
-                        : i === 2
-                          ? "-translate-x-18"
-                          : "-translate-x-1.5 sm:-translate-x-18"
-                  }`}
+                  <div
+                    className={`relative z-[1] flex items-center gap-1 ${
+                      i === 2
+                        ? "-translate-x-6 sm:-translate-x-8"
+                        : "-translate-x-4 sm:-translate-x-6"
+                    }`}
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 ring-2 ring-white/40 sm:h-11 sm:w-11">
+                      <Icon
+                        className="h-5 w-5 text-white sm:h-6 sm:w-6"
+                        strokeWidth={1.75}
+                      />
+                    </span>
+                    <span
+                      className="pointer-events-none select-none text-4xl font-bold leading-none text-white/25"
+                      aria-hidden
+                    >
+                      {i === 2 ? "03" : "04"}
+                    </span>
+                  </div>
+                  <p
+                    className={`relative z-[1] min-w-0 max-w-full break-words text-sm font-bold leading-snug sm:text-[15px] ${
+                      i === 2
+                        ? "w-full text-left text-balance -translate-x-2 sm:-translate-x-3"
+                        : "w-full text-left text-balance -translate-x-1 sm:-translate-x-2"
+                    }`}
+                  >
+                    {item.title}
+                  </p>
+                  <p
+                    className={`relative z-[1] min-w-0 max-w-full break-words text-xs leading-snug text-white/95 sm:text-[13px] ${
+                      i === 2
+                        ? "w-full text-left text-pretty -translate-x-2 sm:-translate-x-4"
+                        : "w-full text-left text-pretty -translate-x-1 sm:-translate-x-3"
+                    }`}
+                  >
+                    {item.description}
+                  </p>
+                </div>
+              </foreignObject>
+            );
+          }
+
+          if (i === 0) {
+            return (
+              <g key={`${item.id}-label`} clipPath="url(#ambuhub-clip-0)">
+                <foreignObject
+                  x={item.fo.x}
+                  y={item.fo.y}
+                  width={item.fo.w}
+                  height={item.fo.h}
+                  className="pointer-events-none overflow-visible"
                 >
-                  <Icon
-                    className="h-5 w-5 text-white sm:h-6 sm:w-6"
-                    strokeWidth={1.75}
-                  />
-                </span>
-                <p
-                  className={`relative z-[1] min-w-0 max-w-full break-words text-[11px] font-bold leading-snug sm:text-xs ${
-                    i === 0
-                      ? "w-full text-left translate-x-2 text-balance sm:translate-x-10"
-                      : i === 1
-                        ? "w-full text-balance text-left -translate-x-1 sm:-translate-x-1.5"
-                        : i === 2
-                          ? "w-full text-balance text-center"
-                          : "w-full text-balance text-right translate-x-1 sm:-translate-x-9"
-                  }`}
+                  <div
+                    className="relative box-border flex h-full min-h-0 w-full flex-col items-start justify-end gap-0.5 py-1.5 pl-2 pr-3 text-left text-white translate-x-[10px] translate-y-[-6px] sm:translate-x-[14px] sm:translate-y-[-8px]"
+                    style={{ textShadow: "0 1px 2px rgb(0 0 0 / 0.35)" }}
+                  >
+                    <div className="relative z-[1] flex max-w-full items-center gap-0.5 translate-x-7 sm:translate-x-8">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 ring-2 ring-white/40 sm:h-11 sm:w-11">
+                        <Icon
+                          className="h-5 w-5 text-white sm:h-6 sm:w-6"
+                          strokeWidth={1.75}
+                        />
+                      </span>
+                      <span
+                        className="pointer-events-none shrink-0 select-none text-3xl font-bold leading-none text-white/25 sm:text-4xl"
+                        aria-hidden
+                      >
+                        01
+                      </span>
+                    </div>
+                    <p className="relative z-[1] min-w-0 max-w-full translate-x-7 break-words text-sm font-bold leading-snug sm:translate-x-8 sm:text-[15px] w-full text-left text-balance">
+                      {item.title}
+                    </p>
+                    <p className="relative z-[1] min-w-0 max-w-full translate-x-7 break-words text-xs leading-snug text-white/95 sm:translate-x-8 sm:text-[13px] w-full text-left text-pretty">
+                      {item.description}
+                    </p>
+                  </div>
+                </foreignObject>
+              </g>
+            );
+          }
+
+          if (i === 1) {
+            return (
+              <g key={`${item.id}-label`} clipPath="url(#ambuhub-clip-1)">
+                <foreignObject
+                  x={item.fo.x}
+                  y={item.fo.y}
+                  width={item.fo.w}
+                  height={item.fo.h}
+                  className="pointer-events-none overflow-visible"
                 >
-                  {item.title}
-                </p>
-                <p
-                  className={`relative z-[1] min-w-0 max-w-full break-words text-[9px] leading-snug text-white/95 sm:text-[10px] ${
-                    i === 0
-                      ? "w-full text-left translate-x-2 text-pretty sm:translate-x-7"
-                      : i === 1
-                        ? "w-full text-left text-pretty -translate-x-1 sm:-translate-x-2"
-                        : i === 2
-                          ? "w-full text-pretty text-center"
-                          : "w-full text-right text-pretty translate-x-1 sm:-translate-x-10"
-                  }`}
-                >
-                  {item.description}
-                </p>
-              </div>
-            </foreignObject>
-          );
+                  <div
+                    className="relative box-border flex h-full min-h-0 w-full flex-col items-start justify-start gap-0.5 py-0.5 pl-1 pr-2 text-left text-white translate-x-[4px] translate-y-0 sm:translate-x-[6px] sm:translate-y-0.5"
+                    style={{ textShadow: "0 1px 2px rgb(0 0 0 / 0.35)" }}
+                  >
+                    <div className="relative z-[1] flex max-w-full items-center gap-0.5 translate-x-14 translate-y-0 sm:translate-x-16 sm:translate-y-0">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 ring-2 ring-white/40 sm:h-11 sm:w-11">
+                        <Icon
+                          className="h-5 w-5 text-white sm:h-6 sm:w-6"
+                          strokeWidth={1.75}
+                        />
+                      </span>
+                      <span
+                        className="pointer-events-none shrink-0 select-none text-3xl font-bold leading-none text-white/25 sm:text-4xl"
+                        aria-hidden
+                      >
+                        02
+                      </span>
+                    </div>
+                    <p className="relative z-[1] min-w-0 max-w-full translate-x-2 translate-y-1.5 break-words text-sm font-bold leading-snug sm:translate-x-3 sm:translate-y-2 sm:text-[15px] w-full text-left text-balance">
+                      {item.title}
+                    </p>
+                    <p className="relative z-[1] min-w-0 max-w-full translate-x-2 break-words text-xs leading-snug text-white/95 sm:translate-x-3 sm:text-[13px] w-full text-left text-pretty">
+                      {item.description}
+                    </p>
+                  </div>
+                </foreignObject>
+              </g>
+            );
+          }
+
+          return null;
         })}
 
         <motion.g
@@ -437,7 +527,7 @@ export function ServiceHubGraphic() {
             x={cx}
             y={cy + 6}
             textAnchor="middle"
-            className="text-[32px] font-bold tracking-tight sm:text-[38px]"
+            className="text-[34px] font-bold tracking-tight sm:text-[40px]"
             style={{
               fontFamily: "inherit",
               fill: "var(--color-ambuhub-900)",
