@@ -259,7 +259,7 @@ export function ServiceHubGraphic() {
 
   return (
     <motion.svg
-      className="hidden h-auto max-h-full w-full min-h-0 min-w-0 max-w-none translate-y-5 justify-self-end drop-shadow-lg lg:block lg:max-h-[min(calc(100dvh-6rem),42rem)] xl:max-h-[min(calc(100dvh-5.75rem),44rem)] xl:translate-y-6"
+      className="hidden h-auto max-h-full w-full min-h-0 min-w-0 max-w-none translate-y-10 justify-self-end drop-shadow-lg lg:block lg:max-h-[min(calc(100dvh-6rem),42rem)] xl:max-h-[min(calc(100dvh-5.75rem),44rem)] xl:translate-y-12"
       viewBox={`${VB_X} ${VB_Y} ${VB_W} ${VB_H}`}
       preserveAspectRatio="xMaxYMax meet"
       fill="none"

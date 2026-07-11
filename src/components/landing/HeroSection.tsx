@@ -69,14 +69,14 @@ export function HeroSection() {
             >
               <Link
                 href="/contact"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-ambuhub-brand px-6 py-3.5 text-base font-semibold text-white shadow-md transition-colors hover:bg-ambuhub-brand-dark lg:px-5 lg:py-2.5 lg:text-sm"
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-ambuhub-brand px-4 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-ambuhub-brand-dark sm:px-5 sm:py-2.5 lg:px-4 lg:py-2 lg:text-[13px]"
               >
                 Contact us
-                <ArrowRight className="h-4 w-4 lg:h-3.5 lg:w-3.5" aria-hidden />
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
               </Link>
               <Link
                 href="/how-it-works"
-                className="inline-flex items-center justify-center rounded-xl border border-white/30 bg-transparent px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-white/10 lg:px-5 lg:py-2.5 lg:text-sm"
+                className="inline-flex items-center justify-center rounded-lg border border-white/30 bg-transparent px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10 sm:px-5 sm:py-2.5 lg:px-4 lg:py-2 lg:text-[13px]"
               >
                 See how it works
               </Link>
