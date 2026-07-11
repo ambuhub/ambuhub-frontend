@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, CalendarDays } from "lucide-react";
@@ -7,14 +8,20 @@ import { ServiceHubGraphic } from "@/components/landing/ServiceHubGraphic";
 
 export function HeroSection() {
   return (
-    <section id="top" className="relative overflow-hidden bg-black">
+    <section id="top" className="relative overflow-hidden bg-slate-950">
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        <Image
+          src="/landing-page/hero-bg.png"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[70%_center] sm:object-[60%_center] lg:object-[45%_center]"
+        />
+      </div>
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.22]"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/65 via-black/40 to-black/10"
         aria-hidden
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 20% 20%, rgb(0 105 180 / 0.35) 0%, transparent 45%), radial-gradient(circle at 80% 60%, rgb(2 132 199 / 0.28) 0%, transparent 40%)",
-        }}
       />
       <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-28">
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.55fr)] lg:items-stretch lg:gap-6 xl:gap-8">
