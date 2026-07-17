@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { API_AUTH_BFF_PREFIX } from "@/lib/api";
+import { AmbuhubLogo } from "@/components/AmbuhubLogo";
 import { NotificationBellDropdown } from "@/components/notifications/NotificationBellDropdown";
 import { unregisterFcmToken } from "@/components/notifications/FcmProvider";
 import { ProviderNotificationBadge } from "@/components/provider/ProviderNotificationBadge";
@@ -114,10 +115,13 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
         <div className="flex h-14 items-center justify-between border-b border-blue-900/60 px-4 md:h-16">
           <Link
             href="/provider/dashboard"
-            className="flex items-center gap-2 text-lg font-semibold tracking-tight text-blue-200"
+            className="flex min-w-0 items-center gap-2 text-lg font-semibold tracking-tight text-blue-200"
             onClick={() => setSidebarOpen(false)}
           >
-            Ambuhub
+            <span className="relative flex h-8 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md">
+              <AmbuhubLogo width={48} className="object-contain" />
+            </span>
+            <span className="truncate">Ambuhub</span>
             <ProviderPremiumBadge />
           </Link>
           <button

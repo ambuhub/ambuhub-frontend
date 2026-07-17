@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, ShoppingCart, X } from "lucide-react";
+import { AmbuhubLogo } from "@/components/AmbuhubLogo";
 import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
 import { postAuthPath } from "@/lib/auth-redirect";
 
@@ -22,7 +22,7 @@ function authHrefWithReturnTo(pathname: string | null): string {
 
 const navItems = [
   { label: "Home", href: "/#top" },
-  { label: "Services", href: "/services" },
+  { label: "What you can find here", href: "/services" },
   { label: "How it works", href: "/how-it-works" },
   { label: "Contact", href: "/contact" },
 ] as const;
@@ -48,19 +48,9 @@ export function Header() {
           className="flex shrink-0 items-center gap-3 rounded-lg outline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ambuhub-brand"
           onClick={() => setOpen(false)}
         >
-          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-ambuhub-200 bg-white sm:h-11 sm:w-11">
-            <Image
-              src="/logo.svg"
-              alt="Ambuhub"
-              width={44}
-              height={44}
-              className="object-contain p-1"
-              priority
-            />
+          <div className="relative flex h-12 w-[4.5rem] shrink-0 items-center justify-center overflow-hidden sm:h-14 sm:w-[5.25rem]">
+            <AmbuhubLogo width={84} className="object-contain" priority />
           </div>
-          <span className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-            Ambuhub
-          </span>
         </Link>
 
         <nav

@@ -39,16 +39,19 @@ export function HeroSection() {
                 className="h-3.5 w-3.5 text-sky-400"
                 aria-hidden
               />
-              Concerts, venues & tours
+              Ambulances, ambulance crew, and equipment
             </motion.div>
             <motion.h1
               initial={{ opacity: 0, x: -48 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-4 text-4xl font-bold tracking-tight text-white sm:mt-5 sm:text-5xl lg:mt-3 lg:text-[2rem] lg:leading-[1.15] xl:text-[2.25rem]"
+              className="mt-4 text-4xl font-bold tracking-tight text-[#FFE566] sm:mt-5 sm:text-5xl lg:mt-3 lg:text-[2rem] lg:leading-[1.15] xl:text-[2.25rem]"
+              style={{
+                textShadow:
+                  "0 0 12px rgba(255, 215, 0, 0.85), 0 0 28px rgba(255, 200, 50, 0.55), 0 0 48px rgba(255, 180, 0, 0.35)",
+              }}
             >
-              Book ambulance coverage, crew, servicing, and equipment in one
-              place
+              A marketplace that links clients to everything ambulance-related
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, x: -36 }}
@@ -56,10 +59,11 @@ export function HeroSection() {
               transition={{ duration: 0.55, delay: 0.16, ease: [0.22, 1, 0.36, 1] }}
               className="mt-4 max-w-xl text-base leading-relaxed text-white/75 sm:mt-5 sm:text-lg lg:mt-2.5 lg:max-w-none lg:text-sm lg:leading-snug"
             >
-              Planning a show, festival, or corporate event? Ambuhub connects
-              you with providers for on-site medical standby, scheduled
-              transports, qualified personnel, fleet servicing, and ambulance
-              gear—before the doors open.
+              Do you need an air or ground ambulance, repatriation of remains,
+              hearse, ambulance crew, or ambulance equipment? Are you an
+              ambulance service provider, personnel, or ambulance equipment
+              provider? AMBUHUB is a one-stop platform connecting you with
+              trusted ambulance and medical transport providers
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 24 }}

@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { API_AUTH_BFF_PREFIX } from "@/lib/api";
+import { AmbuhubLogo } from "@/components/AmbuhubLogo";
 import { AdminNotificationBadge } from "@/components/admin/AdminNotificationBadge";
 import { AdminNotificationBellDropdown } from "@/components/notifications/AdminNotificationBellDropdown";
 import { unregisterFcmToken } from "@/components/notifications/FcmProvider";
@@ -80,6 +81,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             className="flex min-w-0 items-center gap-2"
             onClick={() => setSidebarOpen(false)}
           >
+            <span className="relative flex h-8 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md">
+              <AmbuhubLogo width={48} className="object-contain" />
+            </span>
             <span className="truncate text-lg font-semibold tracking-tight text-indigo-200">
               Ambuhub
             </span>

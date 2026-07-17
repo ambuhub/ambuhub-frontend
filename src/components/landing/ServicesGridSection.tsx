@@ -27,12 +27,8 @@ export async function ServicesGridSection() {
           id="services-grid-heading"
           className="text-center text-2xl font-bold tracking-tight text-blue-950 sm:text-3xl"
         >
-          Our services
+          What you can find here
         </h2>
-        <p className="mx-auto mt-3 max-w-2xl text-center text-base text-blue-900/75 sm:text-lg">
-          Medical transport, personnel, fleet servicing, and equipment—explore
-          each path on one platform.
-        </p>
 
         {categories.length === 0 ? (
           <p className="mt-10 text-center text-sm text-blue-900/60">

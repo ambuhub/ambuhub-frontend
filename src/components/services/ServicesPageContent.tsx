@@ -71,7 +71,7 @@ export function ServicesPageContent({ categories }: Props) {
               One marketplace for medical coverage
             </span>
             <h1 className="mt-6 text-4xl font-bold tracking-tight text-white sm:text-5xl">
-              Our services
+              What you can find here
             </h1>
             <p className="mt-5 text-lg leading-relaxed text-white/75">
               Medical transport, personnel, fleet servicing, and equipment—browse

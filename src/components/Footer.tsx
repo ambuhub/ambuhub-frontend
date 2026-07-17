@@ -8,10 +8,11 @@ import {
   Phone,
   X,
 } from "lucide-react";
+import { AmbuhubLogo } from "@/components/AmbuhubLogo";
 
 const quickLinks = [
   { label: "Home", href: "/#top" },
-  { label: "Services", href: "/services" },
+  { label: "What you can find here", href: "/services" },
   { label: "How to use", href: "/how-to-use" },
   { label: "How it works", href: "/how-it-works" },
   { label: "FAQ", href: "/faq" },
@@ -55,7 +56,12 @@ export function Footer() {
       <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-12">
           <div className="lg:pr-4">
-            <p className="text-lg font-bold tracking-tight">Ambuhub</p>
+            <div className="flex items-center gap-3">
+              <span className="relative flex h-10 w-[3.75rem] shrink-0 items-center justify-center overflow-hidden rounded-lg">
+                <AmbuhubLogo width={60} className="object-contain" />
+              </span>
+              <p className="text-lg font-bold tracking-tight">Ambuhub</p>
+            </div>
             <p className="mt-4 text-sm leading-relaxed text-white/75">
               Connecting organizers and patients to emergency medical coverage
               and equipment through one marketplace. We are building a clearer way

@@ -15,25 +15,25 @@ export const AMBUHUB_SERVICES: AmbuhubServiceMeta[] = [
     slug: "medical-transport",
     title: "Medical transport",
     description:
-      "Event standby and planned transports—ground or air—with vetted providers.",
+      "Find air/ground ambulance providers for all your medical transport needs and events",
   },
   {
     slug: "personnel",
     title: "Ambulance personnel",
     description:
-      "Find medics, drivers, and support staff for shifts, tours, or short-term coverage.",
+      "Find medics, drivers and support staff for your event and medical transport",
   },
   {
     slug: "ambulance-servicing",
     title: "Ambulance sales and servicing",
     description:
-      "Ambulance sales and servicing—vehicles, parts, and workshop care from trusted providers.",
+      "Find Ambulance manufacturers, dealers, and service companies.",
   },
   {
     slug: "ambulance-equipment",
     title: "Ambulance equipment",
     description:
-      "Buy and sell stretchers, monitors, vehicle kit, and other ambulance-related gear.",
+      "Buy and sell stretchers, monitors, AEDs, defibrillators, ambulance consumables and other ambulance equipment.",
   },
 ];
 

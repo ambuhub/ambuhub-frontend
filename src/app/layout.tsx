@@ -27,6 +27,10 @@ export const metadata: Metadata = {
     locale: "en",
     siteName: "Ambuhub",
   },
+  icons: {
+    icon: "/ambuhub-logo.png",
+    apple: "/ambuhub-logo.png",
+  },
 };
 
 export default function RootLayout({

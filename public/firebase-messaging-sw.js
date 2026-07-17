@@ -20,8 +20,8 @@ messaging.onBackgroundMessage((payload) => {
 
   self.registration.showNotification(title, {
     body,
-    icon: "/logo.svg",
-    badge: "/logo.svg",
+    icon: "/ambuhub-logo.png",
+    badge: "/ambuhub-logo.png",
     data: { ...payload.data, deepLink },
   });
 });

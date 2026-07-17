@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft, UserPlus } from "lucide-react";
+import { AmbuhubLogo } from "@/components/AmbuhubLogo";
 
 type Props = {
   children: React.ReactNode;
@@ -30,8 +31,11 @@ export function AuthSignupSplitShell({
         <div className="relative z-10">
           <Link
             href="/"
-            className="text-xl font-bold tracking-tight text-white hover:text-blue-100"
+            className="inline-flex items-center gap-3 text-xl font-bold tracking-tight text-white hover:text-blue-100"
           >
+            <span className="relative flex h-9 w-[3.375rem] shrink-0 items-center justify-center overflow-hidden">
+              <AmbuhubLogo width={54} className="object-contain" />
+            </span>
             Ambuhub
           </Link>
           <div className="mt-8 flex h-14 w-14 items-center justify-center rounded-full border border-white/25 bg-white/10 shadow-lg backdrop-blur-sm">

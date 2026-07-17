@@ -23,9 +23,11 @@ const providerSteps = [
 function StepList({
   steps,
   accentClass,
+  stepTextClass,
 }: {
   steps: readonly string[];
   accentClass: string;
+  stepTextClass: string;
 }) {
   return (
     <ol className="mt-6 space-y-4">
@@ -36,7 +38,7 @@ function StepList({
           >
             {i + 1}
           </span>
-          <span className="pt-0.5 text-sm leading-relaxed text-blue-950/85">
+          <span className={`pt-0.5 text-sm leading-relaxed ${stepTextClass}`}>
             {text}
           </span>
         </li>
@@ -66,10 +68,6 @@ export function HowToUseSection() {
           >
             How to use Ambuhub
           </h2>
-          <p className="mt-4 text-lg leading-relaxed text-blue-900/75">
-            Whether you are booking coverage or listing it, the flow stays
-            straightforward.
-          </p>
         </motion.div>
 
         <div className="mt-12 grid gap-8 lg:grid-cols-2 lg:gap-10">
@@ -78,10 +76,10 @@ export function HowToUseSection() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-48px" }}
             transition={{ duration: 0.5, ease, delay: 0.05 }}
-            className="rounded-2xl border-2 border-sky-300/70 bg-gradient-to-br from-white to-sky-100/90 p-6 shadow-lg shadow-sky-600/10 sm:p-8"
+            className="rounded-2xl border border-blue-200/80 bg-white p-6 shadow-lg shadow-blue-900/5 sm:p-8"
           >
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-md shadow-sky-600/30">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700 ring-1 ring-blue-200/80">
                 <UserRound className="h-5 w-5" aria-hidden />
               </span>
               <h3 className="text-xl font-semibold tracking-tight text-blue-950">
@@ -90,12 +88,13 @@ export function HowToUseSection() {
             </div>
             <StepList
               steps={clientSteps}
-              accentClass="bg-sky-500 text-white shadow-md shadow-sky-500/25"
+              accentClass="bg-blue-600 text-white"
+              stepTextClass="text-blue-900/85"
             />
             <p className="mt-8 text-sm">
               <Link
                 href="/auth"
-                className="font-semibold text-blue-700 hover:text-blue-900 hover:underline"
+                className="font-semibold text-blue-700 transition-colors hover:text-blue-900 hover:underline"
               >
                 Sign up as a client
               </Link>
@@ -107,24 +106,25 @@ export function HowToUseSection() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-48px" }}
             transition={{ duration: 0.5, ease, delay: 0.1 }}
-            className="rounded-2xl border-2 border-indigo-300/70 bg-gradient-to-br from-white to-indigo-100/90 p-6 shadow-lg shadow-indigo-600/10 sm:p-8"
+            className="rounded-2xl bg-gradient-to-br from-blue-700 via-blue-600 to-sky-600 p-6 shadow-xl shadow-blue-900/25 sm:p-8"
           >
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-blue-800 text-white shadow-md shadow-indigo-700/30">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-sm">
                 <Building2 className="h-5 w-5" aria-hidden />
               </span>
-              <h3 className="text-xl font-semibold tracking-tight text-blue-950">
+              <h3 className="text-xl font-semibold tracking-tight text-white">
                 As a service provider
               </h3>
             </div>
             <StepList
               steps={providerSteps}
-              accentClass="bg-indigo-600 text-white shadow-md shadow-indigo-600/25"
+              accentClass="bg-white/20 text-white ring-1 ring-white/30"
+              stepTextClass="text-white/90"
             />
             <p className="mt-8 text-sm">
               <Link
                 href="/auth"
-                className="font-semibold text-indigo-700 hover:text-indigo-950 hover:underline"
+                className="font-semibold text-white transition-colors hover:text-sky-100 hover:underline"
               >
                 Sign up as a provider
               </Link>
