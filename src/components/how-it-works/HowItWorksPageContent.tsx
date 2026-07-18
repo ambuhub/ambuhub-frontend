@@ -8,9 +8,6 @@ import {
   Building2,
   CalendarClock,
   CalendarDays,
-  ClipboardList,
-  Compass,
-  Handshake,
   Package,
   Receipt,
   ShoppingCart,
@@ -21,36 +18,6 @@ import {
 } from "lucide-react";
 
 const ease = [0.22, 1, 0.36, 1] as const;
-
-const steps = [
-  {
-    step: "01",
-    title: "Discover what you need",
-    body: "Browse service categories—medical transport, personnel, fleet servicing, and equipment—or search listings from verified providers.",
-    icon: Compass,
-    cardTint:
-      "border-sky-300/70 bg-gradient-to-br from-white to-sky-50 shadow-sky-500/15",
-    badge: "bg-sky-600 text-white shadow-md shadow-sky-600/30",
-  },
-  {
-    step: "02",
-    title: "Compare and confirm details",
-    body: "Review provider profiles, scope, availability, and pricing. Pick your dates, location, and the exact coverage your event or operation needs.",
-    icon: ClipboardList,
-    cardTint:
-      "border-blue-300/70 bg-gradient-to-br from-white to-blue-50 shadow-blue-600/15",
-    badge: "bg-blue-700 text-white shadow-md shadow-blue-700/30",
-  },
-  {
-    step: "03",
-    title: "Book, pay, and coordinate",
-    body: "Check out securely, then track everything from your dashboard—schedules, personnel, and handoffs stay in one place through to wrap.",
-    icon: Handshake,
-    cardTint:
-      "border-cyan-300/70 bg-gradient-to-br from-white to-cyan-50 shadow-cyan-600/12",
-    badge: "bg-teal-600 text-white shadow-md shadow-teal-600/30",
-  },
-] as const;
 
 const clientSteps = [
   "Create a free client account and complete your profile.",
@@ -120,9 +87,11 @@ const features = [
 function StepList({
   items,
   accentClass,
+  stepTextClass,
 }: {
   items: readonly string[];
   accentClass: string;
+  stepTextClass: string;
 }) {
   return (
     <ol className="mt-6 space-y-4">
@@ -133,7 +102,7 @@ function StepList({
           >
             {i + 1}
           </span>
-          <span className="pt-0.5 text-sm leading-relaxed text-blue-950/85">
+          <span className={`pt-0.5 text-sm leading-relaxed ${stepTextClass}`}>
             {text}
           </span>
         </li>
@@ -177,57 +146,6 @@ export function HowItWorksPageContent() {
         </div>
       </section>
 
-      <section className="border-t border-blue-200/50 bg-gradient-to-b from-sky-100/90 via-blue-50 to-cyan-50/80 py-16 sm:py-20 lg:py-24">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5, ease }}
-            className="mx-auto max-w-2xl text-center"
-          >
-            <h2 className="text-3xl font-bold tracking-tight text-blue-950 sm:text-4xl">
-              Three steps to coverage
-            </h2>
-            <p className="mt-4 text-lg leading-relaxed text-blue-900/75">
-              A simple flow promoters, venues, and providers can adopt quickly—without
-              sacrificing the rigor professional medical coverage deserves.
-            </p>
-          </motion.div>
-
-          <div className="mt-14 grid gap-8 lg:grid-cols-3 lg:gap-10">
-            {steps.map((s, i) => {
-              const Icon = s.icon;
-              return (
-                <motion.div
-                  key={s.step}
-                  initial={{ opacity: 0, x: i % 2 === 0 ? -36 : 36 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, margin: "-40px" }}
-                  transition={{ duration: 0.5, delay: i * 0.1, ease }}
-                  className={`relative rounded-2xl border-2 p-6 shadow-lg lg:p-8 ${s.cardTint}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`inline-flex min-w-[2.25rem] items-center justify-center rounded-lg px-2 py-1 text-sm font-bold tabular-nums ${s.badge}`}
-                    >
-                      {s.step}
-                    </span>
-                    <Icon className="h-6 w-6 text-blue-900/40" aria-hidden />
-                  </div>
-                  <h3 className="mt-4 text-xl font-semibold text-blue-950">
-                    {s.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-blue-900/70">
-                    {s.body}
-                  </p>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
       <section className="border-t border-blue-200/60 bg-gradient-to-b from-white via-sky-50/90 to-blue-100/80 py-16 sm:py-20 lg:py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -252,10 +170,10 @@ export function HowItWorksPageContent() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: "-48px" }}
               transition={{ duration: 0.5, ease, delay: 0.05 }}
-              className="rounded-2xl border-2 border-sky-300/70 bg-gradient-to-br from-white to-sky-100/90 p-6 shadow-lg shadow-sky-600/10 sm:p-8"
+              className="rounded-2xl border border-blue-200/80 bg-white p-6 shadow-lg shadow-blue-900/5 sm:p-8"
             >
               <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-md shadow-sky-600/30">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-950 ring-1 ring-blue-200/80">
                   <UserRound className="h-5 w-5" aria-hidden />
                 </span>
                 <h3 className="text-xl font-semibold tracking-tight text-blue-950">
@@ -264,11 +182,12 @@ export function HowItWorksPageContent() {
               </div>
               <StepList
                 items={clientSteps}
-                accentClass="bg-sky-500 text-white shadow-md shadow-sky-500/25"
+                accentClass="bg-blue-950 text-white"
+                stepTextClass="text-blue-950"
               />
               <Link
                 href="/auth?signup=1"
-                className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition-colors hover:text-blue-900 hover:underline"
+                className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-blue-950 transition-colors hover:text-blue-800 hover:underline"
               >
                 Sign up as a client
                 <ArrowRight className="h-4 w-4" aria-hidden />
@@ -280,23 +199,24 @@ export function HowItWorksPageContent() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: "-48px" }}
               transition={{ duration: 0.5, ease, delay: 0.1 }}
-              className="rounded-2xl border-2 border-indigo-300/70 bg-gradient-to-br from-white to-indigo-100/90 p-6 shadow-lg shadow-indigo-600/10 sm:p-8"
+              className="rounded-2xl bg-gradient-to-br from-blue-950 via-blue-900 to-slate-900 p-6 shadow-xl shadow-blue-950/30 sm:p-8"
             >
               <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-blue-800 text-white shadow-md shadow-indigo-700/30">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-sm">
                   <Building2 className="h-5 w-5" aria-hidden />
                 </span>
-                <h3 className="text-xl font-semibold tracking-tight text-blue-950">
+                <h3 className="text-xl font-semibold tracking-tight text-white">
                   As a service provider
                 </h3>
               </div>
               <StepList
                 items={providerSteps}
-                accentClass="bg-indigo-600 text-white shadow-md shadow-indigo-600/25"
+                accentClass="bg-white/20 text-white ring-1 ring-white/30"
+                stepTextClass="text-white/90"
               />
               <Link
                 href="/auth?signup=1"
-                className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-indigo-700 transition-colors hover:text-indigo-950 hover:underline"
+                className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-white transition-colors hover:text-sky-100 hover:underline"
               >
                 Sign up as a provider
                 <ArrowRight className="h-4 w-4" aria-hidden />
@@ -319,7 +239,7 @@ export function HowItWorksPageContent() {
               Ways to transact
             </h2>
             <p className="mt-4 text-lg leading-relaxed text-blue-900/75">
-              Listings come in three flavours so providers can offer exactly what
+              Listings come in three forms so providers can offer exactly what
               fits—and clients book the right way every time.
             </p>
           </motion.div>

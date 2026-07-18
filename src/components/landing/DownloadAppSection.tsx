@@ -54,32 +54,40 @@ export function DownloadAppSection() {
   return (
     <section
       id="download-app"
-      className="flex items-center justify-center border-t border-slate-200/80 bg-white py-12 sm:py-16 lg:max-h-[50vh] lg:py-0"
+      className="relative flex items-center justify-center overflow-hidden border-t border-blue-300/40 bg-gradient-to-br from-blue-700 via-blue-600 to-sky-500 py-14 sm:py-16 lg:max-h-[50vh] lg:py-10"
     >
-      <div className="mx-auto flex w-full max-w-6xl justify-center px-4 sm:px-6 lg:px-8">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-40"
+        aria-hidden
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 15% 20%, rgb(125 211 252 / 0.5), transparent 45%), radial-gradient(circle at 85% 85%, rgb(99 102 241 / 0.45), transparent 40%)",
+        }}
+      />
+      <div className="relative mx-auto flex w-full max-w-6xl justify-center px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center gap-6 sm:gap-8 lg:flex-row lg:items-center lg:gap-6 xl:gap-8">
           <motion.div
             {...slideUp(0.1)}
             className="order-2 max-w-md text-center lg:order-1 lg:text-left"
           >
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 sm:text-xs">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-sky-200 sm:text-xs">
               Connect on the go
             </p>
-            <h2 className="mt-2 text-xl font-bold tracking-tight text-blue-950 sm:text-2xl lg:text-[1.65rem] lg:leading-snug">
-              Coverage that&apos;s in the palm of your hand
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl lg:leading-snug">
+              One Platform, Every Ambulance
             </h2>
-            <p className="mt-2 text-sm leading-relaxed text-blue-900/75 sm:text-[0.9375rem]">
-              Browse listings, book coverage, and stay in sync with providers—everything
-              you need for events and medical transport, in one app.
+            <p className="mt-3 text-sm leading-relaxed text-sky-100/90 sm:text-base">
+              Connect to ambulance service providers near you when it matters.
             </p>
-            <h3 className="mt-4 text-sm font-bold text-blue-950 sm:text-base">
-              Download the Ambuhub app below
+            <h3 className="mt-5 text-sm font-bold text-white sm:text-base">
+              Download the Ambu<span className="text-red-500">H</span>ub app
+              below
             </h3>
             <div className="mt-3 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
               <AppStoreBadge />
               <GooglePlayBadge />
             </div>
-            <p className="mt-2 text-xs text-slate-500">Mobile apps coming soon.</p>
+            <p className="mt-2 text-xs text-sky-200/80">Mobile apps coming soon.</p>
           </motion.div>
 
           <motion.div {...slideUp(0)} className="order-1 shrink-0 lg:order-2">

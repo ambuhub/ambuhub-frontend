@@ -81,7 +81,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             className="flex min-w-0 items-center gap-2"
             onClick={() => setSidebarOpen(false)}
           >
-            <span className="relative flex h-8 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md">
+            <span className="relative flex h-9 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white p-1 shadow-sm">
               <AmbuhubLogo width={48} className="object-contain" />
             </span>
             <span className="truncate text-lg font-semibold tracking-tight text-indigo-200">

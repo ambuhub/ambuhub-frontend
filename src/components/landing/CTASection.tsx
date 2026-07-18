@@ -63,7 +63,7 @@ export function CTASection() {
           className="mx-auto max-w-2xl text-center"
         >
           <h2 className="text-2xl font-bold tracking-tight text-blue-950 sm:text-3xl lg:text-4xl">
-            Ready to list or book on Ambuhub?
+            Ready to list or book on Ambu<span className="text-red-600">H</span>ub?
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-blue-900/75 sm:mt-4 sm:text-base lg:text-lg">
             Tell us about your event, fleet, or storefront and we will follow up

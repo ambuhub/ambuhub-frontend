@@ -3,10 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Heart, Loader2, Search, ShoppingCart, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronDown, Heart, Loader2, Search, ShoppingCart, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
 import { API_PROXY_PREFIX } from "@/lib/api";
+import {
+  writeBrowseCountryCookie,
+  type MarketplaceBrowseCountry,
+} from "@/lib/browse-country";
 import { getCountryNameByCode } from "@/lib/countries";
 import { FALLBACK_THUMB, isCloudinaryHost } from "@/lib/landing-service-categories";
 import { AMBUHUB_SERVICES } from "@/lib/ambuhub-services";
@@ -53,8 +57,6 @@ const filterLabelClass = "block text-xs font-medium text-white";
 const filterControlClass =
   "w-full rounded-lg border border-ambuhub-200 bg-white px-3 py-2 text-sm text-foreground outline-none focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/25 disabled:cursor-not-allowed disabled:opacity-60";
 const filterControlDisabledClass = `${filterControlClass} disabled:cursor-not-allowed disabled:opacity-60`;
-
-type MarketplaceBrowseCountry = "NG" | "GH";
 
 const MARKETPLACE_COUNTRY_OPTIONS: {
   code: MarketplaceBrowseCountry;
@@ -286,9 +288,24 @@ export function ServiceCardImage({
 type Props = {
   category: ServiceCategoryPageDto;
   sections: DepartmentServiceSection[];
+  initialCountry: MarketplaceBrowseCountry;
+  /** True when the user previously chose a country (cookie set). */
+  hasCountryCookie: boolean;
 };
 
-export function CategoryServiceListing({ category, sections }: Props) {
+function sectionsCacheKey(
+  categorySlug: string,
+  country: MarketplaceBrowseCountry,
+): string {
+  return `${categorySlug}|${country}`;
+}
+
+export function CategoryServiceListing({
+  category,
+  sections,
+  initialCountry,
+  hasCountryCookie,
+}: Props) {
   const pathname = usePathname();
   const loginHref = `/auth?next=${encodeURIComponent(pathname || "/")}`;
   const { title, description } = getCategoryPageTitleDescription(category);
@@ -305,10 +322,15 @@ export function CategoryServiceListing({ category, sections }: Props) {
     subtotal,
     currency: cartCurrencyFromSession,
   } = useSessionAndCart();
-  const [detectedCountry, setDetectedCountry] = useState<MarketplaceBrowseCountry>("NG");
-  const [browseCountry, setBrowseCountry] = useState<MarketplaceBrowseCountry>("NG");
+  const [detectedCountry, setDetectedCountry] =
+    useState<MarketplaceBrowseCountry>(initialCountry);
+  const [browseCountry, setBrowseCountry] =
+    useState<MarketplaceBrowseCountry>(initialCountry);
   const [countryReady, setCountryReady] = useState(false);
   const [liveSections, setLiveSections] = useState(sections);
+  const lastFetchedKeyRef = useRef(
+    sectionsCacheKey(category.slug, initialCountry),
+  );
   const [addingServiceId, setAddingServiceId] = useState<string | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
     () => new Set(),
@@ -324,8 +346,10 @@ export function CategoryServiceListing({ category, sections }: Props) {
     useState<ListingTypeFilter>("all");
 
   useEffect(() => {
+    setBrowseCountry(initialCountry);
     setLiveSections(sections);
-  }, [sections]);
+    lastFetchedKeyRef.current = sectionsCacheKey(category.slug, initialCountry);
+  }, [category.slug, initialCountry, sections]);
 
   useEffect(() => {
     let cancelled = false;
@@ -342,10 +366,13 @@ export function CategoryServiceListing({ category, sections }: Props) {
         const code = data.countryCode?.trim().toUpperCase();
         if (!cancelled && (code === "NG" || code === "GH")) {
           setDetectedCountry(code);
-          setBrowseCountry(code);
+          // Never override an explicit user country choice from the cookie.
+          if (!hasCountryCookie) {
+            setBrowseCountry(code);
+          }
         }
       } catch {
-        /* keep default NG */
+        /* keep initialCountry */
       } finally {
         if (!cancelled) {
           setCountryReady(true);
@@ -355,9 +382,10 @@ export function CategoryServiceListing({ category, sections }: Props) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [hasCountryCookie]);
 
   const refetchMarketplaceSections = useCallback(async () => {
+    const fetchKey = sectionsCacheKey(category.slug, browseCountry);
     try {
       const res = await fetch(
         `${API_PROXY_PREFIX}/services/marketplace?categorySlug=${encodeURIComponent(category.slug)}&countryCode=${encodeURIComponent(browseCountry)}`,
@@ -372,6 +400,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
       const data = (await res.json()) as { services?: MarketplaceServiceRow[] };
       const rows = Array.isArray(data.services) ? data.services : [];
       setLiveSections(groupMarketplaceByDepartments(category, rows));
+      lastFetchedKeyRef.current = fetchKey;
     } catch {
       /* keep current liveSections */
     }
@@ -379,6 +408,10 @@ export function CategoryServiceListing({ category, sections }: Props) {
 
   useEffect(() => {
     if (!countryReady) {
+      return;
+    }
+    const key = sectionsCacheKey(category.slug, browseCountry);
+    if (lastFetchedKeyRef.current === key) {
       return;
     }
     void refetchMarketplaceSections();
@@ -445,7 +478,8 @@ export function CategoryServiceListing({ category, sections }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [priceMinInput, setPriceMinInput] = useState("");
   const [priceMaxInput, setPriceMaxInput] = useState("");
-  const [stateFilter, setStateFilter] = useState("all");
+  const [stateFilter, setStateFilter] = useState<Set<string>>(() => new Set());
+  const [stateFilterOpen, setStateFilterOpen] = useState(false);
 
   const listingCurrency = parseSupportedCurrency(
     browseCountry === "GH" ? "GHS" : "NGN",
@@ -549,7 +583,30 @@ export function CategoryServiceListing({ category, sections }: Props) {
     );
   }, [browseCountryLower, locationOptions.states]);
 
-  const locationFilterActive = stateFilter !== "all";
+  const locationFilterActive = stateFilter.size > 0;
+
+  const selectedStateCodes = useMemo(() => {
+    const codes = new Set<string>();
+    for (const value of stateFilter) {
+      const { stateCode } = parseStateFilterValue(value);
+      if (stateCode) {
+        codes.add(stateCode);
+      }
+    }
+    return codes;
+  }, [stateFilter]);
+
+  function toggleStateFilter(value: string) {
+    setStateFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(value)) {
+        next.delete(value);
+      } else {
+        next.add(value);
+      }
+      return next;
+    });
+  }
 
   const filteredSections = useMemo(() => {
     const normalizedQuery = normalizeSearchText(searchQuery);
@@ -614,14 +671,10 @@ export function CategoryServiceListing({ category, sections }: Props) {
       }
 
       const svcState = service.stateProvince?.trim() ?? "";
-
-      if (stateFilter !== "all") {
-        const { stateCode: filterState } = parseStateFilterValue(stateFilter);
-        if (filterState && svcState !== filterState) {
-          return false;
-        }
+      if (!svcState) {
+        return false;
       }
-      return true;
+      return selectedStateCodes.has(svcState);
     }
 
     function matchesPriceRange(service: MarketplaceServiceRow): boolean {
@@ -673,7 +726,7 @@ export function CategoryServiceListing({ category, sections }: Props) {
     parsedPriceMin,
     parsedPriceMax,
     locationFilterActive,
-    stateFilter,
+    selectedStateCodes,
   ]);
 
   const tallBannerShellClass =
@@ -838,8 +891,10 @@ export function CategoryServiceListing({ category, sections }: Props) {
                     setListingTypeFilter("all");
                     setPriceMinInput("");
                     setPriceMaxInput("");
+                    writeBrowseCountryCookie(null);
                     setBrowseCountry(detectedCountry);
-                    setStateFilter("all");
+                    setStateFilter(new Set());
+                    setStateFilterOpen(false);
                   }}
                 >
                   Reset
@@ -917,8 +972,10 @@ export function CategoryServiceListing({ category, sections }: Props) {
                     onChange={(e) => {
                       const next = e.target.value.trim().toUpperCase();
                       if (next === "NG" || next === "GH") {
+                        writeBrowseCountryCookie(next);
                         setBrowseCountry(next);
-                        setStateFilter("all");
+                        setStateFilter(new Set());
+                        setStateFilterOpen(false);
                       }
                     }}
                     className={`mt-1 ${filterControlClass}`}
@@ -939,28 +996,68 @@ export function CategoryServiceListing({ category, sections }: Props) {
                 </div>
 
                 <div>
-                  <label htmlFor="state-filter" className={filterLabelClass}>
-                    State / province
-                  </label>
-                  <select
-                    id="state-filter"
-                    value={stateFilter}
-                    onChange={(e) => setStateFilter(e.target.value)}
+                  <button
+                    type="button"
+                    id="state-filter-toggle"
+                    aria-expanded={stateFilterOpen}
+                    aria-controls="state-filter-panel"
                     disabled={
                       !locationOptions.hasStates || stateFilterOptions.length === 0
                     }
-                    className={`mt-1 ${filterControlDisabledClass}`}
+                    onClick={() => setStateFilterOpen((open) => !open)}
+                    className={`flex w-full items-center justify-between gap-2 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-left transition-colors hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60`}
                   >
-                    <option value="all">All states / provinces</option>
-                    {stateFilterOptions.map((option) => (
-                      <option
-                        key={stateFilterOptionValue(option)}
-                        value={stateFilterOptionValue(option)}
-                      >
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    <span className="min-w-0">
+                      <span className={filterLabelClass}>State / province</span>
+                      <span className="mt-0.5 block truncate text-xs text-white/75">
+                        {stateFilter.size > 0
+                          ? `${stateFilter.size} selected`
+                          : stateFilterOptions.length > 0
+                            ? "All states / provinces"
+                            : "Unavailable"}
+                      </span>
+                    </span>
+                    <ChevronDown
+                      className={`h-4 w-4 shrink-0 text-white/80 transition-transform ${
+                        stateFilterOpen ? "rotate-180" : ""
+                      }`}
+                      aria-hidden
+                    />
+                  </button>
+                  {stateFilterOpen && stateFilterOptions.length > 0 ? (
+                    <div
+                      id="state-filter-panel"
+                      role="group"
+                      aria-labelledby="state-filter-toggle"
+                      className="mt-1.5 max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-white/20 bg-white/10 p-2"
+                    >
+                      {stateFilterOptions.map((option) => {
+                        const value = stateFilterOptionValue(option);
+                        const inputId = `state-filter-${value.replace(/\|/g, "-")}`;
+                        return (
+                          <label
+                            key={value}
+                            htmlFor={inputId}
+                            className="flex cursor-pointer items-start gap-2 rounded-md px-1.5 py-1 text-sm text-white hover:bg-white/10"
+                          >
+                            <input
+                              id={inputId}
+                              type="checkbox"
+                              checked={stateFilter.has(value)}
+                              onChange={() => toggleStateFilter(value)}
+                              className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-white/40 bg-white/90 text-ambuhub-brand focus:ring-2 focus:ring-white/50"
+                            />
+                            <span className="leading-snug">{option.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                  {stateFilter.size > 0 && !stateFilterOpen ? (
+                    <p className="mt-1 text-xs text-white/75">
+                      Expand to change selection.
+                    </p>
+                  ) : null}
                   {!locationOptions.hasStates ? (
                     <p className="mt-1 text-xs text-white/75">
                       No state or province set on listings in this category.

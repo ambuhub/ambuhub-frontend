@@ -62,8 +62,9 @@ export function HeroSection() {
               Do you need an air or ground ambulance, repatriation of remains,
               hearse, ambulance crew, or ambulance equipment? Are you an
               ambulance service provider, personnel, or ambulance equipment
-              provider? AMBUHUB is a one-stop platform connecting you with
-              trusted ambulance and medical transport providers
+              provider? Ambu<span className="text-red-500">H</span>ub is a
+              one-stop platform connecting you with trusted ambulance and
+              medical transport providers
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 24 }}

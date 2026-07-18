@@ -6,7 +6,6 @@ import { ServicesGridSection } from "@/components/landing/ServicesGridSection";
 import { HowToUseSection } from "@/components/landing/HowToUseSection";
 import { ImageStorySections } from "@/components/landing/ImageStorySections";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
-import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
 import { DownloadAppSection } from "@/components/landing/DownloadAppSection";
 import { CTASection } from "@/components/landing/CTASection";
 import { publicPageMetadata } from "@/lib/seo-metadata";
@@ -26,7 +25,6 @@ export default function Home() {
         <HowToUseSection />
         <ImageStorySections />
         <FeaturesSection />
-        <HowItWorksSection />
         <DownloadAppSection />
         <CTASection />
       </main>

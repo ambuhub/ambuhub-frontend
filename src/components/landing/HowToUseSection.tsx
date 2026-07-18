@@ -66,7 +66,7 @@ export function HowToUseSection() {
             id="how-to-use-heading"
             className="text-3xl font-bold tracking-tight text-blue-950 sm:text-4xl"
           >
-            How to use Ambuhub
+            How to use Ambu<span className="text-red-600">H</span>ub
           </h2>
         </motion.div>
 
@@ -79,7 +79,7 @@ export function HowToUseSection() {
             className="rounded-2xl border border-blue-200/80 bg-white p-6 shadow-lg shadow-blue-900/5 sm:p-8"
           >
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700 ring-1 ring-blue-200/80">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-950 ring-1 ring-blue-200/80">
                 <UserRound className="h-5 w-5" aria-hidden />
               </span>
               <h3 className="text-xl font-semibold tracking-tight text-blue-950">
@@ -88,13 +88,13 @@ export function HowToUseSection() {
             </div>
             <StepList
               steps={clientSteps}
-              accentClass="bg-blue-600 text-white"
-              stepTextClass="text-blue-900/85"
+              accentClass="bg-blue-950 text-white"
+              stepTextClass="text-blue-950"
             />
             <p className="mt-8 text-sm">
               <Link
                 href="/auth"
-                className="font-semibold text-blue-700 transition-colors hover:text-blue-900 hover:underline"
+                className="font-semibold text-blue-950 transition-colors hover:text-blue-800 hover:underline"
               >
                 Sign up as a client
               </Link>
@@ -106,7 +106,7 @@ export function HowToUseSection() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-48px" }}
             transition={{ duration: 0.5, ease, delay: 0.1 }}
-            className="rounded-2xl bg-gradient-to-br from-blue-700 via-blue-600 to-sky-600 p-6 shadow-xl shadow-blue-900/25 sm:p-8"
+            className="rounded-2xl bg-gradient-to-br from-blue-950 via-blue-900 to-slate-900 p-6 shadow-xl shadow-blue-950/30 sm:p-8"
           >
             <div className="flex items-center gap-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-sm">

@@ -45,12 +45,15 @@ export function Header() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:h-[4.25rem] sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-3 rounded-lg outline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ambuhub-brand"
+          className="flex shrink-0 items-center rounded-lg outline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ambuhub-brand"
           onClick={() => setOpen(false)}
         >
           <div className="relative flex h-12 w-[4.5rem] shrink-0 items-center justify-center overflow-hidden sm:h-14 sm:w-[5.25rem]">
             <AmbuhubLogo width={84} className="object-contain" priority />
           </div>
+          <span className="-ml-1.5 text-lg font-bold tracking-tight text-blue-950 sm:text-xl">
+            Ambu<span className="text-red-600">H</span>ub
+          </span>
         </Link>
 
         <nav

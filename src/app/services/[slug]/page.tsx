@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { CategoryServiceListing } from "@/components/services/CategoryServiceListing";
+import {
+  BROWSE_COUNTRY_COOKIE,
+  parseBrowseCountry,
+  type MarketplaceBrowseCountry,
+} from "@/lib/browse-country";
 import {
   fetchMarketplaceServices,
   fetchServiceCategoryBySlug,
@@ -33,12 +39,26 @@ export async function generateMetadata({
   return publicPageMetadata(title, description);
 }
 
+async function resolveBrowseCountry(): Promise<{
+  country: MarketplaceBrowseCountry;
+  fromCookie: boolean;
+}> {
+  const jar = await cookies();
+  const fromCookie = parseBrowseCountry(jar.get(BROWSE_COUNTRY_COOKIE)?.value);
+  if (fromCookie) {
+    return { country: fromCookie, fromCookie: true };
+  }
+  return { country: "NG", fromCookie: false };
+}
+
 export default async function ServiceDetailPage({ params }: PageProps) {
   const { slug } = await params;
+  const { country: initialCountry, fromCookie: hasCountryCookie } =
+    await resolveBrowseCountry();
 
   const [category, marketplace] = await Promise.all([
     fetchServiceCategoryBySlug(slug),
-    fetchMarketplaceServices(),
+    fetchMarketplaceServices(initialCountry),
   ]);
 
   if (!category) {
@@ -51,7 +71,12 @@ export default async function ServiceDetailPage({ params }: PageProps) {
     <div className="flex min-h-full flex-1 flex-col bg-white">
       <Header />
       <main className="flex flex-1 flex-col pt-4 sm:pt-6 lg:pt-8">
-        <CategoryServiceListing category={category} sections={sections} />
+        <CategoryServiceListing
+          category={category}
+          sections={sections}
+          initialCountry={initialCountry}
+          hasCountryCookie={hasCountryCookie}
+        />
       </main>
       <Footer />
     </div>

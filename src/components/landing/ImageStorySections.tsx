@@ -7,21 +7,27 @@ const ease = [0.22, 1, 0.36, 1] as const;
 
 const blocks = [
   {
-    id: "field-operations",
-    title: "From tour bus to festival field",
-    body: "Give your production team and medical partners the same plan—who is booked, when they arrive, and what is included. Less time chasing spreadsheets, more time locking in the run of show.",
-    imageSrc: "/landing-page/landing-1.jpg",
+    id: "mass-gathering-coverage",
+    title: "Medical coverage for any mass gathering",
+    body: (
+      <>
+        Planning a conference, political rally, marathon, sporting event,
+        crusade or any mass gathering, you can get all you need for medical
+        coverage at Ambu<span className="text-red-600">H</span>ub.
+      </>
+    ),
+    imageSrc: "/landing-page/landing-1.png",
     imageAlt:
-      "Medical standby and ambulance vehicle at an outdoor event venue",
+      "Ambulance and medical standby team on duty at a large outdoor event",
     imageOnRight: true,
   },
   {
-    id: "unified-marketplace",
-    title: "One place for coverage and gear",
-    body: "Ambuhub keeps standby, transport, staff, and equipment listings connected—so you can secure medical coverage for opening night and source kit for the fleet without switching between disconnected tools.",
-    imageSrc: "/landing-page/landing-2.jpg",
+    id: "one-stop-platform",
+    title: "Your one-stop medical transport platform",
+    body: "One-stop shop connecting patients, individuals and organisations to non-emergency and emergency ambulance services, other medical transport and support services all in one platform.",
+    imageSrc: "/landing-page/landing-2.png",
     imageAlt:
-      "Ambulance and medical professionals preparing kit for an event",
+      "Ambulance crew assisting a patient during a medical transport",
     imageOnRight: false,
   },
 ] as const;

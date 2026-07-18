@@ -63,9 +63,16 @@ export function Footer() {
               <p className="text-lg font-bold tracking-tight">Ambuhub</p>
             </div>
             <p className="mt-4 text-sm leading-relaxed text-white/75">
-              Connecting organizers and patients to emergency medical coverage
-              and equipment through one marketplace. We are building a clearer way
-              to list, compare, and book standby, transport, personnel, and kit.
+              Ambu<span className="text-red-500">H</span>ub is a one-stop
+              marketplace for ambulance and medical
+              transport services. We connect clients with trusted medical
+              transport providers, ambulance personnel, ambulance equipment
+              suppliers, and other essential support services.
+            </p>
+            <p className="mt-3 text-sm leading-relaxed text-white/75">
+              Our mission is to create a seamless, integrated platform where
+              clients can easily compare, choose, and access the right service
+              provider—all in one place and with just a few clicks.
             </p>
           </div>
 
@@ -92,7 +99,10 @@ export function Footer() {
                   className="mt-0.5 h-4 w-4 shrink-0 text-white/60"
                   aria-hidden
                 />
-                <span>Lagos, Nigeria</span>
+                <span className="flex flex-col gap-1">
+                  <span>Abuja, Nigeria</span>
+                  <span>Accra, Ghana</span>
+                </span>
               </li>
               <li className="flex gap-3">
                 <Phone

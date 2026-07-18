@@ -13,19 +13,19 @@ const features = [
   {
     title: "Structured bookings",
     description:
-      "Dates, venues, and scope stay in one thread—so organizers and providers stay aligned.",
+      "Select location, dates, venues, and scope in one click — so clients and service providers stay aligned.",
     icon: CalendarClock,
   },
   {
-    title: "Equipment marketplace",
+    title: "Sales of Products and Services",
     description:
-      "List or source stretchers, monitors, and vehicle kit alongside your service bookings.",
+      "List or source your products, ranging from ambulances, ambulance equipment and services such as ambulance servicing and training",
     icon: Package,
   },
   {
     title: "Personnel on demand",
     description:
-      "Post shifts or browse medics and drivers for tours, standby, and short-term coverage.",
+      "Post or browse medics, drivers and support staff for medical transport, event standby and other medical coverage.",
     icon: Users,
   },
 ] as const;
@@ -69,28 +69,12 @@ export function FeaturesSection() {
         }}
       />
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, x: -40 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="max-w-2xl"
-        >
-          <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Built for events, venues, and fleets
-          </h2>
-          <p className="mt-4 text-lg leading-relaxed text-sky-100/90">
-            Ambuhub is for promoters, operators, and buyers who plan ahead—clear
-            listings, shared expectations, and less back-and-forth before show day.
-          </p>
-        </motion.div>
-
         <motion.ul
           variants={container}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-60px" }}
-          className="mt-12 grid gap-6 sm:grid-cols-2 lg:gap-8"
+          className="grid gap-6 sm:grid-cols-2 lg:gap-8"
         >
           {features.map((f, i) => (
             <motion.li
