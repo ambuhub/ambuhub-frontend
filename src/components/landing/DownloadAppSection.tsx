@@ -54,21 +54,21 @@ export function DownloadAppSection() {
   return (
     <section
       id="download-app"
-      className="relative flex items-center justify-center overflow-hidden border-t border-blue-300/40 bg-gradient-to-br from-blue-700 via-blue-600 to-sky-500 py-14 sm:py-16 lg:max-h-[50vh] lg:py-10"
+      className="flex items-center justify-center border-t border-blue-200/50 bg-gradient-to-b from-white via-sky-50/70 to-blue-50/60 py-14 sm:py-16 lg:py-14"
     >
-      <div
-        className="pointer-events-none absolute inset-0 opacity-40"
-        aria-hidden
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 15% 20%, rgb(125 211 252 / 0.5), transparent 45%), radial-gradient(circle at 85% 85%, rgb(99 102 241 / 0.45), transparent 40%)",
-        }}
-      />
-      <div className="relative mx-auto flex w-full max-w-6xl justify-center px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col items-center gap-6 sm:gap-8 lg:flex-row lg:items-center lg:gap-6 xl:gap-8">
+      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="relative flex flex-col items-center gap-6 overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-blue-600 to-sky-500 px-6 py-10 shadow-2xl shadow-blue-900/30 ring-2 ring-white/20 sm:gap-8 sm:px-10 sm:py-12 lg:flex-row lg:justify-center lg:gap-10 xl:gap-14">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-40"
+            aria-hidden
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 15% 20%, rgb(125 211 252 / 0.5), transparent 45%), radial-gradient(circle at 85% 85%, rgb(99 102 241 / 0.45), transparent 40%)",
+            }}
+          />
           <motion.div
             {...slideUp(0.1)}
-            className="order-2 max-w-md text-center lg:order-1 lg:text-left"
+            className="relative order-2 max-w-md text-center lg:order-1 lg:text-left"
           >
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-sky-200 sm:text-xs">
               Connect on the go
@@ -90,7 +90,10 @@ export function DownloadAppSection() {
             <p className="mt-2 text-xs text-sky-200/80">Mobile apps coming soon.</p>
           </motion.div>
 
-          <motion.div {...slideUp(0)} className="order-1 shrink-0 lg:order-2">
+          <motion.div
+            {...slideUp(0)}
+            className="relative order-1 shrink-0 lg:order-2"
+          >
             <div className="relative aspect-[3/4] w-[150px] sm:w-[170px] lg:w-[min(16vw,180px)]">
               <Image
                 src="/landing-page/landing-6.png"
