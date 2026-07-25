@@ -43,7 +43,7 @@ const socialLinks = [
   },
   {
     label: "LinkedIn",
-    href: "https://www.linkedin.com/",
+    href: "https://www.linkedin.com/company/ambuhub/?viewAsMember=true",
     icon: Linkedin,
   },
 ] as const;
