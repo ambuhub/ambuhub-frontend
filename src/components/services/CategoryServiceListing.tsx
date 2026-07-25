@@ -12,7 +12,7 @@ import {
   type MarketplaceBrowseCountry,
 } from "@/lib/browse-country";
 import { getCountryNameByCode } from "@/lib/countries";
-import { FALLBACK_THUMB, isCloudinaryHost } from "@/lib/landing-service-categories";
+import { FALLBACK_THUMB, isCloudinaryHost, toTitleCase } from "@/lib/landing-service-categories";
 import { AMBUHUB_SERVICES } from "@/lib/ambuhub-services";
 import { postCartItem } from "@/lib/marketplace-cart";
 import {
@@ -308,7 +308,9 @@ export function CategoryServiceListing({
 }: Props) {
   const pathname = usePathname();
   const loginHref = `/auth?next=${encodeURIComponent(pathname || "/")}`;
-  const { title, description } = getCategoryPageTitleDescription(category);
+  const pageInfo = getCategoryPageTitleDescription(category);
+  const title = toTitleCase(pageInfo.title);
+  const description = pageInfo.description;
   const bannerSrc =
     category.bannerUrl?.trim() ||
     category.thumbnailUrl?.trim() ||
@@ -492,12 +494,12 @@ export function CategoryServiceListing({
     const options = new Map<string, string>();
 
     for (const d of category.departments) {
-      options.set(d.slug, d.name);
+      options.set(d.slug, toTitleCase(d.name));
     }
 
     for (const section of liveSections) {
       if (!options.has(section.key)) {
-        options.set(section.key, section.heading);
+        options.set(section.key, toTitleCase(section.heading));
       }
     }
 
@@ -821,7 +823,7 @@ export function CategoryServiceListing({
           {bannerSrc ? (
             <CategoryBannerImage
               src={bannerSrc}
-              alt={`${category.name} — banner`}
+              alt={`${toTitleCase(category.name)} — banner`}
               categorySlug={category.slug}
             />
           ) : null}
@@ -1177,7 +1179,7 @@ export function CategoryServiceListing({
                   id={`dept-heading-${section.key}`}
                   className="text-lg font-semibold tracking-tight text-foreground sm:text-xl"
                 >
-                  {section.heading}
+                  {toTitleCase(section.heading)}
                 </h2>
                 <ul className="mt-5 grid grid-cols-1 gap-5 min-w-0 sm:grid-cols-2 sm:gap-5 lg:mt-6 lg:grid-cols-4 lg:gap-6">
                   {section.services.map((svc) => {

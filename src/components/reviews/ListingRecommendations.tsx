@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowRight, Loader2, Sparkles, Star } from "lucide-react";
+import { toTitleCase } from "@/lib/landing-service-categories";
 import { useEffect, useMemo, useState } from "react";
 import { ServiceCardImage } from "@/components/services/CategoryServiceListing";
 import type { ListingRecommendation } from "@/lib/listing-recommendations";
@@ -184,7 +185,7 @@ export function ListingRecommendations({
                             key={reason}
                             className="rounded-full border border-cyan-200/80 bg-cyan-50/90 px-2 py-0.5 text-[10px] font-medium text-[#0369a1]"
                           >
-                            {reason}
+                            {toTitleCase(reason)}
                           </li>
                         ))}
                       </ul>
@@ -196,7 +197,7 @@ export function ListingRecommendations({
                       {rec.service.title}
                     </Link>
                     <p className="mt-1 text-xs text-slate-500">
-                      {rec.service.departmentName}
+                      {toTitleCase(rec.service.departmentName)}
                     </p>
                     <div className="mt-auto flex flex-wrap items-end justify-between gap-2 pt-3">
                       <p className="text-sm font-bold text-[#0069b4]">
@@ -231,7 +232,7 @@ export function ListingRecommendations({
             href={`/services/${encodeURIComponent(categorySlug)}`}
             className="font-semibold text-[#0069b4] hover:underline"
           >
-            Browse all in {categoryName}
+            Browse all in {toTitleCase(categoryName)}
           </Link>
         </p>
       </div>

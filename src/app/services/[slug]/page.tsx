@@ -16,6 +16,7 @@ import {
   getCategoryPageTitleDescription,
   groupMarketplaceByDepartments,
 } from "@/lib/service-category-page-data";
+import { toTitleCase } from "@/lib/landing-service-categories";
 import { publicPageMetadata } from "@/lib/seo-metadata";
 
 type PageProps = {
@@ -36,7 +37,7 @@ export async function generateMetadata({
     return { title: "Services" };
   }
   const { title, description } = getCategoryPageTitleDescription(category);
-  return publicPageMetadata(title, description);
+  return publicPageMetadata(toTitleCase(title), description);
 }
 
 async function resolveBrowseCountry(): Promise<{

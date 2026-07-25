@@ -4,6 +4,7 @@ import { getServiceBySlug } from "@/lib/ambuhub-services";
 import {
   FALLBACK_THUMB,
   isCloudinaryHost,
+  toTitleCase,
   type LandingServiceCategory,
 } from "@/lib/landing-service-categories";
 
@@ -119,12 +120,12 @@ export function ServiceCategoryCard({ category, index, className }: Props) {
         <CategoryCardImage
           slug={category.slug}
           thumbnailUrl={category.thumbnailUrl}
-          alt={category.name}
+          alt={toTitleCase(category.name)}
         />
       </div>
       <div className="flex flex-1 flex-col p-6 sm:p-7">
         <span className="text-lg font-semibold text-blue-950 group-hover:text-blue-700">
-          {category.name}
+          {toTitleCase(category.name)}
         </span>
         <span className="mt-2 flex-1 text-sm leading-relaxed text-blue-900/70">
           {cardDescription(category)}

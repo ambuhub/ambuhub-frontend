@@ -7,7 +7,7 @@ import {
   formatHireReturnWindowSummary,
   hasValidHireReturnWindow,
 } from "@/lib/hire-return-window";
-import { FALLBACK_THUMB, isCloudinaryHost } from "@/lib/landing-service-categories";
+import { FALLBACK_THUMB, isCloudinaryHost, toTitleCase } from "@/lib/landing-service-categories";
 import {
   formatHirePricePeriodSuffix,
   formatPricingPeriodLabel,
@@ -255,7 +255,7 @@ export function MarketplaceListingDetail({
             Listing details
           </span>
           <span className="text-xs font-medium text-slate-500">
-            {service.category.name} · {service.departmentName}
+            {toTitleCase(service.category.name)} · {toTitleCase(service.departmentName)}
           </span>
         </div>
       ) : null}
@@ -309,7 +309,7 @@ export function MarketplaceListingDetail({
 
               {!isPublic ? (
                 <p className="mt-2 text-sm text-foreground/70">
-                  {service.category.name} · {service.departmentName}
+                  {toTitleCase(service.category.name)} · {toTitleCase(service.departmentName)}
                 </p>
               ) : null}
 
