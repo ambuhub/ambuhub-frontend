@@ -28,8 +28,37 @@ export const metadata: Metadata = {
     siteName: "Ambuhub",
   },
   icons: {
-    icon: "/ambuhub-logo.png",
-    apple: "/ambuhub-logo.png",
+    icon: [
+      {
+        url: "/favicon.png",
+        type: "image/png",
+        sizes: "any",
+      },
+      {
+        url: "/ambuhub-logo.png",
+        type: "image/png",
+        sizes: "any",
+      },
+    ],
+    shortcut: [
+      {
+        url: "/favicon.png",
+        type: "image/png",
+      },
+    ],
+    apple: [
+      {
+        url: "/ambuhub-logo.png",
+        type: "image/png",
+      },
+    ],
+    other: [
+      {
+        rel: "apple-touch-icon-precomposed",
+        url: "/ambuhub-logo.png",
+        type: "image/png",
+      },
+    ],
   },
 };
 
