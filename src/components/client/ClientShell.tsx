@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bell,
+  ClipboardList,
   ConciergeBell,
   Heart,
   LayoutDashboard,
@@ -12,6 +13,7 @@ import {
   Menu,
   Share2,
   ShoppingBag,
+  Siren,
   Star,
   User,
   X,
@@ -24,6 +26,12 @@ import { unregisterFcmToken } from "@/components/notifications/FcmProvider";
 
 const navItems = [
   { href: "/client/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/client/dispatch", label: "Request Ambulance", icon: Siren },
+  {
+    href: "/client/dispatch/requests",
+    label: "My requests",
+    icon: ClipboardList,
+  },
   { href: "/client/profile", label: "Profile", icon: User },
   { href: "/client/orders", label: "Orders", icon: ShoppingBag },
   { href: "/client/favorite", label: "Favorite", icon: Heart },
@@ -35,6 +43,9 @@ const navItems = [
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/client/dashboard") {
+    return pathname === href;
+  }
+  if (href === "/client/dispatch") {
     return pathname === href;
   }
   return pathname === href || pathname.startsWith(`${href}/`);

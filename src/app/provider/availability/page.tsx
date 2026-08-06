@@ -349,7 +349,7 @@ export default function ProviderAvailabilityPage() {
                         {item.title}
                       </p>
                       <Link
-                        href={`/provider/listings/${item.id}/edit`}
+                        href={`/provider/listings/edit/${item.id}`}
                         className="mt-1 inline-block text-xs font-medium text-ambuhub-brand hover:underline"
                       >
                         Edit listing

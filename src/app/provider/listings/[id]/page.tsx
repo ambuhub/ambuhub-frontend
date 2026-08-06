@@ -281,7 +281,7 @@ export default function ProviderListingDetailPage() {
             </div>
             <div className="flex w-full shrink-0 flex-col gap-3 sm:flex-row lg:w-auto lg:flex-col">
               <Link
-                href={`/provider/listings/${service.id}/edit`}
+                href={`/provider/listings/edit/${service.id}`}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-cyan-200/60 bg-white px-5 py-3.5 text-sm font-semibold text-[#004a7c] shadow-[0_0_24px_-4px_rgba(34,211,238,0.45),0_4px_14px_rgba(0,0,0,0.15)] transition hover:border-cyan-300 hover:bg-cyan-50 hover:shadow-[0_0_32px_-2px_rgba(34,211,238,0.55)] lg:flex-none"
               >
                 <Pencil className="h-4 w-4" aria-hidden />

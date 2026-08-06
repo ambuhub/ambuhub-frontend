@@ -7,6 +7,7 @@ import {
   Building2,
   Calendar,
   CalendarClock,
+  ClipboardList,
   CreditCard,
   LayoutDashboard,
   List,
@@ -15,6 +16,7 @@ import {
   Bell,
   PackagePlus,
   Settings,
+  Siren,
   X,
 } from "lucide-react";
 import { API_AUTH_BFF_PREFIX } from "@/lib/api";
@@ -46,6 +48,16 @@ const navItems = [
     icon: Calendar,
   },
   {
+    href: "/provider/dispatch",
+    label: "Dispatch",
+    icon: Siren,
+  },
+  {
+    href: "/provider/dispatch/requests",
+    label: "Dispatch requests",
+    icon: ClipboardList,
+  },
+  {
     href: "/provider/availability",
     label: "Availability",
     icon: CalendarClock,
@@ -74,6 +86,9 @@ const navItems = [
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/provider/dashboard") {
+    return pathname === href;
+  }
+  if (href === "/provider/dispatch") {
     return pathname === href;
   }
   return pathname === href || pathname.startsWith(`${href}/`);

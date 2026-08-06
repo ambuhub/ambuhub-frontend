@@ -9,6 +9,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@react-google-maps/api": "^2.20.8",
+    "@types/google.maps": "^3.65.4",
     "firebase": "^12.15.0",
     "framer-motion": "^12.38.0",
     "jose": "^6.2.2",
