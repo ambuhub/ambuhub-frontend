@@ -24,6 +24,7 @@ import {
   isPricingPeriod,
 } from "@/lib/pricing-period";
 import type { MarketplaceServiceRow } from "@/lib/service-category-page-data";
+import { toTitleCase } from "@/lib/ambuhub-services";
 import {
   formatStockLabel,
   getListingPrice,
@@ -223,7 +224,7 @@ function FavoriteNeonCard({
               href={`/services/${encodeURIComponent(svc.category.slug)}`}
               className="font-semibold text-[#0069b4] underline"
             >
-              {svc.category.name}
+              {toTitleCase(svc.category.name)}
             </Link>{" "}
             category page.
           </p>

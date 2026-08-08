@@ -11,6 +11,7 @@ import { dispatchMarketplaceInvalidate } from "@/lib/cache-tags";
 import { getCountryNameByCode } from "@/lib/countries";
 import { formatHireReturnWindowSummary, type HireReturnWindow } from "@/lib/hire-return-window";
 import { formatHirePricePeriodSuffix } from "@/lib/pricing-period";
+import { toTitleCase } from "@/lib/ambuhub-services";
 import {
   ArrowLeft,
   Calendar,
@@ -249,7 +250,7 @@ export default function ProviderListingDetailPage() {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-sky-100">
-                  {service.category.name}
+                  {toTitleCase(service.category.name)}
                 </span>
                 <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/90">
                   {service.departmentName}

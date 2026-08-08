@@ -16,6 +16,8 @@ export type AdminConciergeListItem = {
   name: string;
   email: string;
   phone: string;
+  inquiryType: string | null;
+  inquiryTypeLabel: string | null;
   categoryName: string;
   departmentName: string;
   status: AdminConciergeStatus;

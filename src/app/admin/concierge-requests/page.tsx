@@ -16,6 +16,7 @@ import {
   type AdminConciergeStatusCounts,
   type AdminConciergeStatusFilter,
 } from "@/lib/admin-concierge";
+import { toTitleCase } from "@/lib/ambuhub-services";
 
 const PAGE_SIZE = 20;
 const numberFmt = new Intl.NumberFormat("en-NG");
@@ -82,7 +83,7 @@ function RequestRow({ request }: { request: AdminConciergeListItem }) {
         </Link>
       </td>
       <td className="hidden px-4 py-3.5 text-sm text-slate-700 md:table-cell">
-        {request.categoryName}
+        {toTitleCase(request.categoryName)}
       </td>
       <td className="hidden px-4 py-3.5 text-sm text-slate-700 lg:table-cell">
         {request.departmentName}

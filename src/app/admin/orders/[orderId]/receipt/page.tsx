@@ -9,6 +9,7 @@ import { fetchAdminOrderReceipt } from "@/lib/admin-orders";
 import { formatMoney, parseSupportedCurrency } from "@/lib/currency";
 import type { ReceiptDetailClient } from "@/lib/marketplace-cart";
 import { formatPricingPeriodLabel, isPricingPeriod } from "@/lib/pricing-period";
+import { toTitleCase } from "@/lib/ambuhub-services";
 
 function AdminReceiptDetails({
   receipt,
@@ -82,7 +83,7 @@ function AdminReceiptDetails({
                   <div className="min-w-0">
                     <p className="font-semibold text-slate-900">{line.title}</p>
                     <p className="text-xs text-slate-500">
-                      {line.categoryName} · {line.departmentName}
+                      {toTitleCase(line.categoryName)} · {line.departmentName}
                     </p>
                     <p className="mt-1 text-xs text-slate-600">
                       {line.lineKind === "hire" &&

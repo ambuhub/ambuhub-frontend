@@ -17,6 +17,7 @@ import {
   type OrderDetailClient,
 } from "@/lib/marketplace-cart";
 import { formatMoney, parseSupportedCurrency } from "@/lib/currency";
+import { toTitleCase } from "@/lib/ambuhub-services";
 
 export default function CheckoutPage() {
   return (
@@ -220,7 +221,7 @@ function CheckoutPageContent() {
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-foreground">{row.title}</p>
                       <p className="mt-1 text-xs text-foreground/60">
-                        {row.category.name} · {row.departmentName}
+                        {toTitleCase(row.category.name)} · {row.departmentName}
                       </p>
                       <p className="mt-2 text-sm font-medium text-foreground">
                         {row.price != null ? formatMoney(row.price, checkoutCurrency) : "—"} each

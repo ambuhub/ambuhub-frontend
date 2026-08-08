@@ -2,6 +2,7 @@ import { cache } from "react";
 import {
   AMBUHUB_SERVICE_SLUGS,
   getServiceBySlug,
+  toTitleCase,
 } from "@/lib/ambuhub-services";
 import type { BookingWindow } from "@/lib/booking-window";
 import type { HourlyBookingSchedule } from "@/lib/hourly-booking-schedule";
@@ -114,7 +115,13 @@ export const fetchServiceCategoriesList = cache(
       const data = (await res.json()) as {
         serviceCategories?: ServiceCategoryPageDto[];
       };
-      return Array.isArray(data.serviceCategories) ? data.serviceCategories : [];
+      const rows = Array.isArray(data.serviceCategories)
+        ? data.serviceCategories
+        : [];
+      return rows.map((c) => ({
+        ...c,
+        name: toTitleCase(c.name),
+      }));
     } catch {
       return [];
     }
@@ -218,7 +225,9 @@ export function getCategoryPageTitleDescription(
 ): { title: string; description: string } {
   const note = category.note?.trim();
   const staticMeta = getServiceBySlug(category.slug);
-  const title = category.name?.trim() || staticMeta?.title || "Services";
+  const title = toTitleCase(
+    category.name?.trim() || staticMeta?.title || "Services",
+  );
   const description =
     note ||
     staticMeta?.description ||

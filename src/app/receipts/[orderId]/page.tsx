@@ -12,6 +12,7 @@ import {
 } from "@/lib/marketplace-cart";
 import { formatPricingPeriodLabel, isPricingPeriod } from "@/lib/pricing-period";
 import { formatMoney, parseSupportedCurrency } from "@/lib/currency";
+import { toTitleCase } from "@/lib/ambuhub-services";
 
 function ReceiptDetails({ receipt }: { receipt: ReceiptDetailClient }) {
   const currency = parseSupportedCurrency(receipt.currency);
@@ -86,7 +87,7 @@ function ReceiptDetails({ receipt }: { receipt: ReceiptDetailClient }) {
                 <div className="min-w-0">
                   <p className="font-semibold text-slate-900">{line.title}</p>
                   <p className="text-xs text-slate-500">
-                    {line.categoryName} · {line.departmentName}
+                    {toTitleCase(line.categoryName)} · {line.departmentName}
                   </p>
                   <p className="mt-1 text-xs text-slate-600">
                     {line.lineKind === "hire" &&

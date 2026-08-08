@@ -23,6 +23,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import { toTitleCase } from "@/lib/ambuhub-services";
 
 type Department = { name: string; slug: string; order: number };
 type ListingType = "sale" | "hire" | "book";
@@ -459,7 +460,7 @@ export default function ProviderEditListingPage() {
             <option value="">Select a category</option>
             {categories.map((c) => (
               <option key={c.id} value={c.slug}>
-                {c.name}
+                {toTitleCase(c.name)}
               </option>
             ))}
           </select>

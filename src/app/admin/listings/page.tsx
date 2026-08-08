@@ -19,6 +19,7 @@ import {
   type AdminListingTypeFilter,
 } from "@/lib/admin-listings";
 import { formatMoney, parseSupportedCurrency } from "@/lib/currency";
+import { toTitleCase } from "@/lib/ambuhub-services";
 
 const PAGE_SIZE = 20;
 const numberFmt = new Intl.NumberFormat("en-NG");
@@ -127,7 +128,7 @@ function ListingRow({
         <div className="min-w-0">
           <p className="truncate font-medium text-slate-900">{listing.title}</p>
           <p className="truncate text-xs text-slate-500">
-            {listing.categoryName} · {listing.departmentName}
+            {toTitleCase(listing.categoryName)} · {listing.departmentName}
           </p>
         </div>
       </td>

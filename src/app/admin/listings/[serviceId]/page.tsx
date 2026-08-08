@@ -26,6 +26,7 @@ import {
   hasValidHireReturnWindow,
 } from "@/lib/hire-return-window";
 import { FALLBACK_THUMB } from "@/lib/landing-service-categories";
+import { toTitleCase } from "@/lib/ambuhub-services";
 import {
   formatHirePricePeriodSuffix,
   formatPricingPeriodLabel,
@@ -222,7 +223,7 @@ export default function AdminListingDetailPage() {
         <>
           <AdminPageHeader
             title={listing.title}
-            description={`${listing.categoryName} · ${listing.departmentName} · Updated ${formatDateTime(listing.updatedAt)}`}
+            description={`${toTitleCase(listing.categoryName)} · ${listing.departmentName} · Updated ${formatDateTime(listing.updatedAt)}`}
           />
 
           {actionMessage ? (
@@ -270,7 +271,7 @@ export default function AdminListingDetailPage() {
                   <div>
                     <dt className="text-xs font-medium text-slate-500">Category</dt>
                     <dd className="mt-1 text-sm font-semibold text-slate-900">
-                      {listing.categoryName}
+                      {toTitleCase(listing.categoryName)}
                     </dd>
                   </div>
                   <div>

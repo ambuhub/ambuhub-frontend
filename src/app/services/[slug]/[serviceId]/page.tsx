@@ -10,6 +10,7 @@ import {
   fetchMarketplaceServiceByIdForPage,
   fetchMarketplaceServices,
 } from "@/lib/service-category-page-data";
+import { toTitleCase } from "@/lib/ambuhub-services";
 import { publicPageMetadata } from "@/lib/seo-metadata";
 
 type PageProps = {
@@ -79,7 +80,7 @@ export default async function MarketplaceListingDetailPage({
         <MarketplaceListingDetail
           service={service}
           backHref={`/services/${encodeURIComponent(slug)}`}
-          backLabel={`Back to ${service.category.name}`}
+          backLabel={`Back to ${toTitleCase(service.category.name)}`}
           variant="public"
           actions={
             <ListingDetailMarketplaceActions
@@ -94,7 +95,7 @@ export default async function MarketplaceListingDetailPage({
             variant="public"
             recommendations={recommendations}
             categorySlug={slug}
-            categoryName={service.category.name}
+            categoryName={toTitleCase(service.category.name)}
           />
         </MarketplaceListingDetail>
       </main>

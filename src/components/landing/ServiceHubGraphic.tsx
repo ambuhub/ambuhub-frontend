@@ -8,7 +8,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { AMBUHUB_SERVICES } from "@/lib/ambuhub-services";
+import { AMBUHUB_SERVICES, toTitleCase } from "@/lib/ambuhub-services";
 
 const cx = 500;
 const cy = 552;
@@ -140,7 +140,7 @@ const wedgeIcons = [Ambulance, Users, Package, ShoppingCart] as const;
 
 const services: Omit<ServiceItem, "fo">[] = AMBUHUB_SERVICES.map((s, i) => ({
   id: s.slug,
-  title: s.title,
+  title: toTitleCase(s.title),
   description: s.description,
   fill: wedgeFills[i],
   icon: wedgeIcons[i],
@@ -533,7 +533,9 @@ export function ServiceHubGraphic() {
               fill: "var(--color-ambuhub-900)",
             }}
           >
-            Ambuhub
+            Ambu
+            <tspan fill="#dc2626">H</tspan>
+            ub
           </text>
         </motion.g>
     </motion.svg>

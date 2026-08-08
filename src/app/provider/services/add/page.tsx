@@ -19,6 +19,7 @@ import {
   validateHireReturnWindowClient,
   type HireReturnWindow,
 } from "@/lib/hire-return-window";
+import { toTitleCase } from "@/lib/ambuhub-services";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -347,7 +348,7 @@ export default function ProviderAddServicePage() {
             </option>
             {categories.map((c) => (
               <option key={c.id} value={c.slug}>
-                {c.name}
+                {toTitleCase(c.name)}
               </option>
             ))}
           </select>

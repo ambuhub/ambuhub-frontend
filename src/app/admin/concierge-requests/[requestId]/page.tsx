@@ -17,6 +17,7 @@ import {
   type AdminConciergeDetail,
 } from "@/lib/admin-concierge";
 import { getCountryNameByCode } from "@/lib/countries";
+import { toTitleCase } from "@/lib/ambuhub-services";
 
 function formatDateTime(iso: string): string {
   try {
@@ -98,7 +99,7 @@ export default function AdminConciergeRequestDetailPage() {
           <AdminPageHeader
             theme="blue"
             title={request.name}
-            description={`${request.categoryName} · ${request.departmentName} · Submitted ${formatDateTime(request.createdAt)}`}
+            description={`${toTitleCase(request.categoryName)} · ${request.departmentName} · Submitted ${formatDateTime(request.createdAt)}`}
           />
 
           <div className="grid gap-4 lg:grid-cols-3">
@@ -108,9 +109,17 @@ export default function AdminConciergeRequestDetailPage() {
               </h2>
               <dl className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div>
+                  <dt className="text-xs font-medium text-slate-500">
+                    Inquiry type
+                  </dt>
+                  <dd className="mt-1 text-sm font-semibold text-slate-900">
+                    {request.inquiryTypeLabel ?? "—"}
+                  </dd>
+                </div>
+                <div>
                   <dt className="text-xs font-medium text-slate-500">Category</dt>
                   <dd className="mt-1 text-sm font-semibold text-slate-900">
-                    {request.categoryName}
+                    {toTitleCase(request.categoryName)}
                   </dd>
                 </div>
                 <div>

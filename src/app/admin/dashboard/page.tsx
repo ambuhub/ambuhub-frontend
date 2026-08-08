@@ -6,9 +6,11 @@ import {
   FolderTree,
   Loader2,
   Package,
+  ScrollText,
   ShoppingBag,
   Star,
   Users,
+  UsersRound,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
@@ -27,6 +29,8 @@ const numberFmt = new Intl.NumberFormat("en-NG");
 
 const quickLinks = [
   { href: "/admin/users", label: "Manage users", icon: Users },
+  { href: "/admin/team", label: "Manage team", icon: UsersRound },
+  { href: "/admin/activity-logs", label: "Activity logs", icon: ScrollText },
   { href: "/admin/orders", label: "View orders", icon: ShoppingBag },
   { href: "/admin/listings", label: "Moderate listings", icon: Package },
   { href: "/admin/categories", label: "Edit categories", icon: FolderTree },

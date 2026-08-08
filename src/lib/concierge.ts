@@ -3,6 +3,28 @@ import { API_PROXY_PREFIX } from "@/lib/api";
 export const CONCIERGE_SOMETHING_ELSE_SLUG = "something-else";
 export const CONCIERGE_SOMETHING_ELSE_LABEL = "Something else";
 
+export const CONCIERGE_INQUIRY_TYPES = [
+  {
+    value: "transport_booking",
+    label: "Transport booking help",
+  },
+  {
+    value: "event_coverage",
+    label: "Event medical coverage",
+  },
+  {
+    value: "equipment_sourcing",
+    label: "Equipment or fleet sourcing",
+  },
+  {
+    value: "other",
+    label: "Other",
+  },
+] as const;
+
+export type ConciergeInquiryType =
+  (typeof CONCIERGE_INQUIRY_TYPES)[number]["value"];
+
 export type ServiceCategoryOption = {
   id: string;
   name: string;
@@ -15,6 +37,7 @@ export type ConciergeRequestPayload = {
   phone: string;
   email: string;
   countryCode: string;
+  inquiryType: ConciergeInquiryType;
   categorySlug: string;
   departmentSlug: string;
   description: string;
@@ -26,6 +49,8 @@ export type ConciergeRequestResult = {
   phone: string;
   email: string;
   countryCode: string;
+  inquiryType: ConciergeInquiryType;
+  inquiryTypeLabel: string;
   categorySlug: string;
   categoryName: string;
   departmentSlug: string;

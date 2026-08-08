@@ -17,6 +17,7 @@ import {
   type AdminOrderLineKind,
 } from "@/lib/admin-orders";
 import { formatMoney, parseSupportedCurrency } from "@/lib/currency";
+import { toTitleCase } from "@/lib/ambuhub-services";
 
 function formatOrderAmount(amount: number, currency: string): string {
   return formatMoney(amount, parseSupportedCurrency(currency));
@@ -224,7 +225,7 @@ export default function AdminOrderDetailPage() {
                       <td className="px-5 py-3">
                         <p className="font-medium text-slate-900">{line.title}</p>
                         <p className="text-xs text-slate-500">
-                          {line.categoryName} · {line.departmentName}
+                          {toTitleCase(line.categoryName)} · {line.departmentName}
                         </p>
                       </td>
                       <td className="px-5 py-3 text-sm text-slate-700">

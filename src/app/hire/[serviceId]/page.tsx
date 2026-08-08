@@ -45,6 +45,7 @@ import { marketplaceCategoryHref } from "@/lib/marketplace-navigation";
 import { formatMoney } from "@/lib/currency";
 import { getListingCurrency } from "@/lib/marketplace-listing";
 import type { MarketplaceServiceRow } from "@/lib/service-category-page-data";
+import { toTitleCase } from "@/lib/ambuhub-services";
 
 function descriptionSnippet(text: string, max = 200): string {
   const t = text.trim();
@@ -314,7 +315,7 @@ export default function HireCheckoutPage() {
                   <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#004a7c] via-cyan-400 to-sky-400" />
                   <p className="font-semibold text-foreground">{service.title}</p>
                   <p className="mt-1 text-xs text-foreground/60">
-                    {service.category.name} · {service.departmentName}
+                    {toTitleCase(service.category.name)} · {service.departmentName}
                   </p>
                 </div>
               ) : null}
@@ -406,7 +407,7 @@ export default function HireCheckoutPage() {
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-foreground">{service.title}</p>
                     <p className="mt-1 text-xs text-foreground/60">
-                      {service.category.name} · {service.departmentName}
+                      {toTitleCase(service.category.name)} · {service.departmentName}
                     </p>
                     {service.description.trim() ? (
                       <p className="mt-2 text-sm text-foreground/75">

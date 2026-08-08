@@ -45,7 +45,6 @@ export default function AdminSettingsPage() {
         description="Configuration panels will be added here as platform controls are defined."
         features={[
           "Environment-aware read-only config preview",
-          "Role-based access for additional admin users",
           "Webhook and payment provider status checks",
           "Data retention and backup policy notes",
         ]}

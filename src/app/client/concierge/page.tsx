@@ -11,12 +11,15 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CountrySelect } from "@/components/ui/CountrySelect";
 import {
+  CONCIERGE_INQUIRY_TYPES,
   CONCIERGE_SOMETHING_ELSE_LABEL,
   CONCIERGE_SOMETHING_ELSE_SLUG,
   fetchServiceCategoryOptions,
   submitConciergeRequest,
+  type ConciergeInquiryType,
   type ServiceCategoryOption,
 } from "@/lib/concierge";
+import { toTitleCase } from "@/lib/ambuhub-services";
 import { fetchAuthMe } from "@/lib/marketplace-cart";
 
 const fieldClass =
@@ -44,6 +47,9 @@ export default function ClientConciergePage() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [countryCode, setCountryCode] = useState("");
+  const [inquiryType, setInquiryType] = useState<ConciergeInquiryType | "">(
+    "",
+  );
   const [categorySlug, setCategorySlug] = useState("");
   const [departmentSlug, setDepartmentSlug] = useState("");
   const [description, setDescription] = useState("");
@@ -141,6 +147,10 @@ export default function ClientConciergePage() {
       setSubmitError("Please select your country.");
       return;
     }
+    if (!inquiryType) {
+      setSubmitError("Please select an inquiry type.");
+      return;
+    }
     if (!categorySlug) {
       setSubmitError("Please select a service category.");
       return;
@@ -161,10 +171,14 @@ export default function ClientConciergePage() {
         phone: phone.trim(),
         email: email.trim(),
         countryCode: countryCode.trim(),
+        inquiryType,
         categorySlug,
         departmentSlug,
         description: description.trim(),
       });
+      setInquiryType("");
+      setCategorySlug("");
+      setDepartmentSlug("");
       setDescription("");
       setSubmitSuccess(
         "Your request has been received successfully, our agent will contact you shortly",
@@ -294,6 +308,28 @@ export default function ClientConciergePage() {
             </div>
 
             <div>
+              <label htmlFor="concierge-inquiry-type" className={labelClass}>
+                Inquiry type
+              </label>
+              <select
+                id="concierge-inquiry-type"
+                value={inquiryType}
+                onChange={(e) =>
+                  setInquiryType(e.target.value as ConciergeInquiryType | "")
+                }
+                required
+                className={selectClass}
+              >
+                <option value="">Select an inquiry type</option>
+                {CONCIERGE_INQUIRY_TYPES.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
               <label htmlFor="concierge-category" className={labelClass}>
                 Service category
               </label>
@@ -310,7 +346,7 @@ export default function ClientConciergePage() {
                 </option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.slug}>
-                    {category.name}
+                    {toTitleCase(category.name)}
                   </option>
                 ))}
                 <option value={CONCIERGE_SOMETHING_ELSE_SLUG}>

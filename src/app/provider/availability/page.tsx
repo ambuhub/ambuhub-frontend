@@ -2,7 +2,7 @@
 
 import { BookingScheduleCard } from "@/components/provider/BookingScheduleCard";
 import { API_PROXY_PREFIX } from "@/lib/api";
-import { AMBUHUB_SERVICE_SLUGS } from "@/lib/ambuhub-services";
+import { AMBUHUB_SERVICE_SLUGS, toTitleCase } from "@/lib/ambuhub-services";
 import { AMBUHUB_MARKETPLACE_INVALIDATE_EVENT } from "@/lib/cache-tags";
 import type { BookingWindow } from "@/lib/booking-window";
 import type { PricingPeriod } from "@/lib/pricing-period";
@@ -99,7 +99,7 @@ export default function ProviderAvailabilityPage() {
       if (items.length === 0) continue;
       result.push({
         slug,
-        categoryName: items[0].category.name,
+        categoryName: toTitleCase(items[0].category.name),
         items,
       });
     }
@@ -115,7 +115,7 @@ export default function ProviderAvailabilityPage() {
       for (const [, items] of byName) {
         result.push({
           slug: items[0].category.slug,
-          categoryName: items[0].category.name,
+          categoryName: toTitleCase(items[0].category.name),
           items,
         });
       }

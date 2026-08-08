@@ -1,16 +1,7 @@
 import { AMBUHUB_SERVICE_SLUGS } from "@/lib/ambuhub-services";
 import { fetchServiceCategoriesList } from "@/lib/service-category-page-data";
 
-export function toTitleCase(input: string | null | undefined): string {
-  const str = (input ?? "").trim();
-  if (!str) return "";
-  return str
-    .toLowerCase()
-    .replace(/([\s/\-_])+\s*/g, "$1")
-    .replace(/(^|\s|\/|\-|\_)([a-z])/g, (_m, sep: string, letter: string) => {
-      return sep + letter.toUpperCase();
-    });
-}
+export { toTitleCase } from "@/lib/ambuhub-services";
 
 export type LandingServiceCategory = {
   id: string;

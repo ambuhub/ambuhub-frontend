@@ -11,10 +11,12 @@ import {
   LogOut,
   Menu,
   Package,
+  ScrollText,
   Settings,
   ShoppingBag,
   Star,
   Users,
+  UsersRound,
   X,
 } from "lucide-react";
 import { API_AUTH_BFF_PREFIX } from "@/lib/api";
@@ -26,10 +28,12 @@ import { unregisterFcmToken } from "@/components/notifications/FcmProvider";
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/team", label: "Team", icon: UsersRound },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { href: "/admin/listings", label: "Listings", icon: Package },
   { href: "/admin/categories", label: "Categories", icon: FolderTree },
   { href: "/admin/concierge-requests", label: "Concierge requests", icon: ConciergeBell },
+  { href: "/admin/activity-logs", label: "Activity logs", icon: ScrollText },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
   { href: "/admin/reviews", label: "Reviews", icon: Star },
   { href: "/admin/settings", label: "Settings", icon: Settings },

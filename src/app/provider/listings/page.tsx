@@ -1,7 +1,7 @@
 "use client";
 
 import { API_PROXY_PREFIX } from "@/lib/api";
-import { AMBUHUB_SERVICE_SLUGS } from "@/lib/ambuhub-services";
+import { AMBUHUB_SERVICE_SLUGS, toTitleCase } from "@/lib/ambuhub-services";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -91,7 +91,7 @@ export default function ProviderListingsPage() {
       }
       result.push({
         slug,
-        categoryName: items[0].category.name,
+        categoryName: toTitleCase(items[0].category.name),
         items,
       });
     }
@@ -109,7 +109,7 @@ export default function ProviderListingsPage() {
       for (const [, items] of byName) {
         result.push({
           slug: items[0].category.slug,
-          categoryName: items[0].category.name,
+          categoryName: toTitleCase(items[0].category.name),
           items,
         });
       }
