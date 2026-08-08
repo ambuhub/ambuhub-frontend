@@ -59,15 +59,19 @@ export function LoginForm({ onSwitchToSignup, afterLoginRedirect }: Props) {
       }
       const role = data.user?.role;
       const defaultNext =
-        role === "admin" ||
         role === "service_provider" ||
         role === "client" ||
         role === "patient"
           ? postAuthPath(role as AuthUserRole)
           : "/";
       const trimmed = afterLoginRedirect?.trim();
+      const unsafeAdminNext =
+        !!trimmed &&
+        (trimmed === "/admin" || trimmed.startsWith("/admin/"));
       const next =
-        trimmed && isSafeInternalNextPath(trimmed) ? trimmed : defaultNext;
+        trimmed && isSafeInternalNextPath(trimmed) && !unsafeAdminNext
+          ? trimmed
+          : defaultNext;
 
       // Session/cart UI (e.g. marketplace cards) is client-state driven and the
       // provider stays mounted across navigation. Refresh it now so the next page

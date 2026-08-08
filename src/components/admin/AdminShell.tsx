@@ -60,7 +60,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     } catch {
       console.warn("Logout request failed; redirecting anyway");
     }
-    window.location.href = "/auth";
+    window.location.href = "/admin/login";
   }
 
   return (

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AdminShell } from "@/components/admin/AdminShell";
+import { AdminChrome } from "@/components/admin/AdminChrome";
 import { privatePageMetadata } from "@/lib/seo-metadata";
 
 export const metadata: Metadata = privatePageMetadata(
@@ -12,5 +12,5 @@ export default function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <AdminShell>{children}</AdminShell>;
+  return <AdminChrome>{children}</AdminChrome>;
 }
