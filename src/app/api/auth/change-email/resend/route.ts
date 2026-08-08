@@ -1,24 +1,14 @@
 import { NextResponse } from "next/server";
 import { getServerBackendOrigin } from "@/lib/server-backend-origin";
 
-async function proxyForgotPassword(
-  request: Request,
-  backendPath: string,
-): Promise<NextResponse> {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ message: "Invalid JSON body" }, { status: 400 });
-  }
-
+export async function POST(request: Request): Promise<NextResponse> {
   const backend = getServerBackendOrigin();
+  const cookie = request.headers.get("cookie");
   let upstream: Response;
   try {
-    upstream = await fetch(`${backend}${backendPath}`, {
+    upstream = await fetch(`${backend}/api/auth/change-email/resend`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      headers: cookie ? { cookie } : {},
     });
   } catch {
     return NextResponse.json(
@@ -41,8 +31,4 @@ async function proxyForgotPassword(
   }
 
   return NextResponse.json(payload, { status: upstream.status });
-}
-
-export async function POST(request: Request): Promise<NextResponse> {
-  return proxyForgotPassword(request, "/api/auth/forgot-password");
 }

@@ -52,6 +52,17 @@ export async function middleware(request: NextRequest) {
       new TextEncoder().encode(secret),
     );
     const role = typeof payload.role === "string" ? payload.role : "";
+    const emailVerified = payload.emailVerified;
+
+    if (
+      (isClient || isProvider) &&
+      emailVerified === false &&
+      (role === "client" || role === "patient" || role === "service_provider")
+    ) {
+      return NextResponse.redirect(
+        new URL("/auth/verify-email", request.url),
+      );
+    }
 
     if (isAdmin) {
       if (role === "admin") {

@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import {
+  applyAuthCookieToResponse,
+  collectSetCookieLines,
+  extractAuthTokenFromSetCookieLines,
+} from "@/lib/bff-cookies";
 import { getServerBackendOrigin } from "@/lib/server-backend-origin";
 
-async function proxyForgotPassword(
-  request: Request,
-  backendPath: string,
-): Promise<NextResponse> {
+export async function POST(request: Request): Promise<NextResponse> {
   let body: unknown;
   try {
     body = await request.json();
@@ -13,11 +15,15 @@ async function proxyForgotPassword(
   }
 
   const backend = getServerBackendOrigin();
+  const cookie = request.headers.get("cookie");
   let upstream: Response;
   try {
-    upstream = await fetch(`${backend}${backendPath}`, {
+    upstream = await fetch(`${backend}/api/auth/change-email/verify`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(cookie ? { cookie } : {}),
+      },
       body: JSON.stringify(body),
     });
   } catch {
@@ -40,9 +46,16 @@ async function proxyForgotPassword(
     );
   }
 
-  return NextResponse.json(payload, { status: upstream.status });
-}
+  const out = NextResponse.json(payload, { status: upstream.status });
+  if (!upstream.ok) {
+    return out;
+  }
 
-export async function POST(request: Request): Promise<NextResponse> {
-  return proxyForgotPassword(request, "/api/auth/forgot-password");
+  const token = extractAuthTokenFromSetCookieLines(
+    collectSetCookieLines(upstream),
+  );
+  if (token) {
+    applyAuthCookieToResponse(out, token);
+  }
+  return out;
 }

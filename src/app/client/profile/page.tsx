@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { CheckCircle2, Loader2, Shield, User } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { CountrySelect } from "@/components/ui/CountrySelect";
+import { ChangeEmailSection } from "@/components/profile/ChangeEmailSection";
 import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
 import type { PublicAuthUser } from "@/lib/auth-redirect";
 import {
@@ -238,7 +239,7 @@ export default function ClientProfilePage() {
                   className={`${fieldClass} cursor-not-allowed bg-slate-50 text-slate-600`}
                 />
                 <p className="mt-1 text-xs text-slate-500">
-                  Email cannot be changed in the app yet.
+                  To change your email, use the section below.
                 </p>
               </div>
               <div>
@@ -334,6 +335,16 @@ export default function ClientProfilePage() {
               </div>
             </dl>
           </section>
+
+          {user ? (
+            <ChangeEmailSection
+              currentEmail={user.email}
+              accent="client"
+              onEmailChanged={(updated) => {
+                setUser(updated);
+              }}
+            />
+          ) : null}
 
           <section className="relative overflow-hidden rounded-2xl border border-cyan-400/40 bg-white p-5 shadow-sm sm:p-6">
             <div className="flex items-center gap-2">

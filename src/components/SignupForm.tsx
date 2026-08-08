@@ -74,10 +74,16 @@ export function SignupForm({ role, onBack, splitLayout }: Props) {
       });
       const data = (await res.json()) as {
         message?: string;
-        user?: { role?: string };
+        user?: { role?: string; emailVerified?: boolean };
+        requiresEmailVerification?: boolean;
       };
       if (!res.ok) {
         setError(data.message ?? "Sign up failed");
+        return;
+      }
+      if (data.requiresEmailVerification || data.user?.emailVerified === false) {
+        router.push("/auth/verify-email");
+        router.refresh();
         return;
       }
       const authRole = data.user?.role;
@@ -133,8 +139,8 @@ export function SignupForm({ role, onBack, splitLayout }: Props) {
             : "mt-2 text-sm text-foreground/65"
         }
       >
-        Email verification with a one-time code will be added soon. For now you
-        can use your account right after signing up.
+        We&apos;ll email you a one-time code to verify your account after you
+        create it.
       </p>
 
       <form

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Building2, CheckCircle2, Loader2, Shield } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { CountrySelect } from "@/components/ui/CountrySelect";
+import { ChangeEmailSection } from "@/components/profile/ChangeEmailSection";
 import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
 import type { PublicAuthUser } from "@/lib/auth-redirect";
 import { postChangePassword } from "@/lib/client-profile";
@@ -375,10 +376,17 @@ export default function ProviderProfilePage() {
                 </dd>
               </div>
             </dl>
-            <p className="mt-4 text-xs text-slate-500">
-              Email cannot be changed in the app yet.
-            </p>
           </section>
+
+          {user ? (
+            <ChangeEmailSection
+              currentEmail={user.email}
+              accent="provider"
+              onEmailChanged={(updated) => {
+                setUser(updated);
+              }}
+            />
+          ) : null}
 
           <section className={sectionClass}>
             <div className={accentBarClass} aria-hidden />
