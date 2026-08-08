@@ -927,7 +927,7 @@ export function CategoryServiceListing({
 
                 <div>
                   <label htmlFor="department-filter" className={filterLabelClass}>
-                    Department
+                    Sub-category
                   </label>
                   <select
                     id="department-filter"
@@ -935,7 +935,7 @@ export function CategoryServiceListing({
                     onChange={(e) => setDepartmentFilter(e.target.value)}
                     className={`mt-1 ${filterControlClass}`}
                   >
-                    <option value="all">All departments</option>
+                    <option value="all">All sub-categories</option>
                     {departmentOptions.map((option) => (
                       <option key={option.slug} value={option.slug}>
                         {option.label}
