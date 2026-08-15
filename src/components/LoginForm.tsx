@@ -65,7 +65,8 @@ export function LoginForm({ onSwitchToSignup, afterLoginRedirect }: Props) {
       const defaultNext =
         role === "service_provider" ||
         role === "client" ||
-        role === "patient"
+        role === "patient" ||
+        role === "dispatch"
           ? postAuthPath(role as AuthUserRole)
           : "/";
       const trimmed = afterLoginRedirect?.trim();

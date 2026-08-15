@@ -8,11 +8,20 @@ function redirectToAuth(request: NextRequest, isAdminRoute: boolean) {
   );
 }
 
+function homeForRole(role: string): string | null {
+  if (role === "admin") return "/admin/dashboard";
+  if (role === "service_provider") return "/provider/dashboard";
+  if (role === "dispatch") return "/dispatch/dashboard";
+  if (role === "client" || role === "patient") return "/client/dashboard";
+  return null;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isProvider = pathname.startsWith("/provider");
   const isClient = pathname.startsWith("/client");
   const isAdmin = pathname.startsWith("/admin");
+  const isDispatch = pathname.startsWith("/dispatch");
   const isAdminLogin = pathname === "/admin/login";
 
   const secret = process.env.JWT_SECRET;
@@ -68,45 +77,42 @@ export async function middleware(request: NextRequest) {
       if (role === "admin") {
         return NextResponse.next();
       }
-      if (role === "service_provider") {
-        return NextResponse.redirect(
-          new URL("/provider/dashboard", request.url),
-        );
-      }
-      if (role === "client" || role === "patient") {
-        return NextResponse.redirect(
-          new URL("/client/dashboard", request.url),
-        );
+      const home = homeForRole(role);
+      if (home) {
+        return NextResponse.redirect(new URL(home, request.url));
       }
       return redirectToAuth(request, true);
     }
 
     if (isProvider) {
-      if (role === "admin") {
-        return NextResponse.redirect(new URL("/admin/dashboard", request.url));
-      }
       if (role === "service_provider") {
         return NextResponse.next();
       }
-      if (role === "client" || role === "patient") {
-        return NextResponse.redirect(
-          new URL("/client/dashboard", request.url),
-        );
+      const home = homeForRole(role);
+      if (home) {
+        return NextResponse.redirect(new URL(home, request.url));
       }
       return redirectToAuth(request, false);
     }
 
     if (isClient) {
-      if (role === "admin") {
-        return NextResponse.redirect(new URL("/admin/dashboard", request.url));
-      }
       if (role === "client" || role === "patient") {
         return NextResponse.next();
       }
-      if (role === "service_provider") {
-        return NextResponse.redirect(
-          new URL("/provider/dashboard", request.url),
-        );
+      const home = homeForRole(role);
+      if (home) {
+        return NextResponse.redirect(new URL(home, request.url));
+      }
+      return redirectToAuth(request, false);
+    }
+
+    if (isDispatch) {
+      if (role === "dispatch") {
+        return NextResponse.next();
+      }
+      const home = homeForRole(role);
+      if (home) {
+        return NextResponse.redirect(new URL(home, request.url));
       }
       return redirectToAuth(request, false);
     }
@@ -118,5 +124,10 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/provider/:path*", "/client/:path*", "/admin/:path*"],
+  matcher: [
+    "/provider/:path*",
+    "/client/:path*",
+    "/admin/:path*",
+    "/dispatch/:path*",
+  ],
 };

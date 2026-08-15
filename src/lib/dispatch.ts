@@ -14,6 +14,7 @@ export type DispatchRequestDto = {
   id: string;
   status: DispatchStatus;
   pickup: { lat: number; lng: number; address: string | null };
+  contactPhone: string | null;
   clientNotes: string | null;
   assignedService?: {
     id: string;
@@ -38,6 +39,8 @@ export type ProviderDispatchService = {
   title: string;
   dispatchEnabled: boolean;
   liveLocationUpdatedAt: string | null;
+  dispatchUserId?: string | null;
+  hasDispatchAccount?: boolean;
 };
 
 export type CreateDispatchPayload = {
@@ -46,6 +49,7 @@ export type CreateDispatchPayload = {
   longitude?: number;
   address?: string;
   notes?: string;
+  contactPhone?: string;
 };
 
 const ACTIVE_STATUSES: DispatchStatus[] = [
@@ -177,10 +181,28 @@ export function isProviderLocationFresh(
   return Date.now() - new Date(updatedAt).getTime() < DISPATCH_LOCATION_STALE_MS;
 }
 
+/** Provider monitoring — fleet status only. */
 export async function fetchProviderDispatchServices(): Promise<
   ProviderDispatchService[]
 > {
   const res = await fetch(`${API_PROXY_PREFIX}/dispatch/provider/services`, {
+    credentials: "include",
+  });
+  const data = (await res.json()) as {
+    services?: ProviderDispatchService[];
+    message?: string;
+  };
+  if (!res.ok) {
+    throw new Error(data.message ?? "Could not load dispatch services");
+  }
+  return data.services ?? [];
+}
+
+/** Crew — linked service for duty / GPS. */
+export async function fetchCrewDispatchServices(): Promise<
+  ProviderDispatchService[]
+> {
+  const res = await fetch(`${API_PROXY_PREFIX}/dispatch/crew/services`, {
     credentials: "include",
   });
   const data = (await res.json()) as {
@@ -237,8 +259,23 @@ export async function updateServiceLiveLocation(
   }
 }
 
+/** @deprecated Provider monitoring no longer receives offers; use fetchCrewOffer. */
 export async function fetchProviderOffer(): Promise<DispatchRequestDto | null> {
   const res = await fetch(`${API_PROXY_PREFIX}/dispatch/provider/offer`, {
+    credentials: "include",
+  });
+  const data = (await res.json()) as {
+    offer?: DispatchRequestDto | null;
+    message?: string;
+  };
+  if (!res.ok) {
+    throw new Error(data.message ?? "Could not load offer");
+  }
+  return data.offer ?? null;
+}
+
+export async function fetchCrewOffer(): Promise<DispatchRequestDto | null> {
+  const res = await fetch(`${API_PROXY_PREFIX}/dispatch/crew/offer`, {
     credentials: "include",
   });
   const data = (await res.json()) as {
@@ -255,6 +292,22 @@ export async function fetchProviderDispatchRequests(): Promise<
   DispatchRequestDto[]
 > {
   const res = await fetch(`${API_PROXY_PREFIX}/dispatch/provider/requests`, {
+    credentials: "include",
+  });
+  const data = (await res.json()) as {
+    requests?: DispatchRequestDto[];
+    message?: string;
+  };
+  if (!res.ok) {
+    throw new Error(data.message ?? "Could not load dispatch requests");
+  }
+  return data.requests ?? [];
+}
+
+export async function fetchCrewDispatchRequests(): Promise<
+  DispatchRequestDto[]
+> {
+  const res = await fetch(`${API_PROXY_PREFIX}/dispatch/crew/requests`, {
     credentials: "include",
   });
   const data = (await res.json()) as {

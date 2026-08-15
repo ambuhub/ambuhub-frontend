@@ -40,6 +40,7 @@ type MyService = {
   departmentName: string;
   category: { id: string; slug: string; name: string };
   photoUrls: string[];
+  dispatchUserId?: string | null;
 };
 
 function listingTypeLabel(t: MyService["listingType"]): string {
@@ -348,6 +349,17 @@ export default function ProviderAvailabilityPage() {
                       <p className="mt-0.5 font-semibold text-foreground">
                         {item.title}
                       </p>
+                      {item.dispatchUserId ? (
+                        <div className="mt-1.5 space-y-1">
+                          <span className="inline-flex rounded-full bg-cyan-100 px-2.5 py-0.5 text-xs font-semibold text-cyan-900">
+                            Linked to dispatch — not for hire
+                          </span>
+                          <p className="text-xs text-foreground/60">
+                            Turning this listing off also disables the linked
+                            dispatch account.
+                          </p>
+                        </div>
+                      ) : null}
                       <Link
                         href={`/provider/listings/edit/${item.id}`}
                         className="mt-1 inline-block text-xs font-medium text-ambuhub-brand hover:underline"

@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
   acceptDispatchOffer,
-  fetchProviderOffer,
+  fetchCrewOffer,
   rejectDispatchOffer,
   type DispatchRequestDto,
 } from "@/lib/dispatch";
@@ -25,7 +25,7 @@ export function ProviderOfferCard({ onAccepted }: Props) {
 
   const loadOffer = useCallback(async () => {
     try {
-      const next = await fetchProviderOffer();
+      const next = await fetchCrewOffer();
       setOffer(next);
       if (next?.offerExpiresAt) {
         setCountdown(secondsRemaining(next.offerExpiresAt));
@@ -105,6 +105,17 @@ export function ProviderOfferCard({ onAccepted }: Props) {
       <p className="mt-2 text-lg font-semibold text-slate-900">
         {offer.pickup.address ?? "Pickup location shared"}
       </p>
+      {offer.contactPhone && (
+        <p className="mt-2 text-sm text-slate-700">
+          Call on arrival:{" "}
+          <a
+            href={`tel:${offer.contactPhone}`}
+            className="font-medium text-blue-700 underline-offset-2 hover:underline"
+          >
+            {offer.contactPhone}
+          </a>
+        </p>
+      )}
       {offer.clientNotes && (
         <p className="mt-2 text-sm text-slate-700">{offer.clientNotes}</p>
       )}

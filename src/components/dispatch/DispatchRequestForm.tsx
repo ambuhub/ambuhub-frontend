@@ -7,6 +7,7 @@ import {
   DispatchLocationPicker,
   type DispatchLocationValue,
 } from "@/components/dispatch/DispatchLocationPicker";
+import type { PublicAuthUser } from "@/lib/auth-redirect";
 import {
   createDispatchRequest,
   fetchActiveDispatchRequest,
@@ -18,6 +19,7 @@ const fieldClass =
 export function DispatchRequestForm() {
   const router = useRouter();
   const [location, setLocation] = useState<DispatchLocationValue | null>(null);
+  const [contactPhone, setContactPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +44,24 @@ export function DispatchRequestForm() {
     };
   }, [router]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/auth/me", { credentials: "include" })
+      .then(async (res) => {
+        if (!res.ok) {
+          return;
+        }
+        const data = (await res.json()) as { user?: PublicAuthUser };
+        if (!cancelled && data.user?.phone) {
+          setContactPhone((prev) => prev || data.user!.phone);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -52,6 +72,12 @@ export function DispatchRequestForm() {
         return;
       }
 
+      const phone = contactPhone.trim();
+      if (!phone) {
+        setError("Enter a phone number for dispatch to call on arrival.");
+        return;
+      }
+
       setSubmitting(true);
       try {
         const request = await createDispatchRequest({
@@ -59,6 +85,7 @@ export function DispatchRequestForm() {
           latitude: location.latitude,
           longitude: location.longitude,
           address: location.address ?? undefined,
+          contactPhone: phone,
           notes: notes.trim() || undefined,
         });
         router.push(`/client/dispatch/${request.id}`);
@@ -74,7 +101,7 @@ export function DispatchRequestForm() {
         setSubmitting(false);
       }
     },
-    [location, notes, router],
+    [contactPhone, location, notes, router],
   );
 
   if (checkingActive) {
@@ -96,6 +123,30 @@ export function DispatchRequestForm() {
       </div>
 
       <DispatchLocationPicker value={location} onChange={setLocation} />
+
+      <div>
+        <label
+          htmlFor="dispatch-contact-phone"
+          className="block text-sm font-medium text-slate-700"
+        >
+          Phone for dispatch to call
+        </label>
+        <input
+          id="dispatch-contact-phone"
+          type="tel"
+          autoComplete="tel"
+          required
+          maxLength={32}
+          value={contactPhone}
+          onChange={(e) => setContactPhone(e.target.value)}
+          placeholder="Number to call on arrival"
+          className={fieldClass}
+        />
+        <p className="mt-1.5 text-xs text-slate-500">
+          Defaults to your registered number. Change it if someone else should
+          answer at the pickup.
+        </p>
+      </div>
 
       <div>
         <label htmlFor="dispatch-notes" className="block text-sm font-medium text-slate-700">

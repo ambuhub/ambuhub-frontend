@@ -76,7 +76,8 @@ export function VerifyEmailOtpForm() {
         const next =
           role === "service_provider" ||
           role === "client" ||
-          role === "patient"
+          role === "patient" ||
+          role === "dispatch"
             ? postAuthPath(role as AuthUserRole)
             : "/";
         router.replace(next);
@@ -197,7 +198,8 @@ export function VerifyEmailOtpForm() {
       const next =
         role === "service_provider" ||
         role === "client" ||
-        role === "patient"
+        role === "patient" ||
+        role === "dispatch"
           ? postAuthPath(role as AuthUserRole)
           : "/";
       router.replace(next);

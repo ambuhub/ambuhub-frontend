@@ -1,27 +1,26 @@
 "use client";
 
 import { Siren } from "lucide-react";
-import { ProviderDispatchPanel } from "@/components/dispatch/ProviderDispatchPanel";
+import { CrewDispatchPanel } from "@/components/dispatch/CrewDispatchPanel";
 
-export default function ProviderDispatchPage() {
+export default function DispatchDashboardPage() {
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-4 sm:p-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <header>
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 text-red-700">
             <Siren className="h-5 w-5" aria-hidden />
           </span>
           <div>
-            <h1 className="text-xl font-semibold text-slate-900">Dispatch</h1>
+            <h1 className="text-xl font-semibold text-slate-900">Dashboard</h1>
             <p className="text-sm text-slate-600">
-              Monitor fleet duty status. Dispatch crew go on duty from their own
-              accounts.
+              Go on duty and share GPS to receive live ambulance requests.
             </p>
           </div>
         </div>
       </header>
 
-      <ProviderDispatchPanel />
+      <CrewDispatchPanel />
     </div>
   );
 }

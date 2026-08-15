@@ -4,103 +4,37 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Building2,
-  Calendar,
-  CalendarClock,
   ClipboardList,
-  CreditCard,
   LayoutDashboard,
-  List,
   LogOut,
   Menu,
-  Bell,
-  PackagePlus,
-  Settings,
-  Siren,
-  UserPlus,
   X,
 } from "lucide-react";
 import { API_AUTH_BFF_PREFIX } from "@/lib/api";
 import { AmbuhubLogo } from "@/components/AmbuhubLogo";
-import { NotificationBellDropdown } from "@/components/notifications/NotificationBellDropdown";
 import { unregisterFcmToken } from "@/components/notifications/FcmProvider";
-import { ProviderNotificationBadge } from "@/components/provider/ProviderNotificationBadge";
-import { ProviderPremiumBadge } from "@/components/provider/ProviderPremiumBadge";
 
 const navItems = [
   {
-    href: "/provider/dashboard",
+    href: "/dispatch/dashboard",
     label: "Dashboard",
     icon: LayoutDashboard,
   },
   {
-    href: "/provider/services/add",
-    label: "Add service",
-    icon: PackagePlus,
-  },
-  {
-    href: "/provider/listings",
-    label: "My listings",
-    icon: List,
-  },
-  {
-    href: "/provider/bookings",
-    label: "Bookings",
-    icon: Calendar,
-  },
-  {
-    href: "/provider/dispatch",
-    label: "Dispatch",
-    icon: Siren,
-  },
-  {
-    href: "/provider/dispatch/requests",
-    label: "Dispatch requests",
+    href: "/dispatch/requests",
+    label: "Requests",
     icon: ClipboardList,
-  },
-  {
-    href: "/provider/dispatch-accounts",
-    label: "Create Dispatch",
-    icon: UserPlus,
-  },
-  {
-    href: "/provider/availability",
-    label: "Availability",
-    icon: CalendarClock,
-  },
-  {
-    href: "/provider/notifications",
-    label: "Notifications",
-    icon: Bell,
-  },
-  {
-    href: "/provider/profile",
-    label: "Business profile",
-    icon: Building2,
-  },
-  {
-    href: "/provider/subscription",
-    label: "Subscription",
-    icon: CreditCard,
-  },
-  {
-    href: "/provider/settings",
-    label: "Settings",
-    icon: Settings,
   },
 ] as const;
 
 function isActivePath(pathname: string, href: string) {
-  if (href === "/provider/dashboard") {
-    return pathname === href;
-  }
-  if (href === "/provider/dispatch") {
+  if (href === "/dispatch/dashboard") {
     return pathname === href;
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function ProviderShell({ children }: { children: React.ReactNode }) {
+export function DispatchShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -135,7 +69,7 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
       >
         <div className="flex h-14 items-center justify-between border-b border-blue-900/60 px-4 md:h-16">
           <Link
-            href="/provider/dashboard"
+            href="/dispatch/dashboard"
             className="flex min-w-0 items-center gap-2 text-lg font-semibold tracking-tight text-blue-200"
             onClick={() => setSidebarOpen(false)}
           >
@@ -143,7 +77,6 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
               <AmbuhubLogo width={48} className="object-contain" />
             </span>
             <span className="truncate">Ambuhub</span>
-            <ProviderPremiumBadge />
           </Link>
           <button
             type="button"
@@ -155,7 +88,10 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        <nav className="min-h-0 flex-1 space-y-0.5 overflow-hidden p-3" aria-label="Provider">
+        <nav
+          className="min-h-0 flex-1 space-y-0.5 overflow-hidden p-3"
+          aria-label="Dispatch"
+        >
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActivePath(pathname, item.href);
@@ -172,21 +108,12 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
               >
                 <Icon className="h-5 w-5 shrink-0 opacity-90" aria-hidden />
                 <span className="min-w-0 flex-1">{item.label}</span>
-                {item.href === "/provider/notifications" ? (
-                  <ProviderNotificationBadge />
-                ) : null}
               </Link>
             );
           })}
         </nav>
 
         <div className="border-t border-blue-900/60 p-3">
-          <Link
-            href="/"
-            className="mb-2 block rounded-xl px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
-          >
-            View public site
-          </Link>
           <button
             type="button"
             onClick={handleSignOut}
@@ -208,13 +135,7 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="flex items-center gap-2 text-sm font-semibold text-blue-100">
-            Provider
-            <ProviderPremiumBadge />
-          </span>
-          <div className="ml-auto">
-            <NotificationBellDropdown notificationsHref="/provider/notifications" />
-          </div>
+          <span className="text-sm font-semibold text-blue-100">Dispatch</span>
         </header>
         <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-slate-100 via-blue-50/30 to-slate-100 p-4 sm:p-6 lg:p-8">
           {children}

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   acceptDispatchOffer,
   dispatchStatusLabel,
+  fetchCrewDispatchRequests,
   fetchProviderDispatchRequests,
   isProviderActiveDispatch,
   rejectDispatchOffer,
@@ -67,14 +68,22 @@ function groupRequests(requests: DispatchRequestDto[]): Section[] {
   return sections;
 }
 
+type Mode = "monitor" | "crew";
+
 function RequestRow({
   request,
   tone,
+  mode,
+  detailBasePath,
   onAccepted,
+  onChanged,
 }: {
   request: DispatchRequestDto;
   tone: Section["tone"];
+  mode: Mode;
+  detailBasePath: string;
   onAccepted: (request: DispatchRequestDto) => void;
+  onChanged: () => void;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -85,16 +94,17 @@ function RequestRow({
 
   const isIncoming = tone === "incoming";
   const isActive = tone === "active";
+  const canAct = mode === "crew" && isIncoming;
 
   useEffect(() => {
-    if (!isIncoming || !request.offerExpiresAt) {
+    if (!canAct || !request.offerExpiresAt) {
       return;
     }
     const tick = setInterval(() => {
       setCountdown(secondsRemaining(request.offerExpiresAt!));
     }, 1000);
     return () => clearInterval(tick);
-  }, [isIncoming, request.offerExpiresAt]);
+  }, [canAct, request.offerExpiresAt]);
 
   async function handleAccept(e: React.MouseEvent) {
     e.stopPropagation();
@@ -116,6 +126,7 @@ function RequestRow({
     setError(null);
     try {
       await rejectDispatchOffer(request.id);
+      onChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Decline failed");
     } finally {
@@ -125,7 +136,7 @@ function RequestRow({
 
   function handleRowClick() {
     if (isActive) {
-      router.push(`/provider/dispatch/requests/${request.id}`);
+      router.push(`${detailBasePath}/${request.id}`);
     }
   }
 
@@ -161,6 +172,18 @@ function RequestRow({
           <p className="font-medium text-slate-900">
             {request.pickup.address ?? "Pickup location shared"}
           </p>
+          {request.contactPhone && (
+            <p className="mt-1 text-sm text-slate-700">
+              Call:{" "}
+              <a
+                href={`tel:${request.contactPhone}`}
+                className="font-medium text-blue-700 underline-offset-2 hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {request.contactPhone}
+              </a>
+            </p>
+          )}
           {request.clientNotes && (
             <p className="mt-1 line-clamp-2 text-sm text-slate-600">
               {request.clientNotes}
@@ -174,7 +197,7 @@ function RequestRow({
         {formatTimestamp(request.createdAt)}
       </p>
 
-      {isIncoming && request.offerExpiresAt && (
+      {canAct && request.offerExpiresAt && (
         <p className="mt-2 text-sm font-medium text-red-800">
           Respond in {mins}:{secs.toString().padStart(2, "0")}
         </p>
@@ -186,13 +209,19 @@ function RequestRow({
         </p>
       )}
 
+      {mode === "monitor" && isIncoming && (
+        <p className="mt-2 text-sm text-slate-600">
+          Waiting for dispatch crew to accept.
+        </p>
+      )}
+
       {error && (
         <p className="mt-2 text-sm text-red-600" role="alert">
           {error}
         </p>
       )}
 
-      {isIncoming && (
+      {canAct && (
         <div className="mt-3 flex flex-wrap gap-3">
           <button
             type="button"
@@ -236,7 +265,17 @@ function StatusBadge({ status }: { status: DispatchStatus }) {
   );
 }
 
-export function ProviderDispatchRequestsList() {
+type ListProps = {
+  mode?: Mode;
+  detailBasePath?: string;
+  emptyHint?: string;
+};
+
+export function ProviderDispatchRequestsList({
+  mode = "monitor",
+  detailBasePath = "/provider/dispatch/requests",
+  emptyHint,
+}: ListProps) {
   const router = useRouter();
   const [requests, setRequests] = useState<DispatchRequestDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -244,7 +283,10 @@ export function ProviderDispatchRequestsList() {
 
   const loadRequests = useCallback(async () => {
     try {
-      const next = await fetchProviderDispatchRequests();
+      const next =
+        mode === "crew"
+          ? await fetchCrewDispatchRequests()
+          : await fetchProviderDispatchRequests();
       setRequests(next);
       setError(null);
     } catch (err) {
@@ -252,7 +294,7 @@ export function ProviderDispatchRequestsList() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     void loadRequests();
@@ -265,7 +307,7 @@ export function ProviderDispatchRequestsList() {
   const sections = useMemo(() => groupRequests(requests), [requests]);
 
   function handleAccepted(request: DispatchRequestDto) {
-    router.push(`/provider/dispatch/requests/${request.id}`);
+    router.push(`${detailBasePath}/${request.id}`);
   }
 
   if (loading) {
@@ -287,8 +329,10 @@ export function ProviderDispatchRequestsList() {
   if (requests.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-8 text-center text-sm text-slate-600">
-        No dispatch requests yet. Go on duty from the Dispatch page to receive
-        incoming offers.
+        {emptyHint ??
+          (mode === "crew"
+            ? "No dispatch requests yet. Go on duty from the Dashboard to receive incoming offers."
+            : "No dispatch requests yet. Create a dispatch account and have crew go on duty to receive offers.")}
       </div>
     );
   }
@@ -312,7 +356,10 @@ export function ProviderDispatchRequestsList() {
                 key={request.id}
                 request={request}
                 tone={section.tone}
+                mode={mode}
+                detailBasePath={detailBasePath}
                 onAccepted={handleAccepted}
+                onChanged={() => void loadRequests()}
               />
             ))}
           </div>

@@ -1,4 +1,9 @@
-export type AuthUserRole = "client" | "service_provider" | "patient" | "admin";
+export type AuthUserRole =
+  | "client"
+  | "service_provider"
+  | "patient"
+  | "admin"
+  | "dispatch";
 
 export type PublicAuthUser = {
   id: string;
@@ -15,6 +20,9 @@ export type PublicAuthUser = {
   businessName?: string;
   physicalAddress?: string;
   website?: string | null;
+  ownerProviderUserId?: string | null;
+  assignedServiceId?: string | null;
+  isDisabled?: boolean;
 };
 
 export function postAuthPath(role: AuthUserRole): string {
@@ -23,6 +31,9 @@ export function postAuthPath(role: AuthUserRole): string {
   }
   if (role === "service_provider") {
     return "/provider/dashboard";
+  }
+  if (role === "dispatch") {
+    return "/dispatch/dashboard";
   }
   if (role === "client" || role === "patient") {
     return "/client/dashboard";

@@ -108,6 +108,11 @@ function RequestRow({
           <p className="font-medium text-slate-900">
             {request.pickup.address ?? "Pickup location shared"}
           </p>
+          {request.contactPhone && (
+            <p className="mt-1 text-sm text-slate-700">
+              Contact: {request.contactPhone}
+            </p>
+          )}
           {request.clientNotes && (
             <p className="mt-1 line-clamp-2 text-sm text-slate-600">
               {request.clientNotes}

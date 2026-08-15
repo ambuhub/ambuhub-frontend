@@ -237,6 +237,18 @@ export function DispatchTrackingMap({
         </p>
       )}
 
+      {request.contactPhone && (
+        <p className="text-sm text-slate-700">
+          Call on arrival:{" "}
+          <a
+            href={`tel:${request.contactPhone}`}
+            className="font-medium text-blue-700 underline-offset-2 hover:underline"
+          >
+            {request.contactPhone}
+          </a>
+        </p>
+      )}
+
       {request.route && (
         <p className="text-sm text-slate-600">
           ETA {formatDuration(request.route.durationSeconds)} ·{" "}
@@ -246,6 +258,16 @@ export function DispatchTrackingMap({
 
       {loadError && (
         <p className="text-sm text-amber-700">Map unavailable — check API key.</p>
+      )}
+
+      {!isLoaded && !loadError && (
+        <div
+          className="flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500"
+          style={mapContainerStyle}
+        >
+          <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
+          <span className="sr-only">Loading map</span>
+        </div>
       )}
 
       {isLoaded && !loadError && (
