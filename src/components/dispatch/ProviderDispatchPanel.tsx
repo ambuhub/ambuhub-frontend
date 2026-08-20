@@ -48,7 +48,7 @@ export function ProviderDispatchPanel() {
         Add a <strong>Medical transport → Ground Ambulance</strong> listing,
         then{" "}
         <Link
-          href="/provider/dispatch-accounts"
+          href="/provider/dispatch?tab=create"
           className="font-semibold text-blue-800 underline"
         >
           create a dispatch account
@@ -63,7 +63,7 @@ export function ProviderDispatchPanel() {
       <div className="rounded-xl border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-950">
         Only dispatch crew accounts can go on duty and accept offers.{" "}
         <Link
-          href="/provider/dispatch-accounts"
+          href="/provider/dispatch?tab=create"
           className="font-semibold underline"
         >
           Create Dispatch

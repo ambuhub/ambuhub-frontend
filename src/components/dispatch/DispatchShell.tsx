@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Bell,
   ClipboardList,
   LayoutDashboard,
   LogOut,
@@ -13,6 +14,8 @@ import {
 import { API_AUTH_BFF_PREFIX } from "@/lib/api";
 import { AmbuhubLogo } from "@/components/AmbuhubLogo";
 import { unregisterFcmToken } from "@/components/notifications/FcmProvider";
+import { NotificationBellDropdown } from "@/components/notifications/NotificationBellDropdown";
+import { ProviderNotificationBadge } from "@/components/provider/ProviderNotificationBadge";
 
 const navItems = [
   {
@@ -24,6 +27,11 @@ const navItems = [
     href: "/dispatch/requests",
     label: "Requests",
     icon: ClipboardList,
+  },
+  {
+    href: "/dispatch/notifications",
+    label: "Notifications",
+    icon: Bell,
   },
 ] as const;
 
@@ -108,6 +116,9 @@ export function DispatchShell({ children }: { children: React.ReactNode }) {
               >
                 <Icon className="h-5 w-5 shrink-0 opacity-90" aria-hidden />
                 <span className="min-w-0 flex-1">{item.label}</span>
+                {item.href === "/dispatch/notifications" ? (
+                  <ProviderNotificationBadge />
+                ) : null}
               </Link>
             );
           })}
@@ -136,6 +147,9 @@ export function DispatchShell({ children }: { children: React.ReactNode }) {
             <Menu className="h-5 w-5" />
           </button>
           <span className="text-sm font-semibold text-blue-100">Dispatch</span>
+          <div className="ml-auto">
+            <NotificationBellDropdown notificationsHref="/dispatch/notifications" />
+          </div>
         </header>
         <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-slate-100 via-blue-50/30 to-slate-100 p-4 sm:p-6 lg:p-8">
           {children}

@@ -1,7 +1,8 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNotificationToast } from "@/components/notifications/NotificationToast";
 import {
   acceptDispatchOffer,
   fetchCrewOffer,
@@ -17,15 +18,57 @@ function secondsRemaining(expiresAt: string): number {
   return Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
 }
 
+function playOfferBeep(): void {
+  try {
+    const AudioCtx =
+      window.AudioContext ||
+      (window as Window & { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+    if (!AudioCtx) {
+      return;
+    }
+    const ctx = new AudioCtx();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.value = 880;
+    gain.gain.value = 0.08;
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + 0.22);
+    void ctx.resume();
+  } catch {
+    /* ignore autoplay / unsupported */
+  }
+}
+
 export function ProviderOfferCard({ onAccepted }: Props) {
+  const { showToast } = useNotificationToast();
   const [offer, setOffer] = useState<DispatchRequestDto | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const seenOfferIdRef = useRef<string | null | undefined>(undefined);
 
   const loadOffer = useCallback(async () => {
     try {
       const next = await fetchCrewOffer();
+      const previousId = seenOfferIdRef.current;
+      const nextId = next?.id ?? null;
+
+      if (previousId !== undefined && next && nextId && nextId !== previousId) {
+        showToast({
+          title: "New ambulance request",
+          body: next.pickup.address
+            ? `Incoming request at ${next.pickup.address}`
+            : "Incoming request. Respond within 4 minutes.",
+          deepLink: `/dispatch/requests/${encodeURIComponent(next.id)}`,
+        });
+        playOfferBeep();
+      }
+
+      seenOfferIdRef.current = nextId;
       setOffer(next);
       if (next?.offerExpiresAt) {
         setCountdown(secondsRemaining(next.offerExpiresAt));
@@ -33,7 +76,7 @@ export function ProviderOfferCard({ onAccepted }: Props) {
     } catch {
       /* ignore poll errors */
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     void loadOffer();

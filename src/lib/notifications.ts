@@ -74,6 +74,10 @@ export function notificationLinkHref(item: NotificationDto): string {
         : "/client/orders";
     case "chat_message":
       return "/client/concierge";
+    case "ambulance_request":
+      return item.entityId
+        ? `/dispatch/requests/${encodeURIComponent(item.entityId)}`
+        : "/dispatch/requests";
     default:
       if (item.orderId) {
         return `/receipts/${encodeURIComponent(item.orderId)}`;

@@ -7,7 +7,6 @@ import {
   Building2,
   Calendar,
   CalendarClock,
-  ClipboardList,
   CreditCard,
   LayoutDashboard,
   List,
@@ -17,7 +16,6 @@ import {
   PackagePlus,
   Settings,
   Siren,
-  UserPlus,
   X,
 } from "lucide-react";
 import { API_AUTH_BFF_PREFIX } from "@/lib/api";
@@ -54,16 +52,6 @@ const navItems = [
     icon: Siren,
   },
   {
-    href: "/provider/dispatch/requests",
-    label: "Dispatch requests",
-    icon: ClipboardList,
-  },
-  {
-    href: "/provider/dispatch-accounts",
-    label: "Create Dispatch",
-    icon: UserPlus,
-  },
-  {
     href: "/provider/availability",
     label: "Availability",
     icon: CalendarClock,
@@ -95,7 +83,11 @@ function isActivePath(pathname: string, href: string) {
     return pathname === href;
   }
   if (href === "/provider/dispatch") {
-    return pathname === href;
+    return (
+      pathname === href ||
+      pathname.startsWith("/provider/dispatch/") ||
+      pathname.startsWith("/provider/dispatch-accounts")
+    );
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

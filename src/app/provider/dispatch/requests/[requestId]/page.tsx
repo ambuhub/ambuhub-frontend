@@ -15,7 +15,7 @@ export default function ProviderDispatchRequestDetailPage({
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4 sm:p-6">
       <Link
-        href="/provider/dispatch/requests"
+        href="/provider/dispatch?tab=requests"
         className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-blue-700 hover:text-blue-900"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden />

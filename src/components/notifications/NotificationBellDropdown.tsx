@@ -19,6 +19,8 @@ import {
 type Props = {
   notificationsHref: string;
   accentClass?: string;
+  /** Sidebar bells open into the main pane so the menu is not clipped. */
+  dropdownPlacement?: "bottom-end" | "sidebar";
 };
 
 function formatRelativeTime(iso: string): string {
@@ -33,6 +35,7 @@ function formatRelativeTime(iso: string): string {
 export function NotificationBellDropdown({
   notificationsHref,
   accentClass = "text-cyan-400",
+  dropdownPlacement = "bottom-end",
 }: Props) {
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(0);
@@ -120,7 +123,13 @@ export function NotificationBellDropdown({
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-full z-50 mt-2 w-[min(100vw-2rem,22rem)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+        <div
+          className={
+            dropdownPlacement === "sidebar"
+              ? "absolute left-full top-0 z-50 ml-2 w-[min(100vw-18rem,22rem)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
+              : "absolute right-0 top-full z-50 mt-2 w-[min(100vw-2rem,22rem)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
+          }
+        >
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
             <span className="text-sm font-semibold text-slate-900">Notifications</span>
             {count > 0 ? (
