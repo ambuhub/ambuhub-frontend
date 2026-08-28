@@ -5,7 +5,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { DispatchTrackingMap } from "@/components/dispatch/DispatchTrackingMap";
 import { ProviderOfferCard } from "@/components/dispatch/ProviderOfferCard";
 import {
+  fetchCrewDispatchRequests,
   fetchCrewDispatchServices,
+  isProviderActiveDispatch,
   isProviderLocationFresh,
   setServiceDispatchEnabled,
   updateServiceLiveLocation,
@@ -60,6 +62,32 @@ export function CrewDispatchPanel() {
   useEffect(() => {
     void loadServices();
   }, [loadServices]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadActiveRequest() {
+      try {
+        const requests = await fetchCrewDispatchRequests();
+        if (cancelled) {
+          return;
+        }
+        const active = requests.find((request) =>
+          isProviderActiveDispatch(request.status),
+        );
+        if (active) {
+          setActiveRequest(active);
+        }
+      } catch {
+        /* ignore — accept callback or polling will recover */
+      }
+    }
+
+    void loadActiveRequest();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!onDutyServiceId) {

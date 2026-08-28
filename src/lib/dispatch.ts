@@ -32,6 +32,22 @@ export type DispatchRequestDto = {
   createdAt: string;
   acceptedAt?: string | null;
   arrivedAt?: string | null;
+  quotedIsFree?: boolean;
+  quotedPrice?: number | null;
+  quotedCurrency?: "NGN" | "GHS" | null;
+  paymentStatus?: "not_required" | "pending" | "paid";
+  paymentExpiresAt?: string | null;
+  paidAt?: string | null;
+};
+
+export type AvailableDispatchUnit = {
+  serviceId: string;
+  title: string;
+  providerName: string;
+  distanceMeters: number;
+  isFree: boolean;
+  price: number | null;
+  currency: "NGN" | "GHS";
 };
 
 export type ProviderDispatchService = {
@@ -41,9 +57,14 @@ export type ProviderDispatchService = {
   liveLocationUpdatedAt: string | null;
   dispatchUserId?: string | null;
   hasDispatchAccount?: boolean;
+  dispatchIsFree?: boolean;
+  dispatchPrice?: number | null;
+  dispatchCurrency?: "NGN" | "GHS";
+  countryCode?: string | null;
 };
 
 export type CreateDispatchPayload = {
+  serviceId: string;
   locationSource: "current_location" | "address";
   latitude?: number;
   longitude?: number;
@@ -78,6 +99,55 @@ export function isClientCancellableStatus(status: DispatchStatus): boolean {
 async function parseError(res: Response): Promise<string> {
   const data = (await res.json().catch(() => ({}))) as { message?: string };
   return data.message ?? "Request failed";
+}
+
+async function parseJsonBody<T>(res: Response): Promise<T> {
+  return (await res.json().catch(() => ({}))) as T;
+}
+
+export async function fetchAvailableDispatchUnits(
+  latitude: number,
+  longitude: number,
+): Promise<AvailableDispatchUnit[]> {
+  const params = new URLSearchParams({
+    latitude: String(latitude),
+    longitude: String(longitude),
+  });
+  const res = await fetch(
+    `${API_PROXY_PREFIX}/dispatch/available?${params.toString()}`,
+    { credentials: "include" },
+  );
+  const data = (await res.json()) as {
+    units?: AvailableDispatchUnit[];
+    message?: string;
+  };
+  if (!res.ok) {
+    throw new Error(data.message ?? "Could not load available ambulances");
+  }
+  return data.units ?? [];
+}
+
+export async function selectDispatchService(
+  requestId: string,
+  serviceId: string,
+): Promise<DispatchRequestDto> {
+  const res = await fetch(
+    `${API_PROXY_PREFIX}/dispatch/requests/${encodeURIComponent(requestId)}/select-service`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ serviceId }),
+    },
+  );
+  const data = (await res.json()) as {
+    request?: DispatchRequestDto;
+    message?: string;
+  };
+  if (!res.ok || !data.request) {
+    throw new Error(data.message ?? "Could not select ambulance");
+  }
+  return data.request;
 }
 
 export async function createDispatchRequest(
@@ -160,14 +230,24 @@ export async function cancelDispatchRequest(
       credentials: "include",
     },
   );
-  const data = (await res.json()) as {
+  const data = await parseJsonBody<{
     request?: DispatchRequestDto;
     message?: string;
-  };
-  if (!res.ok || !data.request) {
-    throw new Error(data.message ?? "Could not cancel request");
+  }>(res);
+  if (res.ok && data.request) {
+    return data.request;
   }
-  return data.request;
+
+  try {
+    const recovered = await fetchDispatchRequest(requestId);
+    if (recovered.status === "cancelled") {
+      return recovered;
+    }
+  } catch {
+    /* cancel may not have persisted */
+  }
+
+  throw new Error(data.message ?? "Could not cancel request");
 }
 
 export const DISPATCH_LOCATION_STALE_MS = 5 * 60 * 1000;
@@ -330,14 +410,24 @@ export async function acceptDispatchOffer(
       credentials: "include",
     },
   );
-  const data = (await res.json()) as {
+  const data = await parseJsonBody<{
     request?: DispatchRequestDto;
     message?: string;
-  };
-  if (!res.ok || !data.request) {
-    throw new Error(data.message ?? "Could not accept offer");
+  }>(res);
+  if (res.ok && data.request) {
+    return data.request;
   }
-  return data.request;
+
+  try {
+    const recovered = await fetchDispatchRequest(requestId);
+    if (recovered.status === "accepted" || recovered.status === "en_route") {
+      return recovered;
+    }
+  } catch {
+    /* accept may not have persisted */
+  }
+
+  throw new Error(data.message ?? "Could not accept offer");
 }
 
 export async function rejectDispatchOffer(
@@ -350,14 +440,24 @@ export async function rejectDispatchOffer(
       credentials: "include",
     },
   );
-  const data = (await res.json()) as {
+  const data = await parseJsonBody<{
     request?: DispatchRequestDto;
     message?: string;
-  };
-  if (!res.ok || !data.request) {
-    throw new Error(data.message ?? "Could not reject offer");
+  }>(res);
+  if (res.ok && data.request) {
+    return data.request;
   }
-  return data.request;
+
+  try {
+    const recovered = await fetchDispatchRequest(requestId);
+    if (recovered.status === "searching") {
+      return recovered;
+    }
+  } catch {
+    /* reject may not have persisted */
+  }
+
+  throw new Error(data.message ?? "Could not reject offer");
 }
 
 export async function markDispatchArrived(
@@ -370,17 +470,42 @@ export async function markDispatchArrived(
       credentials: "include",
     },
   );
-  const data = (await res.json()) as {
+  const data = await parseJsonBody<{
     request?: DispatchRequestDto;
     message?: string;
-  };
-  if (!res.ok || !data.request) {
-    throw new Error(data.message ?? "Could not mark arrival");
+  }>(res);
+  if (res.ok && data.request) {
+    return data.request;
   }
-  return data.request;
+
+  try {
+    const recovered = await fetchDispatchRequest(requestId);
+    if (recovered.status === "arrived") {
+      return recovered;
+    }
+  } catch {
+    /* mark arrived may not have persisted */
+  }
+
+  throw new Error(data.message ?? "Could not mark arrival");
 }
 
-export function dispatchStatusLabel(status: DispatchStatus): string {
+export function dispatchStatusLabel(
+  status: DispatchStatus,
+  options?: {
+    paymentStatus?: DispatchRequestDto["paymentStatus"];
+    hasAssignedService?: boolean;
+  },
+): string {
+  if (
+    status === "accepted" &&
+    options?.paymentStatus === "pending"
+  ) {
+    return "Ambulance accepted — complete payment to start trip";
+  }
+  if (status === "searching" && options?.hasAssignedService === false) {
+    return "Choose another nearby ambulance";
+  }
   switch (status) {
     case "searching":
       return "Searching for nearby ambulances…";
@@ -401,4 +526,12 @@ export function dispatchStatusLabel(status: DispatchStatus): string {
     default:
       return status;
   }
+}
+
+export function isDispatchPaymentPending(request: DispatchRequestDto): boolean {
+  return request.status === "accepted" && request.paymentStatus === "pending";
+}
+
+export function needsDispatchReselect(request: DispatchRequestDto): boolean {
+  return request.status === "searching" && !request.assignedService;
 }

@@ -10,6 +10,7 @@ import {
   fetchAvailableDispatchListings,
   type AvailableDispatchListing,
 } from "@/lib/provider-dispatch-accounts";
+import { currencyForCountry, getCurrencySymbol } from "@/lib/currency";
 
 const inputClass =
   "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20";
@@ -30,6 +31,8 @@ export function ProviderDispatchAccountsPanel() {
   const [countryCode, setCountryCode] = useState("NG");
   const [password, setPassword] = useState("");
   const [serviceId, setServiceId] = useState("");
+  const [dispatchIsFree, setDispatchIsFree] = useState(true);
+  const [dispatchPrice, setDispatchPrice] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -66,6 +69,8 @@ export function ProviderDispatchAccountsPanel() {
         countryCode,
         password,
         serviceId,
+        dispatchIsFree,
+        dispatchPrice: dispatchIsFree ? null : Number(dispatchPrice),
       });
       setFirstName("");
       setLastName("");
@@ -223,6 +228,49 @@ export function ProviderDispatchAccountsPanel() {
                     </option>
                   ))}
                 </select>
+              </div>
+              <div className="sm:col-span-2">
+                <p className={labelClass}>Dispatch trip fee</p>
+                <div className="flex flex-wrap gap-4 text-sm">
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={dispatchIsFree}
+                      onChange={() => setDispatchIsFree(true)}
+                    />
+                    Free
+                  </label>
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={!dispatchIsFree}
+                      onChange={() => setDispatchIsFree(false)}
+                    />
+                    Paid
+                  </label>
+                </div>
+                {!dispatchIsFree && (
+                  <div className="mt-3">
+                    <label htmlFor="dispatch-price" className={labelClass}>
+                      Price (
+                      {getCurrencySymbol(
+                        currencyForCountry(
+                          listings.find((l) => l.id === serviceId)?.countryCode,
+                        ),
+                      )}
+                      )
+                    </label>
+                    <input
+                      id="dispatch-price"
+                      type="number"
+                      min={1}
+                      className={inputClass}
+                      value={dispatchPrice}
+                      onChange={(e) => setDispatchPrice(e.target.value)}
+                      required={!dispatchIsFree}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 

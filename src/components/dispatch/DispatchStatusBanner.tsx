@@ -1,6 +1,6 @@
 "use client";
 
-import type { DispatchStatus } from "@/lib/dispatch";
+import type { DispatchRequestDto, DispatchStatus } from "@/lib/dispatch";
 import { dispatchStatusLabel } from "@/lib/dispatch";
 
 const statusStyles: Partial<Record<DispatchStatus, string>> = {
@@ -14,12 +14,24 @@ const statusStyles: Partial<Record<DispatchStatus, string>> = {
   expired: "border-slate-200 bg-slate-50 text-slate-700",
 };
 
-export function DispatchStatusBanner({ status }: { status: DispatchStatus }) {
+export function DispatchStatusBanner({
+  request,
+}: {
+  request: Pick<
+    DispatchRequestDto,
+    "status" | "paymentStatus" | "assignedService"
+  >;
+}) {
+  const label = dispatchStatusLabel(request.status, {
+    paymentStatus: request.paymentStatus,
+    hasAssignedService: Boolean(request.assignedService),
+  });
+
   return (
     <div
-      className={`rounded-xl border px-4 py-3 text-sm font-medium ${statusStyles[status] ?? "border-slate-200 bg-slate-50"}`}
+      className={`rounded-xl border px-4 py-3 text-sm font-medium ${statusStyles[request.status] ?? "border-slate-200 bg-slate-50"}`}
     >
-      {dispatchStatusLabel(status)}
+      {label}
     </div>
   );
 }

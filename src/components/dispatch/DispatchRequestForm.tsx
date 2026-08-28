@@ -3,6 +3,7 @@
 import { Loader2, Siren } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { AvailableDispatchPicker } from "@/components/dispatch/AvailableDispatchPicker";
 import {
   DispatchLocationPicker,
   type DispatchLocationValue,
@@ -11,6 +12,7 @@ import type { PublicAuthUser } from "@/lib/auth-redirect";
 import {
   createDispatchRequest,
   fetchActiveDispatchRequest,
+  type AvailableDispatchUnit,
 } from "@/lib/dispatch";
 
 const fieldClass =
@@ -18,7 +20,11 @@ const fieldClass =
 
 export function DispatchRequestForm() {
   const router = useRouter();
+  const [step, setStep] = useState<"pickup" | "choose">("pickup");
   const [location, setLocation] = useState<DispatchLocationValue | null>(null);
+  const [selectedUnit, setSelectedUnit] = useState<AvailableDispatchUnit | null>(
+    null,
+  );
   const [contactPhone, setContactPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -72,6 +78,16 @@ export function DispatchRequestForm() {
         return;
       }
 
+      if (step === "pickup") {
+        setStep("choose");
+        return;
+      }
+
+      if (!selectedUnit) {
+        setError("Choose an ambulance to continue.");
+        return;
+      }
+
       const phone = contactPhone.trim();
       if (!phone) {
         setError("Enter a phone number for dispatch to call on arrival.");
@@ -81,6 +97,7 @@ export function DispatchRequestForm() {
       setSubmitting(true);
       try {
         const request = await createDispatchRequest({
+          serviceId: selectedUnit.serviceId,
           locationSource: location.locationSource,
           latitude: location.latitude,
           longitude: location.longitude,
@@ -101,7 +118,7 @@ export function DispatchRequestForm() {
         setSubmitting(false);
       }
     },
-    [contactPhone, location, notes, router],
+    [contactPhone, location, notes, router, selectedUnit, step],
   );
 
   if (checkingActive) {
@@ -122,46 +139,73 @@ export function DispatchRequestForm() {
         </p>
       </div>
 
-      <DispatchLocationPicker value={location} onChange={setLocation} />
+      {step === "pickup" ? (
+        <>
+          <DispatchLocationPicker value={location} onChange={setLocation} />
 
-      <div>
-        <label
-          htmlFor="dispatch-contact-phone"
-          className="block text-sm font-medium text-slate-700"
-        >
-          Phone for dispatch to call
-        </label>
-        <input
-          id="dispatch-contact-phone"
-          type="tel"
-          autoComplete="tel"
-          required
-          maxLength={32}
-          value={contactPhone}
-          onChange={(e) => setContactPhone(e.target.value)}
-          placeholder="Number to call on arrival"
-          className={fieldClass}
-        />
-        <p className="mt-1.5 text-xs text-slate-500">
-          Defaults to your registered number. Change it if someone else should
-          answer at the pickup.
-        </p>
-      </div>
+          <div>
+            <label
+              htmlFor="dispatch-contact-phone"
+              className="block text-sm font-medium text-slate-700"
+            >
+              Phone for dispatch to call
+            </label>
+            <input
+              id="dispatch-contact-phone"
+              type="tel"
+              autoComplete="tel"
+              required
+              maxLength={32}
+              value={contactPhone}
+              onChange={(e) => setContactPhone(e.target.value)}
+              placeholder="Number to call on arrival"
+              className={fieldClass}
+            />
+          </div>
 
-      <div>
-        <label htmlFor="dispatch-notes" className="block text-sm font-medium text-slate-700">
-          Notes (optional)
-        </label>
-        <textarea
-          id="dispatch-notes"
-          rows={3}
-          maxLength={1000}
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Describe the situation or special instructions…"
-          className={fieldClass}
-        />
-      </div>
+          <div>
+            <label
+              htmlFor="dispatch-notes"
+              className="block text-sm font-medium text-slate-700"
+            >
+              Notes (optional)
+            </label>
+            <textarea
+              id="dispatch-notes"
+              rows={3}
+              maxLength={1000}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Describe the situation or special instructions…"
+              className={fieldClass}
+            />
+          </div>
+        </>
+      ) : (
+        location && (
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                setStep("pickup");
+                setSelectedUnit(null);
+                setError(null);
+              }}
+              className="text-sm font-medium text-blue-700 hover:text-blue-900"
+            >
+              ← Change pickup location
+            </button>
+
+            <AvailableDispatchPicker
+              latitude={location.latitude}
+              longitude={location.longitude}
+              selectedServiceId={selectedUnit?.serviceId ?? null}
+              onSelect={setSelectedUnit}
+              disabled={submitting}
+            />
+          </>
+        )
+      )}
 
       {error && (
         <p className="text-sm text-red-600" role="alert">
@@ -171,7 +215,11 @@ export function DispatchRequestForm() {
 
       <button
         type="submit"
-        disabled={submitting || !location}
+        disabled={
+          submitting ||
+          !location ||
+          (step === "choose" && !selectedUnit)
+        }
         className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
         {submitting ? (
@@ -179,7 +227,7 @@ export function DispatchRequestForm() {
         ) : (
           <Siren className="h-4 w-4" aria-hidden />
         )}
-        Request ambulance
+        {step === "pickup" ? "Find nearby ambulances" : "Request ambulance"}
       </button>
     </form>
   );

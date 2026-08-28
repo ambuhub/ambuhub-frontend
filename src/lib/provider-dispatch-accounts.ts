@@ -26,11 +26,23 @@ export type CreateDispatchAccountInput = {
   countryCode: string;
   password: string;
   serviceId: string;
+  dispatchIsFree?: boolean;
+  dispatchPrice?: number | null;
 };
 
 export type AvailableDispatchListing = {
   id: string;
   title: string;
+  countryCode?: string | null;
+  dispatchCurrency?: "NGN" | "GHS";
+};
+
+export type DispatchServicePricing = {
+  serviceId: string;
+  title: string;
+  dispatchIsFree: boolean;
+  dispatchPrice: number | null;
+  dispatchCurrency: "NGN" | "GHS";
 };
 
 function proxyUrl(path: string): string {
@@ -110,4 +122,29 @@ export async function setDispatchAccountDisabled(
     throw new Error(data.message ?? "Could not update account");
   }
   return data.account;
+}
+
+export async function updateDispatchServicePricing(
+  serviceId: string,
+  input: { dispatchIsFree: boolean; dispatchPrice?: number | null },
+): Promise<DispatchServicePricing> {
+  const res = await fetch(
+    proxyUrl(
+      `provider/dispatch-accounts/services/${encodeURIComponent(serviceId)}/pricing`,
+    ),
+    {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+  );
+  const data = (await res.json()) as {
+    pricing?: DispatchServicePricing;
+    message?: string;
+  };
+  if (!res.ok || !data.pricing) {
+    throw new Error(data.message ?? "Could not update dispatch pricing");
+  }
+  return data.pricing;
 }

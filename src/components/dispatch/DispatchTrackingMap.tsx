@@ -4,6 +4,7 @@ import { GoogleMap, Marker, Polyline } from "@react-google-maps/api";
 import { Loader2, LocateFixed } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DispatchStatusBanner } from "@/components/dispatch/DispatchStatusBanner";
+import { AvailableDispatchPicker } from "@/components/dispatch/AvailableDispatchPicker";
 import {
   DEFAULT_MAP_CENTER,
   useGoogleMaps,
@@ -18,9 +19,14 @@ import {
   fetchDispatchRequest,
   isActiveDispatchStatus,
   isClientCancellableStatus,
+  isDispatchPaymentPending,
   markDispatchArrived,
+  needsDispatchReselect,
+  selectDispatchService,
   type DispatchRequestDto,
 } from "@/lib/dispatch";
+import { runDispatchPaymentCheckout } from "@/lib/dispatch-payment";
+import { formatMoney, parseSupportedCurrency } from "@/lib/currency";
 
 const defaultMapHeight = "420px";
 
@@ -178,6 +184,45 @@ export function DispatchTrackingMap({
     }
   }
 
+  async function handlePay() {
+    if (!request) {
+      return;
+    }
+    setActionLoading(true);
+    setError(null);
+    try {
+      const { request: updated, message } = await runDispatchPaymentCheckout(
+        request.id,
+      );
+      setRequest(updated);
+      onRequestUpdate?.(updated);
+      if (message) {
+        setError(null);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Payment failed");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleReselect(serviceId: string) {
+    if (!request) {
+      return;
+    }
+    setActionLoading(true);
+    setError(null);
+    try {
+      const updated = await selectDispatchService(request.id, serviceId);
+      setRequest(updated);
+      onRequestUpdate?.(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not select ambulance");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
   async function handleCancel() {
     if (!request) {
       return;
@@ -220,7 +265,47 @@ export function DispatchTrackingMap({
 
   return (
     <div className="space-y-4">
-      <DispatchStatusBanner status={request.status} />
+      <DispatchStatusBanner request={request} />
+
+      {role === "client" && isDispatchPaymentPending(request) && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
+          <p className="text-sm font-medium text-amber-950">
+            Payment required to start your trip
+          </p>
+          {request.quotedPrice != null && request.quotedCurrency && (
+            <p className="mt-1 text-sm text-amber-900">
+              Amount:{" "}
+              {formatMoney(
+                request.quotedPrice,
+                parseSupportedCurrency(request.quotedCurrency),
+              )}
+            </p>
+          )}
+          <button
+            type="button"
+            disabled={actionLoading}
+            onClick={() => void handlePay()}
+            className="mt-3 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-60"
+          >
+            Pay now with Paystack
+          </button>
+        </div>
+      )}
+
+      {role === "client" && needsDispatchReselect(request) && (
+        <AvailableDispatchPicker
+          latitude={request.pickup.lat}
+          longitude={request.pickup.lng}
+          onSelect={(unit) => void handleReselect(unit.serviceId)}
+          disabled={actionLoading}
+        />
+      )}
+
+      {role === "provider" && isDispatchPaymentPending(request) && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          Awaiting client payment. The trip will begin after payment is confirmed.
+        </div>
+      )}
 
       {request.assignedService && (
         <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
@@ -337,7 +422,8 @@ export function DispatchTrackingMap({
           </button>
         )}
         {showArrived &&
-          (request.status === "accepted" || request.status === "en_route") && (
+          (request.status === "accepted" || request.status === "en_route") &&
+          request.paymentStatus !== "pending" && (
             <button
               type="button"
               disabled={actionLoading}
