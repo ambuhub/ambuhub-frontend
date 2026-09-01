@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ProviderDashboardCurrencyProvider } from "./ProviderDashboardCurrency";
 import { ProviderDashboardTitle } from "./ProviderDashboardTitle";
 import { ProviderMonthlySalesChart } from "./ProviderMonthlySalesChart";
+import { ProviderShopLink } from "./ProviderShopLink";
 import {
   ProviderDashboardBellLink,
   ProviderDashboardUpgradeLink,
@@ -44,7 +45,8 @@ export default function ProviderDashboardPage() {
               place.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <ProviderShopLink />
             <ProviderDashboardUpgradeLink />
             <ProviderDashboardBellLink />
             <Link

@@ -20,6 +20,7 @@ export type PublicAuthUser = {
   businessName?: string;
   physicalAddress?: string;
   website?: string | null;
+  shopSlug?: string | null;
   ownerProviderUserId?: string | null;
   assignedServiceId?: string | null;
   isDisabled?: boolean;

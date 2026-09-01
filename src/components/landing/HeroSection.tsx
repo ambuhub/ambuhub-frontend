@@ -73,17 +73,11 @@ export function HeroSection() {
               className="mt-6 flex flex-col gap-3 sm:mt-7 sm:flex-row sm:items-center lg:mt-4 lg:gap-2.5"
             >
               <Link
-                href="/contact"
+                href="/auth"
                 className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-ambuhub-brand px-4 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-ambuhub-brand-dark sm:px-5 sm:py-2.5 lg:px-4 lg:py-2 lg:text-[13px]"
               >
-                Contact us
+                Get started
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-              </Link>
-              <Link
-                href="/how-it-works"
-                className="inline-flex items-center justify-center rounded-lg border border-white/30 bg-transparent px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10 sm:px-5 sm:py-2.5 lg:px-4 lg:py-2 lg:text-[13px]"
-              >
-                See how it works
               </Link>
             </motion.div>
           </div>

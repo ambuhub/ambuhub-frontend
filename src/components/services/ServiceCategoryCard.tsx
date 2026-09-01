@@ -124,10 +124,10 @@ export function ServiceCategoryCard({ category, index, className }: Props) {
         />
       </div>
       <div className="flex flex-1 flex-col p-6 sm:p-7">
-        <span className="text-lg font-semibold text-blue-950 group-hover:text-blue-700">
+        <span className="line-clamp-2 text-lg font-semibold text-blue-950 group-hover:text-blue-700">
           {toTitleCase(category.name)}
         </span>
-        <span className="mt-2 flex-1 text-sm leading-relaxed text-blue-900/70">
+        <span className="mt-2 line-clamp-3 flex-1 text-sm leading-relaxed text-blue-900/70">
           {cardDescription(category)}
         </span>
         <span className="mt-4 text-sm font-semibold text-sky-700 group-hover:text-blue-700">

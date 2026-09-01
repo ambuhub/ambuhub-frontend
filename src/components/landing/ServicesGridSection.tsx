@@ -38,7 +38,7 @@ export async function ServicesGridSection() {
         ) : (
           <ul className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
             {categories.map((category, i) => (
-              <li key={category.id} className="min-w-0">
+              <li key={category.id} className="min-w-0 h-full">
                 <ServiceCategoryCard category={category} index={i} />
               </li>
             ))}

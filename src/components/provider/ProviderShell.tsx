@@ -24,6 +24,8 @@ import { NotificationBellDropdown } from "@/components/notifications/Notificatio
 import { unregisterFcmToken } from "@/components/notifications/FcmProvider";
 import { ProviderNotificationBadge } from "@/components/provider/ProviderNotificationBadge";
 import { ProviderPremiumBadge } from "@/components/provider/ProviderPremiumBadge";
+import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
+import type { PublicAuthUser } from "@/lib/auth-redirect";
 
 const navItems = [
   {
@@ -92,9 +94,23 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function ownerDisplayName(user: PublicAuthUser | null): string | null {
+  if (!user) {
+    return null;
+  }
+  const personal = `${user.firstName} ${user.lastName}`.trim();
+  if (personal) {
+    return personal;
+  }
+  const business = user.businessName?.trim();
+  return business || null;
+}
+
 export function ProviderShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user } = useSessionAndCart();
+  const ownerName = ownerDisplayName(user);
 
   async function handleSignOut() {
     await unregisterFcmToken();
@@ -135,7 +151,6 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
               <AmbuhubLogo width={48} className="object-contain" />
             </span>
             <span className="truncate">Ambuhub</span>
-            <ProviderPremiumBadge />
           </Link>
           <button
             type="button"
@@ -145,6 +160,20 @@ export function ProviderShell({ children }: { children: React.ReactNode }) {
           >
             <X className="h-5 w-5" />
           </button>
+        </div>
+
+        <div className="flex items-center gap-2 border-b border-blue-900/60 px-4 py-2.5">
+          {ownerName ? (
+            <p
+              className="min-w-0 flex-1 truncate text-sm font-medium text-slate-200"
+              title={ownerName}
+            >
+              {ownerName}
+            </p>
+          ) : (
+            <span className="min-w-0 flex-1" aria-hidden />
+          )}
+          <ProviderPremiumBadge />
         </div>
 
         <nav className="min-h-0 flex-1 space-y-0.5 overflow-hidden p-3" aria-label="Provider">

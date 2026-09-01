@@ -67,6 +67,10 @@ async function proxyRequest(
     outHeaders.set("content-type", contentType);
   }
 
+  if (upstream.status === 204) {
+    return new NextResponse(null, { status: 204, headers: outHeaders });
+  }
+
   const buf = await upstream.arrayBuffer();
 
   // Invalidate marketplace fetch cache after service listing mutations or checkout (stock).

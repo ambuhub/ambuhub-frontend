@@ -223,3 +223,53 @@ export async function deleteDeviceToken(fcmToken: string): Promise<void> {
     throw new Error(data.message ?? "Could not remove device token.");
   }
 }
+
+export type NotificationCategory =
+  | "ambulance_updates"
+  | "booking_updates"
+  | "payments"
+  | "chat_messages"
+  | "concierge"
+  | "marketing"
+  | "general";
+
+export type NotificationCategoryPreferences = Record<
+  NotificationCategory,
+  boolean
+>;
+
+export type NotificationPreferences = {
+  categories: NotificationCategoryPreferences;
+};
+
+export async function fetchNotificationPreferences(): Promise<NotificationPreferences> {
+  const res = await fetch(proxyUrl("notifications/me/preferences"), {
+    credentials: "include",
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(data.message ?? "Could not load notification preferences.");
+  }
+  const data = (await res.json()) as { preferences: NotificationPreferences };
+  return data.preferences;
+}
+
+export async function updateNotificationPreferences(
+  categories: Partial<NotificationCategoryPreferences>,
+): Promise<NotificationPreferences> {
+  const res = await fetch(proxyUrl("notifications/me/preferences"), {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ categories }),
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(
+      data.message ?? "Could not update notification preferences.",
+    );
+  }
+  const data = (await res.json()) as { preferences: NotificationPreferences };
+  return data.preferences;
+}
