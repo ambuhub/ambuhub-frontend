@@ -2,9 +2,11 @@ import { Search, Upload } from "lucide-react";
 import Link from "next/link";
 
 import { ProviderDashboardCurrencyProvider } from "./ProviderDashboardCurrency";
+import { ProviderDashboardTitle } from "./ProviderDashboardTitle";
 import { ProviderMonthlySalesChart } from "./ProviderMonthlySalesChart";
 import {
   ProviderDashboardBellLink,
+  ProviderDashboardUpgradeLink,
   ProviderUnreadNotificationsMetric,
 } from "./ProviderUnreadNotifications";
 import { ProviderWalletBalance } from "./ProviderWalletBalance";
@@ -36,15 +38,14 @@ export default function ProviderDashboardPage() {
       <div className="rounded-[26px] border border-blue-100/80 bg-white/95 p-5 shadow-xl shadow-slate-200/70 backdrop-blur-sm sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              Dashboard
-            </h1>
+            <ProviderDashboardTitle />
             <p className="mt-1 text-sm text-slate-500">
               Track your provider performance, listings, and activity from one
               place.
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <ProviderDashboardUpgradeLink />
             <ProviderDashboardBellLink />
             <Link
               href="/provider/services/add"

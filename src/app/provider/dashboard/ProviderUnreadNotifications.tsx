@@ -1,9 +1,62 @@
 "use client";
 
 import Link from "next/link";
-import { Bell } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Bell, Crown } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { PROVIDER_SUBSCRIPTION_UPDATED_EVENT } from "@/components/provider/ProviderPremiumBadge";
 import { fetchUnreadNotificationCount } from "@/lib/notifications";
+import { fetchProviderSubscription } from "@/lib/provider-subscription";
+
+export function ProviderDashboardUpgradeLink() {
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  const loadSubscription = useCallback(async () => {
+    try {
+      const subscription = await fetchProviderSubscription();
+      const isPremium =
+        subscription.isActive && subscription.plan === "premium";
+      setShowUpgrade(!isPremium);
+    } catch {
+      setShowUpgrade(true);
+    } finally {
+      setLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadSubscription();
+
+    function onSubscriptionUpdated() {
+      void loadSubscription();
+    }
+
+    window.addEventListener(
+      PROVIDER_SUBSCRIPTION_UPDATED_EVENT,
+      onSubscriptionUpdated,
+    );
+    return () => {
+      window.removeEventListener(
+        PROVIDER_SUBSCRIPTION_UPDATED_EVENT,
+        onSubscriptionUpdated,
+      );
+    };
+  }, [loadSubscription]);
+
+  if (!loaded || !showUpgrade) {
+    return null;
+  }
+
+  return (
+    <Link
+      href="/provider/subscription"
+      className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 px-3 text-sm font-semibold text-amber-900 shadow-sm shadow-amber-200/50 transition hover:border-amber-400 hover:from-amber-100 hover:to-yellow-100"
+    >
+      <Crown className="h-4 w-4 text-amber-700" aria-hidden />
+      Upgrade
+    </Link>
+  );
+}
 
 export function ProviderDashboardBellLink() {
   return (
