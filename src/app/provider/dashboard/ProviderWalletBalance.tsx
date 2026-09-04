@@ -1,30 +1,18 @@
 "use client";
 
-import { API_PROXY_PREFIX } from "@/lib/api";
-import {
-  formatMoney,
-  type SupportedCurrency,
-} from "@/lib/currency";
-import { Wallet } from "lucide-react";
+import { formatMoney } from "@/lib/currency";
+import { fetchWalletBalances, type WalletBalance } from "@/lib/provider-wallet";
+import { ArrowRight, Wallet } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   ProviderCurrencyToggle,
   useProviderDashboardCurrency,
 } from "./ProviderDashboardCurrency";
 
-type WalletEntry = {
-  currency: SupportedCurrency;
-  balance: number;
-};
-
-type WalletsPayload = {
-  wallets?: WalletEntry[];
-  message?: string;
-};
-
 export function ProviderWalletBalance() {
   const { currency } = useProviderDashboardCurrency();
-  const [wallets, setWallets] = useState<WalletEntry[]>([]);
+  const [wallets, setWallets] = useState<WalletBalance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,24 +22,9 @@ export function ProviderWalletBalance() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_PROXY_PREFIX}/wallet/me`, {
-          credentials: "include",
-        });
-        const data = (await res.json()) as WalletsPayload;
-        if (!res.ok) {
-          if (res.status === 401) {
-            throw new Error("Sign in to view your wallet.");
-          }
-          if (res.status === 403) {
-            throw new Error("Only service providers have a wallet.");
-          }
-          throw new Error(data.message ?? "Could not load wallet.");
-        }
-        if (!Array.isArray(data.wallets)) {
-          throw new Error("Invalid wallet response.");
-        }
+        const list = await fetchWalletBalances();
         if (!cancelled) {
-          setWallets(data.wallets);
+          setWallets(list);
         }
       } catch (e) {
         if (!cancelled) {
@@ -93,9 +66,18 @@ export function ProviderWalletBalance() {
           formatMoney(balance, currency)
         )}
       </p>
-      <p className="mt-1 text-sm text-cyan-100/85">
-        Available balance ({currency})
-      </p>
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-cyan-100/85">
+          Available balance ({currency})
+        </p>
+        <Link
+          href="/provider/wallet"
+          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-medium text-cyan-100 underline-offset-2 transition hover:bg-white/10 hover:text-white hover:underline"
+        >
+          View history
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+        </Link>
+      </div>
     </div>
   );
 }

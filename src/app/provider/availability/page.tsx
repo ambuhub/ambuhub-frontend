@@ -2,6 +2,12 @@
 
 import { BookingScheduleCard } from "@/components/provider/BookingScheduleCard";
 import { API_PROXY_PREFIX } from "@/lib/api";
+import {
+  EMPTY_PAGE_META,
+  fetchAllPages,
+  readPaginationMeta,
+  withPageParams,
+} from "@/lib/paginate";
 import { AMBUHUB_SERVICE_SLUGS, toTitleCase } from "@/lib/ambuhub-services";
 import { AMBUHUB_MARKETPLACE_INVALIDATE_EVENT } from "@/lib/cache-tags";
 import type { BookingWindow } from "@/lib/booking-window";
@@ -64,13 +70,25 @@ export default function ProviderAvailabilityPage() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(`${API_PROXY_PREFIX}/services/me`, {
-        credentials: "include",
+      // This endpoint is paginated (20 per page); this screen needs every
+      // listing, so walk the pages and combine them.
+      let res!: Response;
+      let data: { services?: MyService[]; message?: string } = {};
+      const services = await fetchAllPages<MyService>(async (page, limit) => {
+        const params = withPageParams(new URLSearchParams(), page, limit);
+        res = await fetch(
+          `${API_PROXY_PREFIX}/services/me?${params.toString()}`,
+          { credentials: "include" },
+        );
+        data = (await res.json()) as { services?: MyService[]; message?: string };
+        if (!res.ok) {
+          return { items: [], meta: EMPTY_PAGE_META };
+        }
+        return {
+          items: Array.isArray(data.services) ? data.services : [],
+          meta: readPaginationMeta(data),
+        };
       });
-      const data = (await res.json()) as {
-        services?: MyService[];
-        message?: string;
-      };
       if (!res.ok) {
         if (res.status === 401) {
           throw new Error("Sign in as a service provider to manage availability.");
@@ -80,7 +98,7 @@ export default function ProviderAvailabilityPage() {
         }
         throw new Error(data.message ?? "Could not load listings.");
       }
-      setServices(data.services ?? []);
+      setServices(services);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {

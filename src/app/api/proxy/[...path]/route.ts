@@ -52,14 +52,26 @@ async function proxyRequest(
     }
   }
 
-  const upstream = await fetch(upstreamUrl, {
-    method,
-    headers,
-    body:
-      method === "POST" || method === "PUT" || method === "PATCH"
-        ? body
-        : undefined,
-  });
+  // Without this guard an unreachable backend rejects the route handler, and
+  // Next answers with an HTML error page. Every caller here does res.json(),
+  // so that surfaces as the opaque "Unexpected token '<'" parse error rather
+  // than something a user or developer can act on.
+  let upstream: Response;
+  try {
+    upstream = await fetch(upstreamUrl, {
+      method,
+      headers,
+      body:
+        method === "POST" || method === "PUT" || method === "PATCH"
+          ? body
+          : undefined,
+    });
+  } catch {
+    return NextResponse.json(
+      { message: `Cannot reach the API at ${backend}. Is the backend running?` },
+      { status: 502 },
+    );
+  }
 
   const outHeaders = new Headers();
   const contentType = upstream.headers.get("content-type");

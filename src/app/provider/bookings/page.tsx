@@ -13,6 +13,8 @@ import {
   formatMoney,
   parseSupportedCurrency,
 } from "@/lib/currency";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePaginatedList } from "@/hooks/usePaginatedList";
 import {
   fetchProviderHireBookings,
   fetchProviderPersonnelBookings,
@@ -93,60 +95,36 @@ export default function ProviderBookingsPage() {
   const [hireBookings, setHireBookings] = useState<ProviderHireBookingRow[] | null>(
     null,
   );
-  const [personnelBookings, setPersonnelBookings] = useState<
-    ProviderPersonnelBookingRow[] | null
-  >(null);
-  const [sales, setSales] = useState<ProviderSaleRow[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [hire, personnel, saleRows] = await Promise.all([
-          fetchProviderHireBookings(),
-          fetchProviderPersonnelBookings(),
-          fetchProviderSales(),
-        ]);
-        if (!cancelled) {
-          setHireBookings(hire);
-          setPersonnelBookings(personnel);
-          setSales(saleRows);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Could not load bookings.");
-          setHireBookings(null);
-          setPersonnelBookings(null);
-          setSales(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // One paginated list per tab, and only the visible tab fetches. Previously all
+  // three loaded up front, so opening this page pulled the provider's entire
+  // sales and booking history before rendering anything.
+  const hire = usePaginatedList<ProviderHireBookingRow>(
+    useCallback((page, limit) => fetchProviderHireBookings(page, limit), []),
+    { enabled: tab === "hire" },
+  );
+  const personnel = usePaginatedList<ProviderPersonnelBookingRow>(
+    useCallback((page, limit) => fetchProviderPersonnelBookings(page, limit), []),
+    { enabled: tab === "personnel" },
+  );
+  const sales = usePaginatedList<ProviderSaleRow>(
+    useCallback((page, limit) => fetchProviderSales(page, limit), []),
+    { enabled: tab === "sales" },
+  );
+
+  const active = tab === "hire" ? hire : tab === "personnel" ? personnel : sales;
+  const { loading, error, loadingMore, meta, loadMore, goToPage } = active;
 
   const displayRows = useMemo((): ProviderBookingDisplayRow[] => {
-    if (tab === "hire" && hireBookings) {
-      return toHireDisplayRows(hireBookings);
+    if (tab === "hire") {
+      return toHireDisplayRows(hire.items);
     }
-    if (tab === "personnel" && personnelBookings) {
-      return toPersonnelDisplayRows(personnelBookings);
+    if (tab === "personnel") {
+      return toPersonnelDisplayRows(personnel.items);
     }
-    if (tab === "sales" && sales) {
-      return toSaleDisplayRows(sales);
-    }
-    return [];
-  }, [tab, hireBookings, personnelBookings, sales]);
+    return toSaleDisplayRows(sales.items);
+  }, [tab, hire.items, personnel.items, sales.items]);
 
   useEffect(() => {
     if (displayRows.length === 0) {
@@ -409,6 +387,15 @@ export default function ProviderBookingsPage() {
                   {displayRows.length === 1 ? "" : "s"} · Click a row for details
                 </p>
               </div>
+
+              <Pagination
+                meta={meta}
+                shownCount={displayRows.length}
+                loadingMore={loadingMore}
+                onLoadMore={loadMore}
+                onGoToPage={goToPage}
+                itemNoun={tab === "sales" ? "sales" : "bookings"}
+              />
             </div>
 
             {/* Desktop detail panel */}

@@ -9,6 +9,26 @@ export type ProviderSubscriptionStatus = {
   isActive: boolean;
 };
 
+export type ProviderCategoryListingUsage = {
+  categoryId: string;
+  name: string;
+  slug: string;
+  count: number;
+  /** null when unlimited. */
+  limit: number | null;
+  /** null when unlimited. */
+  remaining: number | null;
+  atLimit: boolean;
+};
+
+export type ProviderListingUsage = {
+  plan: "free" | "premium";
+  /** Allowance per service category; null when unlimited. */
+  limitPerCategory: number | null;
+  totalListings: number;
+  categories: ProviderCategoryListingUsage[];
+};
+
 function proxyUrl(path: string): string {
   const base = API_PROXY_PREFIX.replace(/\/$/, "");
   const p = path.replace(/^\//, "");
@@ -30,6 +50,23 @@ export async function fetchProviderSubscription(): Promise<ProviderSubscriptionS
     throw new Error("Subscription data is missing");
   }
   return data.subscription;
+}
+
+export async function fetchProviderListingUsage(): Promise<ProviderListingUsage> {
+  const res = await fetch(proxyUrl("provider/subscription/listing-usage"), {
+    credentials: "include",
+  });
+  const data = (await res.json()) as {
+    usage?: ProviderListingUsage;
+    message?: string;
+  };
+  if (!res.ok) {
+    throw new Error(data.message ?? "Could not load listing usage");
+  }
+  if (!data.usage) {
+    throw new Error("Listing usage data is missing");
+  }
+  return data.usage;
 }
 
 export async function postPremiumSubscriptionInitialize(

@@ -3,6 +3,12 @@ import {
   type SupportedCurrency,
 } from "@/lib/currency";
 
+/**
+ * Free providers get this allowance in EACH service category, not in total.
+ * Mirrors [listingLimits.ts](ambuhub-backend/src/shared/subscription/listingLimits.ts).
+ */
+export const FREE_PLAN_LISTINGS_PER_CATEGORY = 15;
+
 export type ProviderPlanId = "free" | "premium";
 
 export type SubscriptionBillingInterval = "monthly" | "yearly";
@@ -34,7 +40,7 @@ export const PROVIDER_PLANS: ProviderPlan[] = [
       yearly: { NGN: 0, GHS: 0 },
     },
     features: [
-      "Up to 3 active listings",
+      `Up to ${FREE_PLAN_LISTINGS_PER_CATEGORY} listings in each service category`,
       "Sale, hire & booking checkout",
       "Standard search visibility",
       "Provider dashboard & wallet",
@@ -48,7 +54,7 @@ export const PROVIDER_PLANS: ProviderPlan[] = [
     prices: PREMIUM_SUBSCRIPTION_PRICES,
     highlighted: true,
     features: [
-      "Up to 15 active listings",
+      "Unlimited listings in every service category",
       "Premium badge on listings",
       "Priority placement in category browse",
       "Sales & booking analytics",

@@ -10,6 +10,12 @@ import type { HireReturnWindow } from "@/lib/hire-return-window";
 import type { PricingPeriod } from "@/lib/pricing-period";
 import type { SupportedCurrency } from "@/lib/currency";
 import { MARKETPLACE_SERVICES_CACHE_TAG } from "@/lib/cache-tags";
+import {
+  EMPTY_PAGE_META,
+  fetchAllPages,
+  readPaginationMeta,
+  withPageParams,
+} from "@/lib/paginate";
 import { getServerBackendOrigin } from "@/lib/server-backend-origin";
 
 const REVALIDATE = 120;
@@ -142,25 +148,37 @@ export async function fetchServiceCategoryBySlug(
   );
 }
 
+/**
+ * Category browse pages need the full catalogue, so this walks every page of the
+ * now-paginated marketplace endpoint. Each page is cached under the same ISR tag,
+ * so a rebuild costs a handful of requests rather than one unbounded response.
+ */
 export async function fetchMarketplaceServices(
   countryCode: "NG" | "GH" = "NG",
 ): Promise<MarketplaceServiceRow[]> {
   const base = getServerBackendOrigin();
   try {
-    const res = await fetch(
-      `${base}/api/services/marketplace?countryCode=${encodeURIComponent(countryCode)}`,
-      {
+    return await fetchAllPages<MarketplaceServiceRow>(async (page, limit) => {
+      const params = withPageParams(
+        new URLSearchParams({ countryCode }),
+        page,
+        limit,
+      );
+      const res = await fetch(`${base}/api/services/marketplace?${params.toString()}`, {
         next: {
           revalidate: REVALIDATE,
           tags: [MARKETPLACE_SERVICES_CACHE_TAG],
         },
-      },
-    );
-    if (!res.ok) {
-      return [];
-    }
-    const data = (await res.json()) as { services?: MarketplaceServiceRow[] };
-    return Array.isArray(data.services) ? data.services : [];
+      });
+      if (!res.ok) {
+        return { items: [], meta: EMPTY_PAGE_META };
+      }
+      const data = (await res.json()) as { services?: MarketplaceServiceRow[] };
+      return {
+        items: Array.isArray(data.services) ? data.services : [],
+        meta: readPaginationMeta(data),
+      };
+    });
   } catch {
     return [];
   }

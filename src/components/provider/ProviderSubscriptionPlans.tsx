@@ -8,6 +8,7 @@ import { runSubscriptionPaystackCheckout } from "@/lib/paystack-checkout";
 import {
   billingIntervalLabel,
   formatPlanPrice,
+  FREE_PLAN_LISTINGS_PER_CATEGORY,
   getPlanById,
   getPlanPrice,
   PROVIDER_PLANS,
@@ -16,11 +17,14 @@ import {
   yearlySavingsPercent,
 } from "@/lib/provider-subscription-plans";
 import {
+  fetchProviderListingUsage,
   fetchProviderSubscription,
   postPremiumSubscriptionInitialize,
   postPremiumSubscriptionVerify,
+  type ProviderListingUsage,
   type ProviderSubscriptionStatus,
 } from "@/lib/provider-subscription";
+import { ProviderListingUsagePanel } from "@/components/provider/ProviderListingUsagePanel";
 import { PROVIDER_SUBSCRIPTION_UPDATED_EVENT } from "@/components/provider/ProviderPremiumBadge";
 
 function planRank(id: ProviderPlanId): number {
@@ -47,6 +51,9 @@ export function ProviderSubscriptionPlans() {
     null,
   );
   const [loadingSubscription, setLoadingSubscription] = useState(true);
+  const [listingUsage, setListingUsage] = useState<ProviderListingUsage | null>(
+    null,
+  );
   const [busyPlan, setBusyPlan] = useState<ProviderPlanId | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,9 +70,21 @@ export function ProviderSubscriptionPlans() {
     }
   }, []);
 
+  const loadListingUsage = useCallback(async () => {
+    try {
+      setListingUsage(await fetchProviderListingUsage());
+    } catch {
+      // Usage is supplementary; the plan cards remain usable without it.
+    }
+  }, []);
+
   useEffect(() => {
     void loadSubscription();
   }, [loadSubscription]);
+
+  useEffect(() => {
+    void loadListingUsage();
+  }, [loadListingUsage]);
 
   const currentPlanId: ProviderPlanId =
     subscription?.isActive && subscription.plan === "premium" ? "premium" : "free";
@@ -84,6 +103,8 @@ export function ProviderSubscriptionPlans() {
       );
       setSubscription(result.subscription);
       setNotice(result.message);
+      // The cap lifts the moment premium activates, so refresh the usage panel.
+      void loadListingUsage();
       window.dispatchEvent(new Event(PROVIDER_SUBSCRIPTION_UPDATED_EVENT));
     } catch (err) {
       const message = err instanceof Error ? err.message : "Could not complete checkout.";
@@ -309,6 +330,8 @@ export function ProviderSubscriptionPlans() {
           })}
         </div>
 
+        <ProviderListingUsagePanel usage={listingUsage} />
+
         <div className="mt-10 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-lg shadow-slate-200/40">
           <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-blue-50/50 px-5 py-4">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
@@ -326,7 +349,11 @@ export function ProviderSubscriptionPlans() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {[
-                  ["Active listings", "Up to 3", "Up to 15"],
+                  [
+                    "Listings per service category",
+                    `Up to ${FREE_PLAN_LISTINGS_PER_CATEGORY}`,
+                    "Unlimited",
+                  ],
                   ["Premium listing badge", "—", "Yes"],
                   ["Priority browse placement", "—", "Yes"],
                   ["Analytics", "Basic", "Advanced"],

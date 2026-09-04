@@ -1,6 +1,12 @@
 "use client";
 
 import { API_PROXY_PREFIX } from "@/lib/api";
+import {
+  EMPTY_PAGE_META,
+  fetchAllPages,
+  readPaginationMeta,
+  withPageParams,
+} from "@/lib/paginate";
 import { AMBUHUB_SERVICE_SLUGS, toTitleCase } from "@/lib/ambuhub-services";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -44,13 +50,25 @@ export default function ProviderListingsPage() {
     async function load() {
       setError(null);
       try {
-        const res = await fetch(`${API_PROXY_PREFIX}/services/me`, {
-          credentials: "include",
+        // This endpoint is paginated (20 per page); this screen needs every
+        // listing, so walk the pages and combine them.
+        let res!: Response;
+        let data: { services?: MyService[]; message?: string } = {};
+        const services = await fetchAllPages<MyService>(async (page, limit) => {
+          const params = withPageParams(new URLSearchParams(), page, limit);
+          res = await fetch(
+            `${API_PROXY_PREFIX}/services/me?${params.toString()}`,
+            { credentials: "include" },
+          );
+          data = (await res.json()) as { services?: MyService[]; message?: string };
+          if (!res.ok) {
+            return { items: [], meta: EMPTY_PAGE_META };
+          }
+          return {
+            items: Array.isArray(data.services) ? data.services : [],
+            meta: readPaginationMeta(data),
+          };
         });
-        const data = (await res.json()) as {
-          services?: MyService[];
-          message?: string;
-        };
 
         if (!res.ok) {
           if (res.status === 401) {
@@ -63,7 +81,7 @@ export default function ProviderListingsPage() {
         }
 
         if (!cancelled) {
-          setServices(data.services ?? []);
+          setServices(services);
         }
       } catch (e) {
         if (!cancelled) {

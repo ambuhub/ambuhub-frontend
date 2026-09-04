@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { ExternalLink, Loader2, Receipt } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
 import {
   fetchMyOrders,
   type ClientOrderSummary,
 } from "@/lib/client-orders";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePaginatedList } from "@/hooks/usePaginatedList";
 import { formatMoney, parseSupportedCurrency } from "@/lib/currency";
 
 function formatDateTime(iso: string): string {
@@ -77,35 +79,19 @@ function OrderNeonCard({ order }: { order: ClientOrderSummary }) {
 }
 
 export default function ClientOrdersPage() {
-  const [orders, setOrders] = useState<ClientOrderSummary[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const rows = await fetchMyOrders();
-        if (!cancelled) {
-          setOrders(rows);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Could not load orders.");
-          setOrders(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const fetchPage = useCallback(
+    (page: number, limit: number) => fetchMyOrders(page, limit),
+    [],
+  );
+  const {
+    items: orders,
+    meta,
+    loading,
+    loadingMore,
+    error,
+    loadMore,
+    goToPage,
+  } = usePaginatedList<ClientOrderSummary>(fetchPage);
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -136,7 +122,7 @@ export default function ClientOrdersPage() {
             </Link>
           ) : null}
         </div>
-      ) : !orders?.length ? (
+      ) : orders.length === 0 ? (
         <div className="relative mt-10 overflow-hidden rounded-2xl border border-dashed border-cyan-400/50 bg-white px-6 py-16 text-center shadow-[0_0_28px_-8px_rgba(34,211,238,0.25)]">
           <div
             className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-cyan-400/15 blur-2xl"
@@ -151,11 +137,21 @@ export default function ClientOrdersPage() {
           </Link>
         </div>
       ) : (
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2">
-          {orders.map((order) => (
-            <OrderNeonCard key={order.id} order={order} />
-          ))}
-        </div>
+        <>
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2">
+            {orders.map((order) => (
+              <OrderNeonCard key={order.id} order={order} />
+            ))}
+          </div>
+          <Pagination
+            meta={meta}
+            shownCount={orders.length}
+            loadingMore={loadingMore}
+            onLoadMore={loadMore}
+            onGoToPage={goToPage}
+            itemNoun="orders"
+          />
+        </>
       )}
     </div>
   );

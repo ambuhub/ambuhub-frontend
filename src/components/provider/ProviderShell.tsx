@@ -16,6 +16,7 @@ import {
   PackagePlus,
   Settings,
   Siren,
+  Wallet,
   X,
 } from "lucide-react";
 import { API_AUTH_BFF_PREFIX } from "@/lib/api";
@@ -67,6 +68,11 @@ const navItems = [
     href: "/provider/profile",
     label: "Business profile",
     icon: Building2,
+  },
+  {
+    href: "/provider/wallet",
+    label: "Wallet",
+    icon: Wallet,
   },
   {
     href: "/provider/subscription",
