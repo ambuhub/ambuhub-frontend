@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, Heart, Loader2, Search, ShoppingCart, X } from "lucide-react";
+import { ChevronDown, ExternalLink, Heart, Loader2, MapPin, Search, ShoppingCart, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSessionAndCart } from "@/components/session-cart/SessionCartProvider";
 import { API_PROXY_PREFIX } from "@/lib/api";
@@ -35,6 +35,11 @@ import {
   type MarketplaceServiceRow,
   type ServiceCategoryPageDto,
 } from "@/lib/service-category-page-data";
+import {
+  fetchProviderShopBySlugClient,
+  shopCategoriesInCatalogOrder,
+  type ProviderShopInfo,
+} from "@/lib/provider-shop";
 import {
   formatStockLabel,
   getListingCurrency,
@@ -291,29 +296,47 @@ type Props = {
   initialCountry: MarketplaceBrowseCountry;
   /** True when the user previously chose a country (cookie set). */
   hasCountryCookie: boolean;
+  /** Provider shop browse mode — same UX, provider-scoped data. */
+  mode?: "category" | "shop";
+  shopSlug?: string;
+  shop?: ProviderShopInfo;
+  allShopServices?: MarketplaceServiceRow[];
+  categoriesMeta?: ServiceCategoryPageDto[];
 };
 
 function sectionsCacheKey(
-  categorySlug: string,
+  scope: string,
   country: MarketplaceBrowseCountry,
 ): string {
-  return `${categorySlug}|${country}`;
+  return `${scope}|${country}`;
 }
+
+const EMPTY_SHOP_SERVICES: MarketplaceServiceRow[] = [];
+const EMPTY_CATEGORIES_META: ServiceCategoryPageDto[] = [];
 
 export function CategoryServiceListing({
   category,
   sections,
   initialCountry,
   hasCountryCookie,
+  mode = "category",
+  shopSlug,
+  shop,
+  allShopServices = EMPTY_SHOP_SERVICES,
+  categoriesMeta = EMPTY_CATEGORIES_META,
 }: Props) {
+  const isShopMode = mode === "shop";
   const pathname = usePathname();
   const loginHref = `/auth?next=${encodeURIComponent(pathname || "/")}`;
-  const pageInfo = getCategoryPageTitleDescription(category);
+  const [activeCategory, setActiveCategory] =
+    useState<ServiceCategoryPageDto>(category);
+  const displayCategory = isShopMode ? activeCategory : category;
+  const pageInfo = getCategoryPageTitleDescription(displayCategory);
   const title = toTitleCase(pageInfo.title);
   const description = pageInfo.description;
   const bannerSrc =
-    category.bannerUrl?.trim() ||
-    category.thumbnailUrl?.trim() ||
+    displayCategory.bannerUrl?.trim() ||
+    displayCategory.thumbnailUrl?.trim() ||
     "";
   const {
     user,
@@ -329,9 +352,14 @@ export function CategoryServiceListing({
   const [browseCountry, setBrowseCountry] =
     useState<MarketplaceBrowseCountry>(initialCountry);
   const [countryReady, setCountryReady] = useState(false);
+  const [liveShopServices, setLiveShopServices] =
+    useState<MarketplaceServiceRow[]>(allShopServices);
   const [liveSections, setLiveSections] = useState(sections);
+  const dataScope = isShopMode
+    ? `shop:${shopSlug ?? ""}`
+    : category.slug;
   const lastFetchedKeyRef = useRef(
-    sectionsCacheKey(category.slug, initialCountry),
+    sectionsCacheKey(dataScope, initialCountry),
   );
   const [addingServiceId, setAddingServiceId] = useState<string | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
@@ -347,11 +375,53 @@ export function CategoryServiceListing({
   const [listingTypeFilter, setListingTypeFilter] =
     useState<ListingTypeFilter>("all");
 
+  const shopServicesKey = useMemo(
+    () => allShopServices.map((s) => s.id).join(","),
+    [allShopServices],
+  );
+  const sectionsKey = useMemo(
+    () =>
+      sections
+        .map(
+          (sec) =>
+            `${sec.key}:${sec.services.map((s) => s.id).join("+")}`,
+        )
+        .join("|"),
+    [sections],
+  );
+
   useEffect(() => {
     setBrowseCountry(initialCountry);
-    setLiveSections(sections);
-    lastFetchedKeyRef.current = sectionsCacheKey(category.slug, initialCountry);
-  }, [category.slug, initialCountry, sections]);
+    setActiveCategory(category);
+    lastFetchedKeyRef.current = sectionsCacheKey(
+      isShopMode ? `shop:${shopSlug ?? ""}` : category.slug,
+      initialCountry,
+    );
+    if (isShopMode) {
+      setLiveShopServices(allShopServices);
+    } else {
+      setLiveSections(sections);
+    }
+    // Sync from props when identity of the payload changes (slug / ids / country).
+    // Do not depend on array/object references — defaults and SSR props can be new each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keys below are the sync triggers
+  }, [
+    category.slug,
+    initialCountry,
+    isShopMode,
+    shopSlug,
+    shopServicesKey,
+    sectionsKey,
+  ]);
+
+  useEffect(() => {
+    if (!isShopMode) {
+      return;
+    }
+    setLiveSections(
+      groupMarketplaceByDepartments(activeCategory, liveShopServices),
+    );
+  }, [isShopMode, activeCategory, liveShopServices]);
 
   useEffect(() => {
     let cancelled = false;
@@ -387,6 +457,39 @@ export function CategoryServiceListing({
   }, [hasCountryCookie]);
 
   const refetchMarketplaceSections = useCallback(async () => {
+    if (isShopMode) {
+      if (!shopSlug) {
+        return;
+      }
+      const fetchKey = sectionsCacheKey(`shop:${shopSlug}`, browseCountry);
+      try {
+        const payload = await fetchProviderShopBySlugClient(
+          shopSlug,
+          browseCountry,
+        );
+        if (!payload) {
+          return;
+        }
+        setLiveShopServices(payload.services);
+        const stillPresent = payload.services.some(
+          (s) => s.category?.slug === activeCategory.slug,
+        );
+        if (!stillPresent) {
+          const nextTabs = shopCategoriesInCatalogOrder(
+            payload.services,
+            categoriesMeta,
+          );
+          if (nextTabs[0]) {
+            setActiveCategory(nextTabs[0]);
+          }
+        }
+        lastFetchedKeyRef.current = fetchKey;
+      } catch {
+        /* keep current shop services */
+      }
+      return;
+    }
+
     const fetchKey = sectionsCacheKey(category.slug, browseCountry);
     try {
       const res = await fetch(
@@ -406,18 +509,35 @@ export function CategoryServiceListing({
     } catch {
       /* keep current liveSections */
     }
-  }, [category, browseCountry]);
+  }, [
+    isShopMode,
+    shopSlug,
+    browseCountry,
+    activeCategory.slug,
+    categoriesMeta,
+    category,
+  ]);
 
   useEffect(() => {
     if (!countryReady) {
       return;
     }
-    const key = sectionsCacheKey(category.slug, browseCountry);
+    const key = sectionsCacheKey(
+      isShopMode ? `shop:${shopSlug ?? ""}` : category.slug,
+      browseCountry,
+    );
     if (lastFetchedKeyRef.current === key) {
       return;
     }
     void refetchMarketplaceSections();
-  }, [category.slug, countryReady, browseCountry, refetchMarketplaceSections]);
+  }, [
+    category.slug,
+    isShopMode,
+    shopSlug,
+    countryReady,
+    browseCountry,
+    refetchMarketplaceSections,
+  ]);
 
   useEffect(() => {
     if (sessionLoading) {
@@ -493,7 +613,7 @@ export function CategoryServiceListing({
   const departmentOptions = useMemo(() => {
     const options = new Map<string, string>();
 
-    for (const d of category.departments) {
+    for (const d of displayCategory.departments) {
       options.set(d.slug, toTitleCase(d.name));
     }
 
@@ -507,7 +627,14 @@ export function CategoryServiceListing({
       slug,
       label,
     }));
-  }, [category.departments, liveSections]);
+  }, [displayCategory.departments, liveSections]);
+
+  const shopTabCategories = useMemo(() => {
+    if (!isShopMode) {
+      return [];
+    }
+    return shopCategoriesInCatalogOrder(liveShopServices, categoriesMeta);
+  }, [isShopMode, liveShopServices, categoriesMeta]);
 
   const priceBounds = useMemo(() => {
     let min = Infinity;
@@ -735,7 +862,7 @@ export function CategoryServiceListing({
     "relative mt-6 h-56 max-h-96 w-full overflow-hidden rounded-2xl bg-gradient-to-br from-ambuhub-100 to-ambuhub-200/80 sm:mt-8 sm:h-72 md:mt-10 md:h-96";
   const defaultBannerShellClass =
     "relative mt-6 h-40 max-h-64 w-full overflow-hidden rounded-2xl bg-gradient-to-br from-ambuhub-100 to-ambuhub-200/80 sm:mt-8 sm:h-52 md:mt-10 md:h-64";
-  const bannerShellClass = TALL_TOP_BIAS_BANNER_SLUGS.has(category.slug)
+  const bannerShellClass = TALL_TOP_BIAS_BANNER_SLUGS.has(displayCategory.slug)
     ? tallBannerShellClass
     : defaultBannerShellClass;
 
@@ -819,12 +946,49 @@ export function CategoryServiceListing({
       ) : null}
 
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        {isShopMode && shop ? (
+          <div className="mb-2 flex flex-col gap-1 border-b border-ambuhub-100 pb-4 sm:mb-0 sm:flex-row sm:items-end sm:justify-between sm:pb-5">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-ambuhub-brand">
+                Provider shop
+              </p>
+              <p className="mt-1 truncate text-lg font-bold text-foreground sm:text-xl">
+                {shop.businessName}
+              </p>
+              {shop.physicalAddress ? (
+                <p className="mt-1 flex items-start gap-1.5 text-sm text-foreground/65">
+                  <MapPin
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 text-foreground/40"
+                    aria-hidden
+                  />
+                  <span>{shop.physicalAddress}</span>
+                </p>
+              ) : null}
+            </div>
+            {shop.website ? (
+              <a
+                href={
+                  shop.website.startsWith("http")
+                    ? shop.website
+                    : `https://${shop.website}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-ambuhub-brand hover:underline"
+              >
+                Website
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              </a>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className={bannerShellClass} aria-hidden={!bannerSrc}>
           {bannerSrc ? (
             <CategoryBannerImage
               src={bannerSrc}
-              alt={`${toTitleCase(category.name)} — banner`}
-              categorySlug={category.slug}
+              alt={`${toTitleCase(displayCategory.name)} — banner`}
+              categorySlug={displayCategory.slug}
             />
           ) : null}
         </div>
@@ -859,23 +1023,45 @@ export function CategoryServiceListing({
       >
         <div className="mb-6 overflow-x-auto rounded-2xl border border-ambuhub-100 bg-white/95 p-2 shadow-sm sm:mb-8">
           <div className="flex min-w-max items-center gap-2">
-            {AMBUHUB_SERVICES.map((svc) => {
-              const active = svc.slug === category.slug;
-              return (
-                <Link
-                  key={svc.slug}
-                  href={`/services/${encodeURIComponent(svc.slug)}`}
-                  className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
-                    active
-                      ? "bg-ambuhub-brand text-white"
-                      : "bg-ambuhub-50 text-foreground hover:bg-ambuhub-100"
-                  }`}
-                  aria-current={active ? "page" : undefined}
-                >
-                  {svc.title}
-                </Link>
-              );
-            })}
+            {isShopMode
+              ? shopTabCategories.map((svc) => {
+                  const active = svc.slug === displayCategory.slug;
+                  return (
+                    <button
+                      key={svc.slug}
+                      type="button"
+                      onClick={() => {
+                        setActiveCategory(svc);
+                        setDepartmentFilter("all");
+                      }}
+                      className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                        active
+                          ? "bg-ambuhub-brand text-white"
+                          : "bg-ambuhub-50 text-foreground hover:bg-ambuhub-100"
+                      }`}
+                      aria-current={active ? "page" : undefined}
+                    >
+                      {toTitleCase(svc.name)}
+                    </button>
+                  );
+                })
+              : AMBUHUB_SERVICES.map((svc) => {
+                  const active = svc.slug === displayCategory.slug;
+                  return (
+                    <Link
+                      key={svc.slug}
+                      href={`/services/${encodeURIComponent(svc.slug)}`}
+                      className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                        active
+                          ? "bg-ambuhub-brand text-white"
+                          : "bg-ambuhub-50 text-foreground hover:bg-ambuhub-100"
+                      }`}
+                      aria-current={active ? "page" : undefined}
+                    >
+                      {svc.title}
+                    </Link>
+                  );
+                })}
           </div>
         </div>
 
@@ -1149,7 +1335,7 @@ export function CategoryServiceListing({
               </p>
             </div>
             <Link
-              href={`/checkout?category=${encodeURIComponent(category.slug)}`}
+              href={`/checkout?category=${encodeURIComponent(displayCategory.slug)}`}
               className="shrink-0 rounded-xl bg-ambuhub-brand px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ambuhub-brand-dark"
             >
               Checkout
@@ -1183,7 +1369,7 @@ export function CategoryServiceListing({
                 </h2>
                 <ul className="mt-5 grid grid-cols-1 gap-5 min-w-0 sm:grid-cols-2 sm:gap-5 lg:mt-6 lg:grid-cols-4 lg:gap-6">
                   {section.services.map((svc) => {
-                    const listingDetailHref = `/services/${encodeURIComponent(category.slug)}/${encodeURIComponent(svc.id)}?countryCode=${encodeURIComponent(browseCountry)}`;
+                    const listingDetailHref = `/services/${encodeURIComponent(displayCategory.slug)}/${encodeURIComponent(svc.id)}?countryCode=${encodeURIComponent(browseCountry)}`;
                     return (
                     <li key={svc.id} className="min-w-0">
                       <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-ambuhub-100 bg-white shadow-sm">
@@ -1426,7 +1612,7 @@ export function CategoryServiceListing({
               </p>
             </div>
             <Link
-              href={`/checkout?category=${encodeURIComponent(category.slug)}`}
+              href={`/checkout?category=${encodeURIComponent(displayCategory.slug)}`}
               className="shrink-0 rounded-xl bg-ambuhub-brand px-4 py-2.5 text-sm font-semibold text-white"
             >
               Checkout

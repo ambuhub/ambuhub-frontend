@@ -22,6 +22,7 @@ import {
   fetchAdminDashboardStats,
   type AdminDashboardStats,
 } from "@/lib/admin-stats";
+import { isSuperAdmin } from "@/lib/admin-tier";
 import { fetchAuthMe } from "@/lib/marketplace-cart";
 import { AdminMonthlyChartsRow } from "./AdminMonthlyChartsRow";
 
@@ -29,7 +30,12 @@ const numberFmt = new Intl.NumberFormat("en-NG");
 
 const quickLinks = [
   { href: "/admin/users", label: "Manage users", icon: Users },
-  { href: "/admin/team", label: "Manage team", icon: UsersRound },
+  {
+    href: "/admin/team",
+    label: "Manage team",
+    icon: UsersRound,
+    superAdminOnly: true,
+  },
   { href: "/admin/activity-logs", label: "Activity logs", icon: ScrollText },
   { href: "/admin/orders", label: "View orders", icon: ShoppingBag },
   { href: "/admin/listings", label: "Moderate listings", icon: Package },
@@ -38,6 +44,7 @@ const quickLinks = [
 
 export default function AdminDashboardPage() {
   const [greetingName, setGreetingName] = useState("Admin");
+  const [canManageTeam, setCanManageTeam] = useState(false);
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
@@ -62,9 +69,11 @@ export default function AdminDashboardPage() {
     let cancelled = false;
     void fetchAuthMe()
       .then(({ user }) => {
-        if (!cancelled && user?.firstName?.trim()) {
+        if (cancelled || !user) return;
+        if (user.firstName?.trim()) {
           setGreetingName(user.firstName.trim());
         }
+        setCanManageTeam(isSuperAdmin(user));
       })
       .catch(() => {
         /* keep default */
@@ -186,7 +195,13 @@ export default function AdminDashboardPage() {
           </button>
         </div>
         <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-          {quickLinks.map((link) => {
+          {quickLinks
+            .filter(
+              (link) =>
+                !("superAdminOnly" in link && link.superAdminOnly) ||
+                canManageTeam,
+            )
+            .map((link) => {
             const Icon = link.icon;
             return (
               <li key={link.href}>

@@ -13,6 +13,8 @@ type Props = {
   onBack: () => void;
   /** When true, omits card chrome and top back link (used inside AuthSignupSplitShell). */
   splitLayout?: boolean;
+  /** Referral code from `/auth?ref=...` (client signups). */
+  referralCode?: string | null;
 };
 
 const roleLabels: Record<SignupRole, string> = {
@@ -23,7 +25,7 @@ const roleLabels: Record<SignupRole, string> = {
 const inputClass =
   "mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition-shadow placeholder:text-slate-400 focus:border-blue-800 focus:ring-2 focus:ring-blue-800/20";
 
-export function SignupForm({ role, onBack, splitLayout }: Props) {
+export function SignupForm({ role, onBack, splitLayout, referralCode }: Props) {
   const router = useRouter();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -51,6 +53,8 @@ export function SignupForm({ role, onBack, splitLayout }: Props) {
     }
     setLoading(true);
     try {
+      const ref =
+        typeof referralCode === "string" ? referralCode.trim() : "";
       const res = await fetch(`${API_AUTH_BFF_PREFIX}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -69,7 +73,10 @@ export function SignupForm({ role, onBack, splitLayout }: Props) {
                 ...(website.trim() ? { website: website.trim() } : {}),
                 physicalAddress: physicalAddress.trim(),
               }
-            : { dateOfBirth: dateOfBirth.trim() }),
+            : {
+                dateOfBirth: dateOfBirth.trim(),
+                ...(ref ? { referralCode: ref } : {}),
+              }),
         }),
       });
       const data = (await res.json()) as {

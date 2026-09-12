@@ -17,6 +17,8 @@ export type PublicAuthUser = {
   phone: string;
   /** ISO 3166-1 alpha-2 */
   countryCode: string;
+  /** Present for admins. Missing/`null` on legacy accounts is treated as super. */
+  adminTier?: "super" | "regular" | null;
   businessName?: string;
   physicalAddress?: string;
   website?: string | null;

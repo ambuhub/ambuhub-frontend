@@ -51,7 +51,7 @@ export function HeroSection() {
                   "0 0 12px rgba(255, 215, 0, 0.85), 0 0 28px rgba(255, 200, 50, 0.55), 0 0 48px rgba(255, 180, 0, 0.35)",
               }}
             >
-              A marketplace that links clients to everything ambulance-related
+              A market place for all your ambulance and medical transport needs
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, x: -36 }}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -9,6 +9,7 @@ import {
   FolderTree,
   LayoutDashboard,
   LogOut,
+  Mail,
   Menu,
   Package,
   ScrollText,
@@ -24,15 +25,23 @@ import { AmbuhubLogo } from "@/components/AmbuhubLogo";
 import { AdminNotificationBadge } from "@/components/admin/AdminNotificationBadge";
 import { AdminNotificationBellDropdown } from "@/components/notifications/AdminNotificationBellDropdown";
 import { unregisterFcmToken } from "@/components/notifications/FcmProvider";
+import { isSuperAdmin } from "@/lib/admin-tier";
+import { fetchAuthMe } from "@/lib/marketplace-cart";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/team", label: "Team", icon: UsersRound },
+  {
+    href: "/admin/team",
+    label: "Team",
+    icon: UsersRound,
+    superAdminOnly: true,
+  },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { href: "/admin/listings", label: "Listings", icon: Package },
   { href: "/admin/categories", label: "Categories", icon: FolderTree },
   { href: "/admin/concierge-requests", label: "Concierge requests", icon: ConciergeBell },
+  { href: "/admin/contact-messages", label: "Contact messages", icon: Mail },
   { href: "/admin/activity-logs", label: "Activity logs", icon: ScrollText },
   { href: "/admin/notifications", label: "Notifications", icon: Bell },
   { href: "/admin/reviews", label: "Reviews", icon: Star },
@@ -49,6 +58,32 @@ function isActivePath(pathname: string, href: string) {
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [canManageTeam, setCanManageTeam] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchAuthMe()
+      .then(({ user }) => {
+        if (!cancelled) {
+          setCanManageTeam(isSuperAdmin(user));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setCanManageTeam(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const visibleNavItems = useMemo(
+    () =>
+      navItems.filter(
+        (item) =>
+          !("superAdminOnly" in item && item.superAdminOnly) || canManageTeam,
+      ),
+    [canManageTeam],
+  );
 
   async function handleSignOut() {
     await unregisterFcmToken();
@@ -109,7 +144,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overflow-x-hidden p-3"
           aria-label="Admin"
         >
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
             const active = isActivePath(pathname, item.href);
             return (

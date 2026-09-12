@@ -2,6 +2,8 @@ import { API_PROXY_PREFIX } from "@/lib/api";
 
 export type AdminUserRole = "client" | "service_provider" | "admin";
 
+export type AdminTier = "super" | "regular";
+
 export type AdminUserListItem = {
   id: string;
   firstName: string;
@@ -10,6 +12,7 @@ export type AdminUserListItem = {
   phone: string;
   countryCode: string;
   role: AdminUserRole;
+  adminTier?: AdminTier | null;
   emailVerified: boolean;
   isSuspended: boolean;
   createdAt: string;

@@ -10,20 +10,29 @@ import {
   CONTACT_PHONE_DISPLAY,
   CONTACT_PHONE_HREF,
 } from "@/lib/contact-info";
+import {
+  CONTACT_SUBJECT_OPTIONS,
+  submitContactMessage,
+  type ContactSubjectKey,
+} from "@/lib/contact-messages";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
 type FormState = {
   name: string;
   email: string;
-  subject: string;
+  phone: string;
+  subjectKey: ContactSubjectKey | "";
+  otherSubject: string;
   message: string;
 };
 
 const EMPTY_FORM: FormState = {
   name: "",
   email: "",
-  subject: "",
+  phone: "",
+  subjectKey: "",
+  otherSubject: "",
   message: "",
 };
 
@@ -34,6 +43,7 @@ export function CTASection() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -41,12 +51,33 @@ export function CTASection() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!form.subjectKey) {
+      setSubmitError("Please select a subject.");
+      return;
+    }
     setSubmitting(true);
-    // No contact endpoint yet: simulate a send so the UX is complete.
-    await new Promise((resolve) => setTimeout(resolve, 900));
-    setSubmitting(false);
-    setSubmitted(true);
-    setForm(EMPTY_FORM);
+    setSubmitError(null);
+    try {
+      await submitContactMessage({
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        subjectKey: form.subjectKey,
+        otherSubject:
+          form.subjectKey === "other" ? form.otherSubject : undefined,
+        message: form.message,
+      });
+      setSubmitted(true);
+      setForm(EMPTY_FORM);
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error
+          ? err.message
+          : "Could not send your message. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -203,17 +234,61 @@ export function CTASection() {
 
                 <label className="flex flex-col gap-1.5">
                   <span className="text-sm font-medium text-blue-950">
-                    Subject
+                    Phone number
                   </span>
                   <input
-                    type="text"
+                    type="tel"
                     required
-                    value={form.subject}
-                    onChange={(e) => update("subject", e.target.value)}
-                    placeholder="How can we help?"
+                    value={form.phone}
+                    onChange={(e) => update("phone", e.target.value)}
+                    placeholder="+234 800 000 0000"
                     className={inputClasses}
                   />
                 </label>
+
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-sm font-medium text-blue-950">
+                    Subject
+                  </span>
+                  <select
+                    required
+                    value={form.subjectKey}
+                    onChange={(e) => {
+                      const next = e.target.value as ContactSubjectKey | "";
+                      update("subjectKey", next);
+                      if (next !== "other") {
+                        update("otherSubject", "");
+                      }
+                    }}
+                    className={inputClasses}
+                  >
+                    <option value="" disabled>
+                      Select a subject
+                    </option>
+                    {CONTACT_SUBJECT_OPTIONS.map((option) => (
+                      <option key={option.key} value={option.key}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {form.subjectKey === "other" ? (
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-sm font-medium text-blue-950">
+                      Please specify
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      maxLength={120}
+                      value={form.otherSubject}
+                      onChange={(e) => update("otherSubject", e.target.value)}
+                      placeholder="What is your message about?"
+                      className={inputClasses}
+                    />
+                  </label>
+                ) : null}
 
                 <label className="flex flex-col gap-1.5">
                   <span className="text-sm font-medium text-blue-950">
@@ -228,6 +303,12 @@ export function CTASection() {
                     className={`resize-y ${inputClasses}`}
                   />
                 </label>
+
+                {submitError ? (
+                  <p className="text-sm text-red-600" role="alert">
+                    {submitError}
+                  </p>
+                ) : null}
 
                 <motion.button
                   type="submit"

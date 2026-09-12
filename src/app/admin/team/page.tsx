@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   Loader2,
@@ -14,11 +15,14 @@ import { useCallback, useEffect, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/AdminPlaceholderPanel";
 import { CountrySelect } from "@/components/ui/CountrySelect";
 import { createAdminTeamMember } from "@/lib/admin-team";
+import { isSuperAdmin, resolveAdminTier } from "@/lib/admin-tier";
 import {
   fetchAdminUsers,
+  type AdminTier,
   type AdminUserListItem,
 } from "@/lib/admin-users";
 import { getCountryNameByCode } from "@/lib/countries";
+import { fetchAuthMe } from "@/lib/marketplace-cart";
 
 const fieldClass =
   "mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20";
@@ -50,7 +54,15 @@ function initials(user: AdminUserListItem): string {
   return (user.email?.charAt(0) ?? "?").toUpperCase();
 }
 
+function tierLabel(tier: AdminTier | null): string {
+  return tier === "super" ? "Super admin" : "Admin";
+}
+
 export default function AdminTeamPage() {
+  const router = useRouter();
+  const [accessChecked, setAccessChecked] = useState(false);
+  const [allowed, setAllowed] = useState(false);
+
   const [admins, setAdmins] = useState<AdminUserListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -61,6 +73,7 @@ export default function AdminTeamPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [countryCode, setCountryCode] = useState("ng");
+  const [adminTier, setAdminTier] = useState<AdminTier>("regular");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -90,8 +103,35 @@ export default function AdminTeamPage() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    void fetchAuthMe()
+      .then(({ user, ok }) => {
+        if (cancelled) return;
+        if (!ok || !user || user.role !== "admin") {
+          router.replace("/admin/login");
+          return;
+        }
+        if (!isSuperAdmin(user)) {
+          router.replace("/admin/dashboard");
+          return;
+        }
+        setAllowed(true);
+        setAccessChecked(true);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          router.replace("/admin/dashboard");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  useEffect(() => {
+    if (!allowed) return;
     void loadAdmins();
-  }, [loadAdmins]);
+  }, [allowed, loadAdmins]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -132,14 +172,19 @@ export default function AdminTeamPage() {
         phone: phone.trim(),
         countryCode: countryCode.trim(),
         password,
+        adminTier,
       });
       setFirstName("");
       setLastName("");
       setEmail("");
       setPhone("");
+      setAdminTier("regular");
       setPassword("");
       setConfirmPassword("");
-      setFormSuccess(`${displayName(created)} was added as an admin.`);
+      const createdTier = resolveAdminTier(created) ?? "regular";
+      setFormSuccess(
+        `${displayName(created)} was added as a ${tierLabel(createdTier).toLowerCase()}.`,
+      );
       await loadAdmins();
     } catch (err) {
       setFormError(
@@ -150,12 +195,23 @@ export default function AdminTeamPage() {
     }
   }
 
+  if (!accessChecked || !allowed) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2
+          className="h-8 w-8 animate-spin text-indigo-600"
+          aria-label="Checking access"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <AdminPageHeader
         theme="blue"
         title="Team"
-        description="Create admin accounts and see who currently has access to the admin dashboard."
+        description="Create regular or super admin accounts and see who currently has access to the admin dashboard."
       />
 
       <div className="grid gap-6 lg:grid-cols-5">
@@ -167,8 +223,8 @@ export default function AdminTeamPage() {
             </h2>
           </div>
           <p className="mt-1 text-sm text-slate-600">
-            New admins can sign in immediately with the email and password you
-            set.
+            Regular admins can use the dashboard but cannot manage the team.
+            Super admins can create other admins.
           </p>
 
           <form className="mt-5 space-y-3.5" onSubmit={(e) => void handleCreate(e)}>
@@ -244,6 +300,28 @@ export default function AdminTeamPage() {
                 required
                 className={fieldClass}
               />
+            </div>
+
+            <div>
+              <label htmlFor="team-admin-tier" className={labelClass}>
+                Admin type
+              </label>
+              <select
+                id="team-admin-tier"
+                value={adminTier}
+                onChange={(e) =>
+                  setAdminTier(
+                    e.target.value === "super" ? "super" : "regular",
+                  )
+                }
+                className={fieldClass}
+              >
+                <option value="regular">Regular admin</option>
+                <option value="super">Super admin</option>
+              </select>
+              <p className="mt-1 text-xs text-slate-500">
+                Regular admins do not get access to this Team page.
+              </p>
             </div>
 
             <div>
@@ -358,6 +436,8 @@ export default function AdminTeamPage() {
               {admins.map((admin) => {
                 const country =
                   getCountryNameByCode(admin.countryCode) ?? admin.countryCode;
+                const tier = resolveAdminTier(admin);
+                const isSuper = tier === "super";
                 return (
                   <li
                     key={admin.id}
@@ -383,8 +463,14 @@ export default function AdminTeamPage() {
                       </div>
                     </div>
                     <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-end">
-                      <span className="inline-flex rounded-full bg-fuchsia-100 px-2.5 py-0.5 text-xs font-semibold text-fuchsia-800 ring-1 ring-fuchsia-200/80">
-                        Admin
+                      <span
+                        className={
+                          isSuper
+                            ? "inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900 ring-1 ring-amber-200/80"
+                            : "inline-flex rounded-full bg-fuchsia-100 px-2.5 py-0.5 text-xs font-semibold text-fuchsia-800 ring-1 ring-fuchsia-200/80"
+                        }
+                      >
+                        {tierLabel(tier)}
                       </span>
                       <span className="text-xs text-slate-500">
                         Joined {formatJoined(admin.createdAt)}

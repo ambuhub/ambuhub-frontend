@@ -1,5 +1,11 @@
+import { API_PROXY_PREFIX } from "@/lib/api";
 import { getServerBackendOrigin } from "@/lib/server-backend-origin";
-import type { MarketplaceServiceRow } from "@/lib/service-category-page-data";
+import type { MarketplaceBrowseCountry } from "@/lib/browse-country";
+import type {
+  MarketplaceServiceRow,
+  ServiceCategoryPageDto,
+} from "@/lib/service-category-page-data";
+import { AMBUHUB_SERVICE_SLUGS } from "@/lib/ambuhub-services";
 
 export type ProviderShopInfo = {
   shopSlug: string;
@@ -62,6 +68,76 @@ export async function fetchProviderShopBySlug(
   } catch {
     return null;
   }
+}
+
+/** Browser refetch for shop country changes (via Next API proxy). */
+export async function fetchProviderShopBySlugClient(
+  shopSlug: string,
+  countryCode?: MarketplaceBrowseCountry,
+): Promise<ProviderShopPayload | null> {
+  const trimmed = shopSlug?.trim().toLowerCase() ?? "";
+  if (!trimmed) {
+    return null;
+  }
+  const qs =
+    countryCode != null
+      ? `?countryCode=${encodeURIComponent(countryCode)}`
+      : "";
+  try {
+    const res = await fetch(
+      `${API_PROXY_PREFIX}/services/shop/${encodeURIComponent(trimmed)}${qs}`,
+      { cache: "no-store", credentials: "omit" },
+    );
+    if (res.status === 404 || !res.ok) {
+      return null;
+    }
+    const data = (await res.json()) as {
+      shop?: ProviderShopInfo;
+      services?: MarketplaceServiceRow[];
+    };
+    if (!data.shop?.shopSlug) {
+      return null;
+    }
+    return {
+      shop: data.shop,
+      services: Array.isArray(data.services) ? data.services : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Categories that appear in the shop, ordered by Ambuhub catalog then extras.
+ */
+export function shopCategoriesInCatalogOrder(
+  services: MarketplaceServiceRow[],
+  categoriesMeta: ServiceCategoryPageDto[],
+): ServiceCategoryPageDto[] {
+  const present = new Set(
+    services.map((s) => s.category?.slug).filter(Boolean) as string[],
+  );
+  const bySlug = new Map(categoriesMeta.map((c) => [c.slug, c]));
+  const ordered: ServiceCategoryPageDto[] = [];
+  const seen = new Set<string>();
+
+  for (const slug of AMBUHUB_SERVICE_SLUGS) {
+    if (!present.has(slug)) continue;
+    const meta = bySlug.get(slug);
+    if (meta) {
+      ordered.push(meta);
+      seen.add(slug);
+    }
+  }
+
+  for (const meta of categoriesMeta) {
+    if (present.has(meta.slug) && !seen.has(meta.slug)) {
+      ordered.push(meta);
+      seen.add(meta.slug);
+    }
+  }
+
+  return ordered;
 }
 
 /** Group shop services by category, then department. */

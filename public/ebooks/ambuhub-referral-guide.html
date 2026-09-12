@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ambuhub Referral Guide</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #0f172a;
+        --muted: #475569;
+        --brand: #0369a1;
+        --bg: #f8fafc;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        background: linear-gradient(180deg, #e0f2fe 0%, var(--bg) 28%, #fff 100%);
+        color: var(--ink);
+        line-height: 1.65;
+      }
+      main {
+        max-width: 42rem;
+        margin: 0 auto;
+        padding: 3rem 1.25rem 4rem;
+      }
+      h1 {
+        font-size: clamp(1.75rem, 4vw, 2.35rem);
+        line-height: 1.2;
+        margin: 0 0 0.75rem;
+      }
+      .eyebrow {
+        font-family: system-ui, sans-serif;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--brand);
+        margin-bottom: 0.75rem;
+      }
+      p,
+      li {
+        color: var(--muted);
+        font-size: 1.05rem;
+      }
+      h2 {
+        margin-top: 2rem;
+        font-size: 1.25rem;
+      }
+      ul {
+        padding-left: 1.25rem;
+      }
+      .card {
+        margin-top: 1.5rem;
+        padding: 1.25rem 1.35rem;
+        border: 1px solid #bae6fd;
+        border-radius: 1rem;
+        background: rgba(255, 255, 255, 0.9);
+      }
+      .print {
+        font-family: system-ui, sans-serif;
+        margin-top: 2rem;
+      }
+      .print button {
+        border: 0;
+        border-radius: 0.75rem;
+        background: var(--brand);
+        color: white;
+        font-weight: 600;
+        padding: 0.7rem 1rem;
+        cursor: pointer;
+      }
+      @media print {
+        .print {
+          display: none;
+        }
+        body {
+          background: white;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Ambuhub reward</p>
+      <h1>Welcome guide for Ambuhub referrers</h1>
+      <p>
+        Thank you for inviting someone to Ambuhub. This short guide covers how
+        clients use dispatch, marketplace services, and your referral rewards.
+      </p>
+
+      <div class="card">
+        <h2>What Ambuhub helps with</h2>
+        <ul>
+          <li>Request ground ambulance dispatch when you need urgent transport.</li>
+          <li>Browse hire, book, and sale listings from verified providers.</li>
+          <li>Track orders, favorites, and notifications from your client dashboard.</li>
+        </ul>
+      </div>
+
+      <h2>Using dispatch safely</h2>
+      <p>
+        Ambuhub connects you with available units, but it is not a replacement
+        for local emergency numbers when someone needs immediate professional
+        medical care.
+      </p>
+
+      <h2>Sharing Ambuhub</h2>
+      <p>
+        Keep sharing your personal referral link from
+        <strong>Client → Referral</strong>. Every successful client signup helps
+        grow safer medical logistics access in your community.
+      </p>
+
+      <div class="print">
+        <button type="button" onclick="window.print()">Save / print as PDF</button>
+      </div>
+    </main>
+  </body>
+</html>

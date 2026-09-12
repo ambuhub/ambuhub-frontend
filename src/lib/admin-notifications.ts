@@ -2,7 +2,7 @@ import { API_PROXY_PREFIX } from "@/lib/api";
 
 export type AdminNotificationDto = {
   id: string;
-  type: "concierge_request_received";
+  type: "concierge_request_received" | "contact_message_received";
   category?: string;
   priority?: string;
   title: string;
@@ -41,6 +41,17 @@ export function resolveAdminNotificationHref(item: AdminNotificationDto): string
 }
 
 export function adminNotificationLinkHref(item: AdminNotificationDto): string {
+  if (item.type === "contact_message_received") {
+    const contactId =
+      item.entityId ??
+      (typeof item.data?.contactMessageId === "string"
+        ? item.data.contactMessageId
+        : null);
+    if (contactId) {
+      return `/admin/contact-messages/${encodeURIComponent(contactId)}`;
+    }
+    return "/admin/contact-messages";
+  }
   if (item.conciergeRequestId) {
     return `/admin/concierge-requests/${encodeURIComponent(item.conciergeRequestId)}`;
   }

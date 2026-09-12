@@ -22,6 +22,11 @@ import {
   CONTACT_PHONE_DISPLAY,
   CONTACT_PHONE_HREF,
 } from "@/lib/contact-info";
+import {
+  CONTACT_SUBJECT_OPTIONS,
+  submitContactMessage,
+  type ContactSubjectKey,
+} from "@/lib/contact-messages";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -61,21 +66,29 @@ const contactDetails = [
 type FormState = {
   name: string;
   email: string;
-  subject: string;
+  phone: string;
+  subjectKey: ContactSubjectKey | "";
+  otherSubject: string;
   message: string;
 };
 
 const EMPTY_FORM: FormState = {
   name: "",
   email: "",
-  subject: "",
+  phone: "",
+  subjectKey: "",
+  otherSubject: "",
   message: "",
 };
+
+const fieldClasses =
+  "rounded-xl border border-ambuhub-200 bg-white px-4 py-2.5 text-sm text-blue-950 outline-none transition-colors placeholder:text-blue-900/35 focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/20";
 
 export function ContactPageContent() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -83,12 +96,33 @@ export function ContactPageContent() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!form.subjectKey) {
+      setSubmitError("Please select a subject.");
+      return;
+    }
     setSubmitting(true);
-    // No contact endpoint yet: simulate a send so the UX is complete.
-    await new Promise((resolve) => setTimeout(resolve, 900));
-    setSubmitting(false);
-    setSubmitted(true);
-    setForm(EMPTY_FORM);
+    setSubmitError(null);
+    try {
+      await submitContactMessage({
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        subjectKey: form.subjectKey,
+        otherSubject:
+          form.subjectKey === "other" ? form.otherSubject : undefined,
+        message: form.message,
+      });
+      setSubmitted(true);
+      setForm(EMPTY_FORM);
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error
+          ? err.message
+          : "Could not send your message. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -264,7 +298,7 @@ export function ContactPageContent() {
                       value={form.name}
                       onChange={(e) => update("name", e.target.value)}
                       placeholder="Jane Doe"
-                      className="rounded-xl border border-ambuhub-200 bg-white px-4 py-2.5 text-sm text-blue-950 outline-none transition-colors placeholder:text-blue-900/35 focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/20"
+                      className={fieldClasses}
                     />
                   </label>
                   <label className="flex flex-col gap-1.5">
@@ -277,24 +311,68 @@ export function ContactPageContent() {
                       value={form.email}
                       onChange={(e) => update("email", e.target.value)}
                       placeholder="you@example.com"
-                      className="rounded-xl border border-ambuhub-200 bg-white px-4 py-2.5 text-sm text-blue-950 outline-none transition-colors placeholder:text-blue-900/35 focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/20"
+                      className={fieldClasses}
                     />
                   </label>
                 </div>
 
                 <label className="flex flex-col gap-1.5">
                   <span className="text-sm font-medium text-blue-950">
-                    Subject
+                    Phone number
                   </span>
                   <input
-                    type="text"
+                    type="tel"
                     required
-                    value={form.subject}
-                    onChange={(e) => update("subject", e.target.value)}
-                    placeholder="How can we help?"
-                    className="rounded-xl border border-ambuhub-200 bg-white px-4 py-2.5 text-sm text-blue-950 outline-none transition-colors placeholder:text-blue-900/35 focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/20"
+                    value={form.phone}
+                    onChange={(e) => update("phone", e.target.value)}
+                    placeholder="+234 800 000 0000"
+                    className={fieldClasses}
                   />
                 </label>
+
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-sm font-medium text-blue-950">
+                    Subject
+                  </span>
+                  <select
+                    required
+                    value={form.subjectKey}
+                    onChange={(e) => {
+                      const next = e.target.value as ContactSubjectKey | "";
+                      update("subjectKey", next);
+                      if (next !== "other") {
+                        update("otherSubject", "");
+                      }
+                    }}
+                    className={fieldClasses}
+                  >
+                    <option value="" disabled>
+                      Select a subject
+                    </option>
+                    {CONTACT_SUBJECT_OPTIONS.map((option) => (
+                      <option key={option.key} value={option.key}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {form.subjectKey === "other" ? (
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-sm font-medium text-blue-950">
+                      Please specify
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      maxLength={120}
+                      value={form.otherSubject}
+                      onChange={(e) => update("otherSubject", e.target.value)}
+                      placeholder="What is your message about?"
+                      className={fieldClasses}
+                    />
+                  </label>
+                ) : null}
 
                 <label className="flex flex-col gap-1.5">
                   <span className="text-sm font-medium text-blue-950">
@@ -306,9 +384,15 @@ export function ContactPageContent() {
                     value={form.message}
                     onChange={(e) => update("message", e.target.value)}
                     placeholder="Tell us a bit about what you need…"
-                    className="resize-y rounded-xl border border-ambuhub-200 bg-white px-4 py-2.5 text-sm text-blue-950 outline-none transition-colors placeholder:text-blue-900/35 focus:border-ambuhub-brand focus:ring-2 focus:ring-ambuhub-brand/20"
+                    className={`resize-y ${fieldClasses}`}
                   />
                 </label>
+
+                {submitError ? (
+                  <p className="text-sm text-red-600" role="alert">
+                    {submitError}
+                  </p>
+                ) : null}
 
                 <motion.button
                   type="submit"

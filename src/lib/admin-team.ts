@@ -1,5 +1,5 @@
 import { API_PROXY_PREFIX } from "@/lib/api";
-import type { AdminUserListItem } from "@/lib/admin-users";
+import type { AdminTier, AdminUserListItem } from "@/lib/admin-users";
 
 export type CreateAdminTeamMemberInput = {
   firstName: string;
@@ -8,6 +8,7 @@ export type CreateAdminTeamMemberInput = {
   phone: string;
   countryCode: string;
   password: string;
+  adminTier: AdminTier;
 };
 
 function adminTeamError(res: Response, data: { message?: string }): Error {
@@ -15,7 +16,11 @@ function adminTeamError(res: Response, data: { message?: string }): Error {
     return new Error("Sign in as an admin to manage the team.");
   }
   if (res.status === 403) {
-    return new Error("Admin access required.");
+    return new Error(
+      data.message === "Super admin access required"
+        ? "Only super admins can create admin accounts."
+        : "Admin access required.",
+    );
   }
   return new Error(data.message ?? "Could not complete team request.");
 }

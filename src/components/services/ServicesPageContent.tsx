@@ -124,9 +124,9 @@ export function ServicesPageContent({ categories }: Props) {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-40px" }}
                     transition={{ duration: 0.5, delay: i * 0.08, ease }}
-                    className="min-w-0"
+                    className="flex min-w-0 h-full"
                   >
-                    <div className="relative">
+                    <div className="relative flex h-full min-w-0 w-full flex-col">
                       <span
                         className="pointer-events-none absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-sky-600 text-white shadow-lg shadow-blue-700/25"
                         aria-hidden

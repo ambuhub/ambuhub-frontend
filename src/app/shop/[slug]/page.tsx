@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
-import { ExternalLink, MapPin } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { ProviderShopListing } from "@/components/services/ProviderShopListing";
+import { CategoryServiceListing } from "@/components/services/CategoryServiceListing";
 import {
   BROWSE_COUNTRY_COOKIE,
   parseBrowseCountry,
@@ -12,24 +11,33 @@ import {
 } from "@/lib/browse-country";
 import {
   fetchProviderShopBySlug,
-  groupShopServicesByCategory,
+  shopCategoriesInCatalogOrder,
 } from "@/lib/provider-shop";
+import {
+  fetchServiceCategoriesList,
+  groupMarketplaceByDepartments,
+} from "@/lib/service-category-page-data";
 import { publicPageMetadata } from "@/lib/seo-metadata";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ countryCode?: string }>;
+  searchParams: Promise<{ countryCode?: string; category?: string }>;
 };
 
-async function resolveBrowseCountry(
-  queryCountry?: string,
-): Promise<MarketplaceBrowseCountry | undefined> {
+async function resolveBrowseCountry(queryCountry?: string): Promise<{
+  country: MarketplaceBrowseCountry;
+  fromCookie: boolean;
+}> {
   const fromQuery = parseBrowseCountry(queryCountry);
   if (fromQuery) {
-    return fromQuery;
+    return { country: fromQuery, fromCookie: true };
   }
   const jar = await cookies();
-  return parseBrowseCountry(jar.get(BROWSE_COUNTRY_COOKIE)?.value) ?? undefined;
+  const fromCookie = parseBrowseCountry(jar.get(BROWSE_COUNTRY_COOKIE)?.value);
+  if (fromCookie) {
+    return { country: fromCookie, fromCookie: true };
+  }
+  return { country: "NG", fromCookie: false };
 }
 
 export async function generateMetadata({
@@ -52,56 +60,68 @@ export default async function ProviderShopPage({
 }: PageProps) {
   const { slug } = await params;
   const sp = await searchParams;
-  const browseCountry = await resolveBrowseCountry(sp.countryCode);
+  const { country: initialCountry, fromCookie: hasCountryCookie } =
+    await resolveBrowseCountry(sp.countryCode);
 
-  const payload = await fetchProviderShopBySlug(slug, browseCountry);
+  const [payload, categoriesMeta] = await Promise.all([
+    fetchProviderShopBySlug(slug, initialCountry),
+    fetchServiceCategoriesList(),
+  ]);
+
   if (!payload) {
     notFound();
   }
 
-  const sections = groupShopServicesByCategory(payload.services);
-  const { shop } = payload;
+  const shopCategories = shopCategoriesInCatalogOrder(
+    payload.services,
+    categoriesMeta,
+  );
+  const requestedCategory = sp.category?.trim().toLowerCase();
+  let initialCategory =
+    shopCategories.find((c) => c.slug === requestedCategory) ??
+    shopCategories[0] ??
+    categoriesMeta[0] ??
+    null;
+
+  if (!initialCategory && payload.services[0]?.category) {
+    const c = payload.services[0].category;
+    initialCategory = {
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      departments: [],
+    };
+  }
+
+  if (!initialCategory) {
+    initialCategory = {
+      id: "empty",
+      name: "Services",
+      slug: "services",
+      departments: [],
+    };
+  }
+
+  const sections = groupMarketplaceByDepartments(
+    initialCategory,
+    payload.services,
+  );
 
   return (
-    <div className="flex min-h-full flex-1 flex-col">
+    <div className="flex min-h-full flex-1 flex-col bg-white">
       <Header />
-      <main className="flex flex-1 flex-col bg-gradient-to-b from-slate-50 via-white to-slate-50">
-        <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-          <header className="mb-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-            <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-              Provider shop
-            </p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-              {shop.businessName}
-            </h1>
-            {shop.physicalAddress ? (
-              <p className="mt-3 flex items-start gap-2 text-sm text-slate-600">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
-                <span>{shop.physicalAddress}</span>
-              </p>
-            ) : null}
-            {shop.website ? (
-              <a
-                href={
-                  shop.website.startsWith("http")
-                    ? shop.website
-                    : `https://${shop.website}`
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-blue-700 hover:underline"
-              >
-                Website
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-              </a>
-            ) : null}
-          </header>
-
-          <ProviderShopListing
-            sections={sections}
-            browseCountry={browseCountry}
-          />
-        </div>
+      <main className="flex flex-1 flex-col pt-4 sm:pt-6 lg:pt-8">
+        <CategoryServiceListing
+          mode="shop"
+          category={initialCategory}
+          sections={sections}
+          initialCountry={initialCountry}
+          hasCountryCookie={hasCountryCookie}
+          shopSlug={payload.shop.shopSlug}
+          shop={payload.shop}
+          allShopServices={payload.services}
+          categoriesMeta={categoriesMeta}
+        />
       </main>
       <Footer />
     </div>

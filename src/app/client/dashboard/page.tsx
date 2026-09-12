@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   ClipboardList,
+  Gift,
   Heart,
   Package,
   ShoppingBag,
@@ -80,6 +81,13 @@ const quickActions = [
     label: "Favorites",
     hint: "Saved providers and listings",
     icon: Heart,
+    tone: "bg-white text-slate-900 hover:bg-sky-50 border border-slate-200",
+  },
+  {
+    href: "/client/referral",
+    label: "Referral",
+    hint: "Share your link, unlock an e-book",
+    icon: Gift,
     tone: "bg-white text-slate-900 hover:bg-sky-50 border border-slate-200",
   },
 ] as const;

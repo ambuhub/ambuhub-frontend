@@ -50,8 +50,13 @@ function AuthLoginShell({ onSwitchToSignup }: { onSwitchToSignup: () => void }) 
 
 function AuthPageContent() {
   const searchParams = useSearchParams();
-  const [step, setStep] = useState<Step>(() => initialAuthStep(searchParams));
-  const [role, setRole] = useState<SignupRole | null>(null);
+  const referralCode = searchParams.get("ref")?.trim() || null;
+  const [step, setStep] = useState<Step>(() =>
+    referralCode ? "signup" : initialAuthStep(searchParams),
+  );
+  const [role, setRole] = useState<SignupRole | null>(() =>
+    referralCode ? "client" : null,
+  );
 
   const disclaimer = (
     <p className="mx-auto mt-12 max-w-xl text-center text-xs text-slate-500">
@@ -86,13 +91,36 @@ function AuthPageContent() {
     return (
       <AuthSignupSplitShell
         onPrevious={() => {
+          if (referralCode) {
+            setStep("login");
+            setRole(null);
+            return;
+          }
           setStep("pick-role");
           setRole(null);
         }}
         onLogIn={() => setStep("login")}
       >
         <div className="mx-auto w-full max-w-2xl">
-          <SignupForm role={role} onBack={() => setStep("pick-role")} splitLayout />
+          {referralCode && role === "client" ? (
+            <p className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+              You&apos;re joining with a referral link. Create your client
+              account to get started.
+            </p>
+          ) : null}
+          <SignupForm
+            role={role}
+            onBack={() => {
+              if (referralCode) {
+                setStep("login");
+                setRole(null);
+                return;
+              }
+              setStep("pick-role");
+            }}
+            splitLayout
+            referralCode={referralCode}
+          />
           {disclaimer}
         </div>
       </AuthSignupSplitShell>
