@@ -1,4 +1,4 @@
-export const CONTACT_EMAIL = "hello@ambuhub.example";
+export const CONTACT_EMAIL = "ambuhub12@gmail.com";
 export const CONTACT_PHONE_DISPLAY = "+234 800 000 0000";
 export const CONTACT_PHONE_TEL = "+2348000000000";
 export const CONTACT_LOCATION = "Lagos, Nigeria";

@@ -12,6 +12,7 @@ import {
   Shield,
   UserRound,
 } from "lucide-react";
+import { CONTACT_EMAIL } from "@/lib/contact-info";
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -155,7 +156,7 @@ const faqCategories: FaqCategory[] = [
       {
         question: "What if I have a dispute with a provider?",
         answer:
-          "Document the issue from your order details and contact us at hello@ambuhub.example with your order reference. We will help coordinate a fair resolution according to our terms and the facts of the booking.",
+          `Document the issue from your order details and contact us at ${CONTACT_EMAIL} with your order reference. We will help coordinate a fair resolution according to our terms and the facts of the booking.`,
       },
     ],
   },

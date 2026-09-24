@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { AmbuhubLogo } from "@/components/AmbuhubLogo";
+import { CONTACT_EMAIL, CONTACT_EMAIL_HREF } from "@/lib/contact-info";
 
 const quickLinks = [
   { label: "Home", href: "/#top" },
@@ -122,10 +123,10 @@ export function Footer() {
                   aria-hidden
                 />
                 <a
-                  href="mailto:hello@ambuhub.example"
+                  href={CONTACT_EMAIL_HREF}
                   className="break-all transition-colors hover:text-white"
                 >
-                  hello@ambuhub.example
+                  {CONTACT_EMAIL}
                 </a>
               </li>
             </ul>
