@@ -29,7 +29,7 @@ const legalLinks = [
 const socialLinks = [
   {
     label: "Facebook",
-    href: "https://www.facebook.com/",
+    href: "https://www.facebook.com/profile.php?id=61594586407933",
     icon: Facebook,
   },
   {
